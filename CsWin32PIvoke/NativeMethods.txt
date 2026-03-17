@@ -1,0 +1,17 @@
+﻿WinUsb.*
+CreateFile
+CloseHandle
+GENERIC_ACCESS_RIGHTS
+SetupDiGetClassDevs
+SetupDiEnumDeviceInfo
+SetupDiGetDeviceProperty
+SetupDiDestroyDeviceInfoList
+SetupDiGetDeviceRegistryProperty
+
+SetupDiGetDeviceInterfaceDetail
+SetupDiEnumDeviceInterfaces
+SP_DEVICE_INTERFACE_DATA
+SP_DEVICE_INTERFACE_DETAIL_DATA_W
+WIN32_ERROR
+
+

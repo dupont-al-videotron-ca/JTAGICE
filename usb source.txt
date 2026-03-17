@@ -1,0 +1,37 @@
+﻿Airbuss ENG 1-2
+path = USB\VID_044F&PID_0407\00000000001A
+class GUID = {745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+
+AT90USB
+path = USB\VID_03EB&PID_0001\001
+class GUID = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
+device path use to createfile \\?\usb#vid_03eb&pid_0001#001#{a5dcbf10-6530-11d2-901f-00c04fb951ed}
+
+Candle :
+Path = USB\VID_1D50&PID_606F&MI_00\7&26789201&1&0000
+class GUID = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
+
+Candle update:
+Path = USB\VID_1D50&PID_606F&MI_01\7&26789201&1&0001
+class GUID = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
+
+JTAGICE mkII
+path = USB\VID_03EB&PID_2103\00B0000006B4
+class GUID = {c671678c-82c1-43f3-d700-0049433e9a4b}
+device path = \\?\usb#vid_03eb&pid_2103#00b0000006b4#{a5dcbf10-6530-11d2-901f-00c04fb951ed}
+
+WinDriver
+path = ROOT\JUNGO\0000
+class GUID = {c671678c-82c1-43f3-d700-0049433e9a4b}
+
+
+USBDevice {88BAE032-5A81-49f0-BC3D-A4FF138216D6} IHVs must use this class for custom devices that don't belong to another class. This class isn't used for USB host controllers and hubs.
+USB {36fc9e60-c465-11cf-8056-444553540000}
+Class GUID
+ Other Devices {4d36e97e-e325-11ce-bfc1-08002be10318}
+ USB	{36fc9e60-c465-11cf-8056-444553540000}
+ HIDClass{745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+
+
+Vendor Specific (FFh)	-	-	Windows 11
+Windows 10	Recommended driver: WinUSB (Winusb.sys)

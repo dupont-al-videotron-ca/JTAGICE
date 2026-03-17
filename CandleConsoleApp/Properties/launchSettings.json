@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CandleConsoleApp": {
+      "commandName": "Project",
+      "commandLineArgs": "hh 55"
+    }
+  }
+}
