@@ -49,8 +49,11 @@ namespace Common.Test.Xunit
             Hierarchy logRepository = (Hierarchy)LogManager.GetRepository(Assembly.GetCallingAssembly());
             XmlConfigurator.ConfigureAndWatch(logRepository, new FileInfo("log4net.config"));
             RootLogger rootlogger = (RootLogger)logRepository.Root;
-            Assert.NotNull(rootlogger.GetAppender("FileAppender"));
-            Assert.NotNull(rootlogger.GetAppender("XUnitTestAppender"));
+            FileAppender? fileAppender = (FileAppender?)rootlogger.GetAppender("FileAppender");
+            if (fileAppender == null)
+            {
+                throw new InvalidOperationException("FileAppender is not configured in log4net.config");
+            }
 
             // file appender
             //var appender = new FileAppender();
@@ -62,13 +65,16 @@ namespace Common.Test.Xunit
 
             // xunit appender
             XUnitTestAppender? appender = (XUnitTestAppender?)rootlogger.GetAppender("XUnitTestAppender");
-            Assert.NotNull(appender);
+            if(appender == null)
+            {
+                throw new InvalidOperationException("XUnitTestAppender is not configured in log4net.config");
+            }
+
             _xUnitTestAppender = appender;
 
             //_xUnitTestAppender.Name = "XUnitTestAppender";
             //_xUnitTestAppender.Layout = _patternLayout;
             //_xUnitTestAppender.ActivateOptions();
-
 
             Logger.Info("----- Starting test: " + this.GetType().Name + " -----");
 

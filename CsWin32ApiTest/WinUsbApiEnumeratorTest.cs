@@ -9,43 +9,22 @@ using Xunit;
 
 namespace CsWin32ApiTest
 {
-    public class WinUsbApiEnumeratorTest : XUnitTestBase
+    public class WinUsbApiEnumeratorTest : WinUsbApiBaseTest
     {
-        private SafeHandle? safeHandle = null;
-        const string deviceDescription = "JTAGICE mkII";
-
-        public WinUsbApiEnumeratorTest() : base(false)
+        public WinUsbApiEnumeratorTest() : base()
         {
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (safeHandle != null)
-                {
-                    if (!safeHandle.IsClosed)
-                    {
-                        safeHandle.Close();
-                    }
-
-                    safeHandle = null;
-                }
-            }
-
-            base.Dispose(disposing);
         }
 
         [Fact]
-        /// JTAGICE mkII shall be powered on.
+        /// The device shall be power on.
         public void CreateFileHandle_shall_return_valid_handle()
         {
             // Test
-            this.safeHandle = WinUsbApi.CreateFileHandle(@"\\?\usb#vid_03eb&pid_2103#00b0000006b4#{a5dcbf10-6530-11d2-901f-00c04fb951ed}");
+            this._fileHandle = WinUsbApi.CreateFileHandle(deviceConnectionString);
 
             // Verification
-            Assert.NotNull(this.safeHandle);
-            Assert.False(this.safeHandle.IsInvalid);
+            Assert.NotNull(this._fileHandle);
+            Assert.False(this._fileHandle.IsInvalid);
 
         }
 
@@ -53,11 +32,11 @@ namespace CsWin32ApiTest
         public void CreateFileHandle_shall_return_invalid_handle()
         {
             // Test
-            this.safeHandle = WinUsbApi.CreateFileHandle(@"\\?\usb#vid_03eb&pid_2103#00b0000006b4");
+            this._fileHandle = WinUsbApi.CreateFileHandle(@"\\?\usb#vid_03eb&pid_2103#00b0000006b4");
 
             // Verification
-            Assert.NotNull(this.safeHandle);
-            Assert.True(this.safeHandle.IsInvalid);
+            Assert.NotNull(this._fileHandle);
+            Assert.True(this._fileHandle.IsInvalid);
         }
 
         [Fact]
@@ -71,28 +50,28 @@ namespace CsWin32ApiTest
         [Fact]
         public void GetDeviceInfoListSafeHandle_shall_return_valid_handle()
         {
-            this.safeHandle = WinUsbApi.GetDeviceInfoListSafeHandle(UsbConstants.GUID_DEVINTERFACE_USB_DEVICE,
+            this._deviceInfoHandle = WinUsbApi.GetDeviceInfoListSafeHandle(UsbConstants.GUID_DEVINTERFACE_USB_DEVICE,
                 null,
                 null,
                 SetupDiGetClassDevsFlags.DIGCF_PRESENT | SetupDiGetClassDevsFlags.DIGCF_DEVICEINTERFACE);
 
-            Assert.NotNull(this.safeHandle);
+            Assert.NotNull(this._deviceInfoHandle);
 
-            Assert.False(this.safeHandle.IsInvalid);
+            Assert.False(this._deviceInfoHandle.IsInvalid);
 
         }
 
         [Fact]
         public void GetDeviceInfoListSafeHandle_shall_return_valid_handle_no_guid()
         {
-            this.safeHandle = WinUsbApi.GetDeviceInfoListSafeHandle(null,
+            this._deviceInfoHandle = WinUsbApi.GetDeviceInfoListSafeHandle(null,
                 null,
                 null,
                 SetupDiGetClassDevsFlags.DIGCF_PRESENT | SetupDiGetClassDevsFlags.DIGCF_ALLCLASSES);
 
-            Assert.NotNull(this.safeHandle);
+            Assert.NotNull(this._deviceInfoHandle);
 
-            Assert.False(this.safeHandle.IsInvalid);
+            Assert.False(this._deviceInfoHandle.IsInvalid);
 
         }
 
@@ -100,14 +79,14 @@ namespace CsWin32ApiTest
         public void GetDeviceInfoListSafeHandle_shall_return_valid_handle_with_enumerator()
         {
             // TODO: enumerator not working.
-            this.safeHandle = WinUsbApi.GetDeviceInfoListSafeHandle(null,
+            this._deviceInfoHandle = WinUsbApi.GetDeviceInfoListSafeHandle(null,
                 "USB",
                 null,
                 SetupDiGetClassDevsFlags.DIGCF_ALLCLASSES | SetupDiGetClassDevsFlags.DIGCF_DEVICEINTERFACE);
 
-            Assert.NotNull(this.safeHandle);
+            Assert.NotNull(this._deviceInfoHandle);
 
-            Assert.True(this.safeHandle.IsInvalid);
+            Assert.True(this._deviceInfoHandle.IsInvalid);
 
         }
 
@@ -170,7 +149,7 @@ namespace CsWin32ApiTest
         }
 
         [Fact]
-        /// JTAGICE mkII shall be powered on.
+        /// The device shall be power on.
         public void EnumerateAllDevicesWithGuid_shall_return_list_device()
         {
             bool result = WinUsbApi.EnumerateAllDevicesWithGuid(UsbConstants.GUID_DEVINTERFACE_USB_DEVICE, out Dictionary<uint, NodeUsbDeviceData> deviceList);
@@ -190,7 +169,7 @@ namespace CsWin32ApiTest
             Assert.Equal(deviceDescription, ba?.Value.RegsiteryProperty[SpDiRegisteryProperty.SPDRP_DEVICEDESC]);
 
             resultData = a.First().Value.RegsiteryProperty[SpDiRegisteryProperty.SPDRP_DRIVER];
-            Assert.Equal(@"{c671678c-82c1-43f3-d700-0049433e9a4b}\0001", resultData);
+            Assert.Equal(expectedSpdrpRegistryDriverInformation, resultData);
 
         }
 
@@ -222,7 +201,7 @@ namespace CsWin32ApiTest
         }
 
         [Fact]
-        /// JTAGICE mkII shall be powered on.
+        /// The device shall be power on.
         public void FindDevicePathForUsbDevice_shall_return_a_valid_device_path()
         {
             string result = WinUsbApi.FindDevicePathForUsbDevice(deviceDescription);
@@ -230,9 +209,9 @@ namespace CsWin32ApiTest
             Assert.NotNull(result);
             Assert.NotEmpty(result);
 
-            this.safeHandle = WinUsbApi.CreateFileHandle(result);
-            Assert.NotNull(this.safeHandle);
-            Assert.False(this.safeHandle.IsInvalid);
+            this._fileHandle = WinUsbApi.CreateFileHandle(result);
+            Assert.NotNull(this._fileHandle);
+            Assert.False(this._fileHandle.IsInvalid);
         }
 
         [Fact]

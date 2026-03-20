@@ -7,11 +7,15 @@ SetupDiEnumDeviceInfo
 SetupDiGetDeviceProperty
 SetupDiDestroyDeviceInfoList
 SetupDiGetDeviceRegistryProperty
+WinUsb_GetDescriptor
+USB_DEVICE_DESCRIPTOR
+USB_DESCRIPTOR_REQUEST
+USB_INTERFACE_DESCRIPTOR
+USB_ENDPOINT_DESCRIPTOR
 
 SetupDiGetDeviceInterfaceDetail
 SetupDiEnumDeviceInterfaces
 SP_DEVICE_INTERFACE_DATA
 SP_DEVICE_INTERFACE_DETAIL_DATA_W
 WIN32_ERROR
-
 

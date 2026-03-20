@@ -18,14 +18,14 @@ namespace CsWin32Api
     /// <summary>
     /// usb interface descriptor class.
     /// </summary>
-    public class UsbInterfaceDescriptor
+    public class UsbEndpointDescriptor : IDataWrapper<USB_ENDPOINT_DESCRIPTOR>
     {
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsbInterfaceDescriptor"/> class.
         /// </summary>
         /// <param name="src">The source.</param>
-        internal UsbInterfaceDescriptor(USB_INTERFACE_DESCRIPTOR src)
+        internal UsbEndpointDescriptor(USB_ENDPOINT_DESCRIPTOR src)
         {
             this._src = src;         
         }
@@ -33,24 +33,27 @@ namespace CsWin32Api
         /// <summary>
         /// Initializes a new instance of the <see cref="UsbInterfaceDescriptor"/> class.
         /// </summary>
-        public UsbInterfaceDescriptor()
+        public UsbEndpointDescriptor()
         {
-            this._src = new USB_INTERFACE_DESCRIPTOR();
+            this._src = new USB_ENDPOINT_DESCRIPTOR();
         }
 
         // Member variables
-        internal USB_INTERFACE_DESCRIPTOR _src;
+        internal USB_ENDPOINT_DESCRIPTOR _src;
+
+        USB_ENDPOINT_DESCRIPTOR IDataWrapper<USB_ENDPOINT_DESCRIPTOR>._src { get => this._src; set => this._src = value; }
 
         // properties
         public byte Length { get => this._src.bLength; set => this._src.bLength = value; }
         public byte DescriptorType { get => this._src.bDescriptorType; set => this._src.bDescriptorType = value; }
-        public byte InterfaceNumber { get => this._src.bInterfaceNumber; set => this._src.bInterfaceNumber = value; }
-        public byte AlternateSetting { get => this._src.bAlternateSetting; set => this._src.bAlternateSetting = value; }
-        public byte NumEndpoints { get => this._src.bNumEndpoints; set => this._src.bNumEndpoints = value; }
-        public byte InterfaceClass { get => this._src.bInterfaceClass; set => this._src.bInterfaceClass = value; }
-        public byte InterfaceSubClass { get => this._src.bInterfaceSubClass; set => this._src.bInterfaceSubClass = value; }
-        public byte InterfaceProtocol { get => this._src.bInterfaceProtocol; set => this._src.bInterfaceProtocol = value; }
-        public byte Interface { get => this._src.iInterface; set => this._src.iInterface = value; }
+
+        public byte EndpointAddress{ get => _src.bEndpointAddress; set => _src.bEndpointAddress = value; }
+
+        public byte mAttributes{ get => _src.bmAttributes; set => _src.bmAttributes = value; }
+
+        public ushort MaxPacketSize{ get => _src.wMaxPacketSize; set => _src.wMaxPacketSize = value; }     
+
+        public byte Interval{ get => _src.bInterval; set => _src.bInterval = value; }
 
     }
 }

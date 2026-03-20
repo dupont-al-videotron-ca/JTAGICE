@@ -30,8 +30,6 @@ namespace CsWin32Api
 
     public static partial class WinUsbApi
     {
-        private static ILog logger = LogManager.GetLogger(typeof(WinUsbApi));
-
         /// <summary>
         /// Opens a file at the specified path for asynchronous read and write access and returns a safe file handle to
         /// the file.   

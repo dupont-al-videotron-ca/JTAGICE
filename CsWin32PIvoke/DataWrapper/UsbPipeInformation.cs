@@ -16,7 +16,7 @@ namespace CsWin32Api
             this.PipeId = src.PipeId;
             this.MaximumPacketSize = src.MaximumPacketSize;
             this.Interval = src.Interval;
-        }
+                    }
 
         public UsbPipeInformation()
         {

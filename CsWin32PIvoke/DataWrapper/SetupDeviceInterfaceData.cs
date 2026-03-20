@@ -19,7 +19,7 @@ namespace CsWin32Api
     /// <summary>
     /// 
     /// </summary>
-    public class SetupDeviceInterfaceData
+    public class SetupDeviceInterfaceData 
     {
 
         /// <summary>
@@ -42,7 +42,6 @@ namespace CsWin32Api
         // Member variables
         internal SP_DEVICE_INTERFACE_DATA _src;
 
-
         // properties
         /// <summary>
         /// Gets the size of the class structure.
@@ -60,6 +59,7 @@ namespace CsWin32Api
 
         /// <summary>Reserved. Do not use.</summary>
         public nuint Reserved { get => this._src.Reserved; set => this._src.Reserved = value; }
+
 
         public override string ToString()
         {
