@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using FluentAssertions;
 using log4net;
 using log4net.Appender;
 using log4net.Config;
@@ -118,12 +117,13 @@ namespace Common.Test.Xunit
         {
             if (VerifyLogForError)
             {
-                _xUnitTestAppender.IsLoggingEventsGt(log4net.Core.Level.Error).Should().BeFalse();
+
+                Assert.False(_xUnitTestAppender.IsLoggingEventsGt(log4net.Core.Level.Error));
             }
 
             if (VerifyLogForWarning)
             {
-                _xUnitTestAppender.IsLoggingEventsEq(log4net.Core.Level.Warn).Should().BeFalse();
+                Assert.False(_xUnitTestAppender.IsLoggingEventsEq(log4net.Core.Level.Warn));
             }
 
             if (VerifyMockSetup)

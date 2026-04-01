@@ -19,7 +19,7 @@ JTAGICE mkII
 path = USB\VID_03EB&PID_2103\00B0000006B4
 class GUID = {c671678c-82c1-43f3-d700-0049433e9a4b}
 device path = \\?\usb#vid_03eb&pid_2103#00b0000006b4#{a5dcbf10-6530-11d2-901f-00c04fb951ed}
-
+			  
 WinDriver
 path = ROOT\JUNGO\0000
 class GUID = {c671678c-82c1-43f3-d700-0049433e9a4b}
