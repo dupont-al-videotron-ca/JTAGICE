@@ -1,0 +1,138 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using System.Threading.Tasks;
+using MemoryPack;
+using Windows.Devices.Usb;
+using Windows.Foundation;
+using Windows.Storage.Streams;
+using WinRT;
+
+namespace UsbDeviceBase
+{
+    public class BulkOutPipeImpl: PipeOutBase   
+    {
+
+        #region Constructors 
+        public BulkOutPipeImpl(Windows.Devices.Usb.UsbEndpointDescriptor descriptor, Windows.Devices.Usb.UsbBulkOutPipe pipe) : base(descriptor)
+        {
+            this.OutPipe = pipe;
+        }
+
+        #endregion
+
+
+        #region Fields 
+
+        #endregion
+
+
+        #region Properties 
+
+        public Windows.Devices.Usb.UsbBulkOutPipe OutPipe { get; }
+
+        //
+        // Summary:
+        //     Gets the object that represents the endpoint descriptor associated with the USB
+        //     bulk OUT endpoint.
+        //
+        // Returns:
+        //     A UsbBulkOutEndpointDescriptor that represents the endpoint descriptor associated
+        //     with the USB bulk OUT endpoint.
+        public UsbBulkOutEndpointDescriptor OutEndpointDescriptor => OutPipe.EndpointDescriptor;
+
+        //
+        // Summary:
+        //     Gets an output stream to which the app can write data to send to the endpoint.
+        //
+        //
+        // Returns:
+        //     The output steam that contains the transfer data.
+        public IOutputStream OutputStream => OutPipe.OutputStream;
+
+        //
+        // Summary:
+        //     Gets or sets configuration flags that controls the behavior of the pipe that
+        //     writes data to a USB bulk IN endpoint.
+        //
+        // Returns:
+        //     A UsbWriteOptions constant that indicates the pipe policy.
+        public UsbWriteOptions WriteOptions
+        {
+            get
+            {
+                return OutPipe.WriteOptions;
+            }
+            set
+            {
+                OutPipe.WriteOptions = value;
+            }
+        }
+
+        public async void Send<T>(T data) where T : struct
+        {
+            byte[] bytes = MemoryPackSerializer.Serialize(data, SerializerOptions);
+
+            if(bytes.Length > OutEndpointDescriptor.MaxPacketSize)
+            {
+                throw new ArgumentException($"The size of the data to be sent ({bytes.Length} bytes) exceeds the maximum packet size ({OutEndpointDescriptor.MaxPacketSize} bytes) of the endpoint.");
+            }
+
+            IBuffer buffer = WindowsRuntimeBuffer.Create(bytes, 0, bytes.Length, bytes.Length);
+
+            // Create the data writer object backed by the in-memory stream.
+            using (DataWriter dataWriter = new DataWriter(this.OutputStream))
+            {
+                dataWriter.UnicodeEncoding = this.UnicodeEncoding;
+                dataWriter.ByteOrder = this.ByteOrder;
+                dataWriter.WriteBuffer(buffer);
+
+                // Send the contents of the writer to the backing stream.
+                await dataWriter.StoreAsync();
+
+                // For the in-memory stream implementation we are using, the flushAsync call 
+                // is superfluous,but other types of streams may require it.
+                await dataWriter.FlushAsync();
+
+                // In order to prolong the lifetime of the stream, detach it from the 
+                // DataWriter so that it will not be closed when Dispose() is called on 
+                // dataWriter. Were we to fail to detach the stream, the call to 
+                // dataWriter.Dispose() would close the underlying stream, preventing 
+                // its subsequent use by the DataReader below.
+                dataWriter.DetachStream();
+            }
+        }
+
+        #endregion
+
+
+        #region Delegates / Events 
+
+        #endregion
+
+
+        #region Public Methods 
+
+        #endregion
+
+
+        #region Protected Methods 
+
+        #endregion
+
+        #region Provate Methods 
+
+        #endregion
+
+        #region Private Classes / Enum 
+
+        #endregion
+
+    }
+}
