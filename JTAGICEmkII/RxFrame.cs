@@ -21,8 +21,6 @@ namespace JTAGICEmkII
         {
             Logger = LogManager.GetLogger(this.GetType());
             state = RxStateEnum.WaitStart;
-            rxTimer = new SingleShotTimer();
-            rxTimer.TimerExpired += this._rxTimer_TimerExpired;
 
             source = new CancellationTokenSource();
             token = source.Token;
@@ -42,7 +40,6 @@ namespace JTAGICEmkII
         private const UInt16 SequenceNumberEvent = 0xFFFF;
 
         private RxStateEnum state;
-        private SingleShotTimer rxTimer;
         private bool disposedValue;
         private Task receiveTask;
         private UInt32 messageLength;
@@ -59,6 +56,8 @@ namespace JTAGICEmkII
         #region Properties 
 
         internal int PreviousSequenceNumber { get; set; }
+
+        protected bool TimeoutOccured{ get; set; }
 
         protected ILog Logger { get; private set; }
 
@@ -147,17 +146,21 @@ namespace JTAGICEmkII
 
 
         #region Protected Methods 
-        protected internal abstract byte GetByte();
+        protected internal abstract bool ReadByte(out byte value, int timeout = -1);
 
-        protected internal abstract byte[] GetBytes(uint length);
+        protected internal abstract bool ReadBytes(out byte[]? values, uint length, int timeout = -1);
 
-        protected internal abstract Task<byte[]> GetBytesAsync(uint length, CancellationToken cancellationToken);
+        protected internal abstract Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1);
 
-        protected internal abstract Task<byte> GetByteAsync(CancellationToken cancellationToken);
+        protected internal abstract Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1);
 
-        protected virtual void OnRxTimerExpired()
+        protected virtual void OnRxTimeoutOccured()
         {
-            RxTimerExpired?.Invoke(this, EventArgs.Empty);
+            if(TimeoutOccured)
+            {
+                TimeoutOccured = false;
+                RxTimerExpired?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         protected virtual void OnReceiveReponse(ISlaveResponse response)
@@ -172,8 +175,6 @@ namespace JTAGICEmkII
             {
                 if (disposing)
                 {
-                    rxTimer.TimerExpired -= this._rxTimer_TimerExpired;
-                    rxTimer.Dispose();
                     source.Cancel();
                     source.Dispose();
                     receiveTask?.Wait();
@@ -212,17 +213,16 @@ namespace JTAGICEmkII
                 frameBuffer.Clear();
                 messageBuffer.Clear();
                 state = RxStateEnum.WaitStart;
-                rxTimer.Start(Timeout);
             }
         }
 
         private void GoWaitSequenceNumber()
         {
+
             if (state != RxStateEnum.WaitSequenceNumber)
             {
                 Logger.Debug($"GoWaitSequenceNumber.");
                 state = RxStateEnum.WaitSequenceNumber;
-                rxTimer.Start(Timeout);
             }
         }
 
@@ -232,7 +232,6 @@ namespace JTAGICEmkII
             {
                 Logger.Debug($"GoWaitToken.");
                 state = RxStateEnum.WaitToken;
-                rxTimer.Start(Timeout);
             }
         }
 
@@ -242,7 +241,6 @@ namespace JTAGICEmkII
             {
                 Logger.Debug($"GoWaitMessageSize.");
                 state = RxStateEnum.WaitMessageSize;
-                rxTimer.Start(Timeout);
             }
         }
 
@@ -252,7 +250,6 @@ namespace JTAGICEmkII
             {
                 Logger.Debug($"GoWaitMessage.");
                 state = RxStateEnum.WaitMessage;
-                rxTimer.Start(Timeout);
             }
         }
 
@@ -262,7 +259,6 @@ namespace JTAGICEmkII
             {
                 Logger.Debug($"GoWaitCRC.");
                 state = RxStateEnum.WaitCRC;
-                rxTimer.Start(Timeout);
             }
         }
 
@@ -272,43 +268,7 @@ namespace JTAGICEmkII
             {
                 Logger.Debug($"GoStop.");
                 state = RxStateEnum.Stop;
-                rxTimer.Stop();
             }
-        }
-
-        private void _rxTimer_TimerExpired(object? sender, EventArgs e)
-        {
-            switch (state)
-            {
-                case RxStateEnum.WaitStart:
-                    GoWaitStart();
-                    break;
-                case RxStateEnum.WaitSequenceNumber:
-                    // Handle timeout for waiting for sequence number
-                    GoWaitStart();
-                    break;
-                case RxStateEnum.WaitToken:
-                    // Handle timeout for waiting for token
-                    GoWaitStart();
-                    break;
-                case RxStateEnum.WaitMessage:
-                    // Handle timeout for waiting for message bytes
-                    GoWaitStart();
-                    break;
-                case RxStateEnum.WaitCRC:
-                    // Handle timeout for waiting for CRC bytes
-                    GoWaitStart();
-                    break;
-                case RxStateEnum.Stop:
-                    GoStop();
-                    break;
-                default:
-                    // Handle unexpected state
-                    GoWaitStart();
-                    break;
-            }
-
-            OnRxTimerExpired();
         }
 
         private void DispathMessageBody(List<byte> messageBuffer)
@@ -338,8 +298,10 @@ namespace JTAGICEmkII
 
         private void ReceiveRxFrame()
         {
-
+            // read bytes according to the current state, and update the state machine accordingly.
+            // The read bytes will be stored in frameBuffer, and the message body bytes will be stored in messageBuffer.
             byte rxbyte;
+            byte[]? rxBytes = null;
             switch (state)
             {
                 case RxStateEnum.Stop:
@@ -347,7 +309,13 @@ namespace JTAGICEmkII
                     break;
 
                 case RxStateEnum.WaitStart:
-                    rxbyte = GetByte();
+                    if (!ReadByte(out rxbyte, Timeout))
+                    {
+                        OnRxTimeoutOccured();
+                        GoWaitStart();
+                        break;
+                    }
+
                     if (rxbyte == ESCAPE_BYTE)
                     {
                         Logger.Debug("Start byte received.");
@@ -360,8 +328,14 @@ namespace JTAGICEmkII
                     }
                     break;
                 case RxStateEnum.WaitSequenceNumber:
-                    var rxBytes = GetBytes(2); // sequence number is 2 bytes
-                    if (rxBytes.Length == 2)
+                    if (!ReadBytes(out rxBytes, 2, Timeout))
+                    {
+                        OnRxTimeoutOccured();
+                        GoWaitStart();
+                        break;
+                    }
+
+                    if (rxBytes?.Length == 2)
                     {
                         frameBuffer.AddRange(rxBytes);
 
@@ -378,13 +352,19 @@ namespace JTAGICEmkII
                     }
                     break;
                 case RxStateEnum.WaitMessageSize:
-                    var rxBytes2 = GetBytes(4);
-                    if (rxBytes2.Length == 4) // message size 
+                    if (!ReadBytes(out rxBytes, 4, Timeout))
                     {
-                        frameBuffer.AddRange(rxBytes2); // Add the message size bytes to the frame buffer
+                        OnRxTimeoutOccured();
+                        GoWaitStart();
+                        break;
+                    }
+
+                    if (rxBytes?.Length == 4) // message size 
+                    {
+                        frameBuffer.AddRange(rxBytes); // Add the message size bytes to the frame buffer
 
                         // LSB is first byte, MSB is last byte
-                        messageLength = BinaryPrimitives.ReadUInt32LittleEndian(rxBytes2);
+                        messageLength = BinaryPrimitives.ReadUInt32LittleEndian(rxBytes);
 
                         Logger.Debug($"message Length:{messageLength:x4}.");
                         GoWaitToken();
@@ -394,9 +374,16 @@ namespace JTAGICEmkII
                         Logger.Error($"Handle error in reading message size bytes.");
                         GoWaitStart();
                     }
+
                     break;
                 case RxStateEnum.WaitToken:
-                    rxbyte = GetByte();
+                    if(!ReadByte(out rxbyte, Timeout))
+                    {
+                        OnRxTimeoutOccured();
+                        GoWaitStart();
+                        break;
+                    }
+
                     if (rxbyte == TOKEN_BYTE)
                     {
                         Logger.Debug($"Received TOKEN.");
@@ -410,8 +397,14 @@ namespace JTAGICEmkII
                     }
                     break;
                 case RxStateEnum.WaitMessage:
-                    byte[] messageBytes = GetBytes(messageLength); // 
-                    if (messageBytes.Length == messageLength)
+                    if(!ReadBytes(out byte[]? messageBytes, messageLength, Timeout))
+                    {
+                        OnRxTimeoutOccured();
+                        GoWaitStart();
+                        break;
+                    }
+
+                    if (messageBytes?.Length == messageLength)
                     {
                         Logger.Debug($"Received message bytes, length: {messageBytes.Length}.");
                         frameBuffer.AddRange(messageBytes); // Add the message bytes to the frame buffer
@@ -420,13 +413,18 @@ namespace JTAGICEmkII
                     }
                     else
                     {
-                        Logger.Error($"Handle error in reading message bytes. length: {messageBytes.Length}, expected: {messageLength}.");
+                        Logger.Error($"Handle error in reading message bytes. length: {messageBytes?.Length}, expected: {messageLength}.");
                         GoWaitStart();
                     }
                     break;
                 case RxStateEnum.WaitCRC:
-                    byte[] crcBytes = GetBytes(2); // CRC is 2 bytes
-                    if (crcBytes.Length == 2)
+                    if(!ReadBytes(out byte[]? crcBytes, 2, Timeout))
+                    {
+                        OnRxTimeoutOccured();
+                        GoWaitStart();
+                        break;
+                    }
+                    if (crcBytes?.Length == 2)
                     {
                         frameBuffer.AddRange(crcBytes); // Add the CRC bytes to the frame buffer
                         if (Crc16.ValidateCrc(frameBuffer.ToArray()))

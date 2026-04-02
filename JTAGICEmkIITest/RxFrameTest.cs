@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII.Slave;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace JTAGICEmkIITest
@@ -20,39 +21,47 @@ namespace JTAGICEmkIITest
         {
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
             var rxFrame = new Moq.RxFrameMoq(buffer);
-            Assert.Equal(0x01, rxFrame.GetByte());
-            Assert.Equal(0x02, rxFrame.GetByte());
-            Assert.Equal(0x03, rxFrame.GetByte());
+
+            byte value;
+            Assert.True(rxFrame.ReadByte(out value));
+            Assert.Equal(0x01, value);
+            Assert.True(rxFrame.ReadByte(out value));
+            Assert.Equal(0x02, value);
+            Assert.True(rxFrame.ReadByte(out value));
+            Assert.Equal(0x03, value);
         }
         [Fact]
         public void GetBytes_shall_return_bytes_in_order()
         {
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
             var rxFrame = new Moq.RxFrameMoq(buffer);
-            Assert.Equal(buffer, rxFrame.GetBytes((uint)buffer.Length));
+            Assert.True(rxFrame.ReadBytes(out byte[]? values, (uint)buffer.Length));
+            Assert.Equal(buffer, values);
         }
         [Fact]
         public async Task GetByteAsync_shall_return_bytes_in_order()
         {
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
-            byte[] result = new byte[buffer.Length];
+            byte value = 0;
 
             var rxFrame = new Moq.RxFrameMoq(buffer);
-            result[0] = await rxFrame.GetByteAsync(CancellationToken.None);
-            result[1] = await rxFrame.GetByteAsync(CancellationToken.None);
-            result[2] = await rxFrame.GetByteAsync(CancellationToken.None);
+            Assert.True(await rxFrame.ReadByteAsync(out value ,CancellationToken.None));
+            Assert.Equal(0x01, value);
+            Assert.True(await rxFrame.ReadByteAsync(out value ,CancellationToken.None));
+            Assert.Equal(0x02, value);
+            Assert.True(await rxFrame.ReadByteAsync(out value ,CancellationToken.None));
+            Assert.Equal(0x03, value);
 
-            Assert.Equal(buffer, result);
         }
         [Fact]
         public async Task GetBytesAsync_shall_return_bytes_in_order()
         {
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
             var rxFrame = new Moq.RxFrameMoq(buffer);
+        
+            Assert.True(await rxFrame.ReadBytesAsync(out byte[]? values, (uint)buffer.Length, CancellationToken.None));
 
-            var result = await rxFrame.GetBytesAsync((uint)buffer.Length, CancellationToken.None);
-
-            Assert.Equal(buffer, result);
+            Assert.Equal(buffer, values);
         }
 
         [Theory]
@@ -82,15 +91,15 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void StartReceiving_shall_receive_message_RSP_OK_and_wait_forever()
+        public void StartReceiving_shall_receive_message_RSP_OK_and_wait_forever_until_timeout_occured()
         {
             var frame = Create1ByteResponse(SlaveResponseEnum.RSP_OK);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = new Moq.RxFrameMoq(frame, 100);
             test.WaitForEver = true;
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
-            Assert.False(timerExpired);
+            Assert.True(timerExpired);
             Assert.NotNull(result);
             Assert.Equal(SlaveResponseEnum.RSP_OK, result.ResponseId);
 
@@ -502,7 +511,7 @@ namespace JTAGICEmkIITest
         [InlineData(SlaveResponseEnum.EVT_BREAK, typeof(ResponseEventBreak))]
         [InlineData(SlaveResponseEnum.EVT_RUN, typeof(ResponseEventRun))]
         [InlineData(SlaveResponseEnum.EVT_DEBUG, typeof(ResponseEventDebug))]
-        public void ResponseFactory_CreateReponses_shall_crete_the_right_object(SlaveResponseEnum testId, Type expectedType)
+        public void ResponseFactory_CreateReponses_shall_create_the_right_object(SlaveResponseEnum testId, Type expectedType)
         {
             var result = ResponseFactory.CreateResponse(testId);
             Assert.IsAssignableFrom(expectedType, result);
