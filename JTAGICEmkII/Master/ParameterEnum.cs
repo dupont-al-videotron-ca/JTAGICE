@@ -1,0 +1,51 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace JTAGICEmkII.Master
+{
+    internal enum ParameterEnum
+    {
+        PARAM_HWD_VERSION = 0x01,
+        PARAM_FW_VERSION = 0x2,
+        PARAM_EMULATOR_MODE = 0x03,
+        PARAM_IRE = 0x04,
+        PARAM_BAUD_RATE = 0x05,
+        PARAM_OCD_VTARGET = 0x06,
+        PARAM_OCD_JTAG_CLOCK = 0x07,
+        PARAM_OCD_BREAK_CAUSE = 0x08,
+        PARAM_TIMERS_RUNNING = 0x09,
+        PARAM_BREAK_ON_CHANGE_FLOW = 0x0A,
+        PARAM_BREAK_ADDR1 = 0x0B,
+        PARAM_BREAK_ADDR2 = 0x0C,
+        PARAM_COMB_BREAK_CTRL = 0x0D,
+        PARAM_JTAGIS_STRING = 0x0E,
+        PARAM_UNITS_BEFORE = 0x0F,
+        PARAM_UNITS_AFTER = 0x10,
+        PARAM_BIT_BEFORE = 0x11,
+        PARAM_BIT_AFTER = 0x12,
+        PARAM_EXTERNAL_RESET = 0x13,
+        PARAM_FLASH_PAGE_SIZE = 0x14,
+        PARAM_EEPROM_PAGE_SIZE = 0x15,
+        PARAM_PSB0 = 0x17,
+        PARAM_PSB1 = 0x18,
+        PARAM_PROTOCOL_DEBUG_EVENT = 0x19,
+        PARAM_TARGET_MCU_STATE = 0x1A,
+        PARAM_DAISY_CHAIN_INFO = 0x1B,
+        PARAM_BOOT_ADDRESS = 0x1C,
+        PARAM_TARGET_SIGNATURE = 0x1D,
+        PARAM_DEBUGWIRE_BAUDRATE = 0x1E,
+        PARAM_PROGRAM_ENTRY_POINT = 0x1F,
+        PARAM_PACKET_PARSING_ERROR = 0x40,
+        PARAM_VALID_PACKETS_RECEIVED = 0x41,
+        PARAM_INTERCOMMUNICATION_TX_ERROR = 0x42,
+        PARAM_INTERCOMMUNICATION_RX_ERROR = 0x43,
+        PARAM_CRC_ERROR = 0x44,
+        PARAM_POWER_SOURCE = 0x45,
+        PARAM_CAN_FLAG = 0x22,
+        PARAM_PAR_ENABLE_IDR_IN_RUN_MODE = 0x23,
+        PARAM_PAR_ALLOW_PAGEPROGRAMMING_INSCANCHAIN = 0x24,
+    }
+}

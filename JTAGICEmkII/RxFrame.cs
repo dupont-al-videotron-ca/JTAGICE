@@ -69,9 +69,7 @@ namespace JTAGICEmkII
         /// </summary>
         internal int Timeout { get; set; }
 
-        protected CancellationToken CancellationToken => Token;
-
-        public CancellationToken Token { get => this.token; }
+        internal CancellationToken CancellationToken { get => this.token; }
 
         #endregion
 
@@ -94,7 +92,7 @@ namespace JTAGICEmkII
                 Logger.Debug("receiving Task running.");
                 while (true)
                 {
-                    if (this.Token.IsCancellationRequested)
+                    if (this.CancellationToken.IsCancellationRequested)
                     {
                         Logger.Debug("Receiving task cancellation requested.");
                         break;

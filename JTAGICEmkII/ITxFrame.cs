@@ -8,5 +8,6 @@ namespace JTAGICEmkII
 {
     internal interface ITxFrame
     {
+
     }
 }

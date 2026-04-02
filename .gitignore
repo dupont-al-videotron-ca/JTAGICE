@@ -350,10 +350,13 @@ MigrationBackup/
 .ionide/
 *.bak
 
+
 # librarie requested
 !x64
 !x86
 !*.dll
 !"DataAccessLayer\SQLite_Lib\x64\e_sqlite3.dll"
 !"DataAccessLayer\SQLite_Lib\x86\e_sqlite3.dll"
-JTAGICE_mkII
+
+JTAGICE_mkII/
+ELF-DWARF/

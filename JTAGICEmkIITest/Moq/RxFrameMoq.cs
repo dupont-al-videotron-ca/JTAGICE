@@ -30,7 +30,7 @@ namespace JTAGICEmkIITest.Moq
 
         protected internal override byte GetByte()
         {
-            return GetByteAsync(this.Token).GetAwaiter().GetResult();
+            return GetByteAsync(this.CancellationToken).GetAwaiter().GetResult();
         }
 
         protected internal override Task<byte> GetByteAsync(CancellationToken cancellationToken)
@@ -63,7 +63,7 @@ namespace JTAGICEmkIITest.Moq
 
         protected internal override byte[] GetBytes(uint length)
         {
-            return GetBytesAsync(length, this.Token).GetAwaiter().GetResult();
+            return GetBytesAsync(length, this.CancellationToken).GetAwaiter().GetResult();
         }
 
         protected internal override Task<byte[]> GetBytesAsync(uint length, CancellationToken cancellationToken)
