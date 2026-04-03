@@ -30,6 +30,7 @@ namespace JTAGICEmkII.Slave
         public BreakpontTypeEnum BreakpontType { get; set; }
 
         public UInt32 Address { get; set; }
+
         public BreakpointModeEnum BreakpointMode { get; set; }
 
         internal override void ReadFromBytes(byte[] data)
