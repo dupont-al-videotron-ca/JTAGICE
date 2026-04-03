@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common.Test.XUnit\Common.Test.XUnit.csproj" />
-    <ProjectReference Include="..\ELF-DWARF\LibObjectFile\LibObjectFile.csproj" />
     <ProjectReference Include="..\MyFramework\MyFramework.csproj" />
   </ItemGroup>
 

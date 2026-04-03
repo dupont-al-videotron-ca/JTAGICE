@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
@@ -12,9 +13,7 @@ namespace JTAGICEmkIITest.Moq
     {
         private byte[] _buffer;
         private int _position;
-        private int waitDelay = 1;
-
-        internal bool WaitForEver { get; set; }
+        private int waitDelay = 100;
 
         public RxFrameMoq(byte[] buffer) : this(buffer, -1)
         {
@@ -29,95 +28,94 @@ namespace JTAGICEmkIITest.Moq
 
         public bool IsEndOfFrame => _position >= _buffer.Length;
 
+        public bool WaitForTimeout { get; set; } = false;
+
         protected internal override bool ReadByte(out byte value, int timeout = -1)
         {
-            return ReadByteAsync(out value, this.CancellationToken, timeout).GetAwaiter().GetResult();
+            return ReadByteAsync(out value, this.CancellationToken, this.Timeout).GetAwaiter().GetResult();
         }
 
         protected internal override Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1)
         {
-            bool timeoutOccured = false;
+            byte[]? values = new byte[1];
             value = 0;
-            while (WaitForEver && !timeoutOccured && IsEndOfFrame && !cancellationToken.IsCancellationRequested)
+            bool result = ReadBytesAsync(out values, 1, cancellationToken, timeout).GetAwaiter().GetResult();
+            if (result)
             {
-                // Wait indefinitely until a byte is available or cancellation is requested
-                try
-                {
-                    timeoutOccured = Task.Delay(waitDelay, cancellationToken).Wait(timeout, cancellationToken);
-
-                    if (timeoutOccured)
-                    {
-                        this.TimeoutOccured = true;
-                        break;
-                    }
-
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        Logger.Debug($"Cancellation requested while waiting for byte.");
-                    }
-                }
-                catch (OperationCanceledException ex)
-                {
-                    // Handle cancellation if needed
-                    Logger.Debug($"OperationCanceledException {ex.Message} while waiting for byte.");
-                    break;
-                }
+                value = values![0];
+                return Task.FromResult(true);
             }
 
-            if (IsEndOfFrame || cancellationToken.IsCancellationRequested || timeoutOccured)
-                return Task.FromResult(false);
-
-            value = _buffer[_position++];
-            return Task.FromResult(true);
+            return Task.FromResult(false);
         }
 
 
         protected internal override bool ReadBytes(out byte[]? values, uint length, int timeout = -1)
         {
-            return ReadBytesAsync(out values, length, this.CancellationToken).GetAwaiter().GetResult();
+            return ReadBytesAsync(out values, length, this.CancellationToken, timeout).GetAwaiter().GetResult();
         }
 
         protected internal override Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1)
         {
             bool timeoutOccured = false;
-            while (WaitForEver && !timeoutOccured && IsEndOfFrame && !cancellationToken.IsCancellationRequested)
+            if (this.Timeout != -1)
             {
-                // Wait indefinitely until a byte is available or cancellation is requested
-                try
-                {
-                    timeoutOccured = Task.Delay(waitDelay, cancellationToken).Wait(timeout, cancellationToken);
-                    if (timeoutOccured)
-                    {
-                        TimeoutOccured = true;
-                        break;
-                    }
-
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        Logger.Debug($"Cancellation requested while waiting for byte.");
-                    }
-                }
-                catch (OperationCanceledException ex)
-                {
-                    // Handle cancellation if needed
-                    Logger.Debug($"OperationCanceledException {ex.Message} while waiting for byte.");
-                    break;
-                }
+                // force timeout to occured.
+                timeout = (int)(this.Timeout * length);
+                waitDelay = timeout * 2;
             }
 
-            if (IsEndOfFrame || timeoutOccured ||
-                cancellationToken.IsCancellationRequested ||
-                length + _position > _buffer.Length)
-            {
-                values = null!;
-                return Task.FromResult(false);
-            }
-            else
+            if (!IsEndOfFrame)
             {
                 values = new byte[length];
                 Array.Copy(_buffer, _position, values, 0, length);
                 _position += (int)length;
                 return Task.FromResult(true);
+            }
+            else
+            {
+                while (true)
+                {
+                    // Wait indefinitely until timeout or cancellation is requested
+                    try
+                    {
+                        Logger.Debug($"Before timeoutOccured: {timeoutOccured}, waitDelay: {waitDelay}, timeout: {timeout}, cancellationRequest: {cancellationToken.IsCancellationRequested}.");
+                        Task.Delay(waitDelay, cancellationToken).Wait();
+                        Logger.Debug($"After timeoutOccured: {timeoutOccured}, waitDelay: {waitDelay}, timeout: {timeout}, cancellationRequest: {cancellationToken.IsCancellationRequested}.");
+                        if (WaitForTimeout)
+                        {
+                            WaitForTimeout = false;
+                            TimeoutOccured = true;
+                            break;
+                        }
+
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            Logger.Debug($"Cancellation requested while waiting for byte.");
+                            break;
+                        }
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        if (!WaitForTimeout)
+                        {
+                            Logger.Debug($"Cancellation requested while waiting for byte: {ex.Message}");
+                            break;
+                        }
+                    }
+                    catch (System.AggregateException ex)
+                    {
+                        if(ex.InnerExceptions.Any(e => e is TaskCanceledException))
+                        {
+                            Logger.Debug($"Cancellation requested while waiting for byte: {ex.InnerExceptions.First(e => e is TaskCanceledException).Message}");
+                            break;
+                        }
+                    }
+                }
+
+                values = null!;
+                return Task.FromResult(false);
+
             }
         }
     }

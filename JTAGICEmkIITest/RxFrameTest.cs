@@ -95,9 +95,9 @@ namespace JTAGICEmkIITest
         {
             var frame = Create1ByteResponse(SlaveResponseEnum.RSP_OK);
             var test = new Moq.RxFrameMoq(frame, 100);
-            test.WaitForEver = true;
+            test.WaitForTimeout = true;
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, true);
 
             Assert.True(timerExpired);
             Assert.NotNull(result);
@@ -156,9 +156,10 @@ namespace JTAGICEmkIITest
                 (byte)McuStateEnum.RUNNING};
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_GET_BREAK, payload);
-            var test = new Moq.RxFrameMoq(frame, 1000);
+            var test = new Moq.RxFrameMoq(frame, 100);
+            test.WaitForTimeout = true;
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, true);
 
             Assert.True(timerExpired);
             Assert.Null(result);
@@ -534,13 +535,14 @@ namespace JTAGICEmkIITest
             if (expectedTimerExpired)
                 localTimeout = 1000;
             else
-                localTimeout = 1000 * 60 * 60;
+                localTimeout = -1;
 
             var test = new Moq.RxFrameMoq(frame, localTimeout);
+            test.WaitForTimeout = expectedTimerExpired;
 
             Assert.Equal(-1, test.PreviousSequenceNumber);
             test.PreviousSequenceNumber = previousSequence;
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, expectedTimerExpired);
 
             Assert.Equal(expectedTimerExpired, timerExpired);
             if (expectedTimerExpired)

@@ -106,7 +106,7 @@ namespace JTAGICEmkIITest
 
         }
 
-        internal ISlaveResponse TestReceiver(Moq.RxFrameMoq test, out bool timerExpired, int sleepTimeout = 1)
+        internal ISlaveResponse TestReceiver(Moq.RxFrameMoq test, out bool timerExpired, bool waitTimeout = false, int sleepTimeout = 10)
         {
             bool localTimerExpired = false;
             ISlaveResponse? result = null;
@@ -124,7 +124,8 @@ namespace JTAGICEmkIITest
             };
 
             test.StartReceiving();
-            while (!localTimerExpired && result == null)
+            while ((waitTimeout && !localTimerExpired) ||
+                (!waitTimeout && result == null))
             {
                 // Wait for the timer to expire or the message to be received
                 Thread.Sleep(sleepTimeout);
