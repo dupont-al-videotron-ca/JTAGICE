@@ -26,14 +26,14 @@ namespace JTAGICEmkIITest
             byte[] values = new byte[] { 0x01, 0x02, 0x03 };
 
             // Arrange
-            var txFrame = new TxFrameMoq();
+            var test = CreateFrameForTest();
 
             // Act
-            var result = txFrame.SendBytes(values);
+            var result = test.SendBytes(values);
 
             // Assert
             Assert.Equal(values.Length, result);
-            Assert.Equal(values, txFrame.Buffer);
+            Assert.Equal(values, ((TxFrameMoq)test.ComAdaptor).Buffer);
         }
 
 
@@ -44,14 +44,14 @@ namespace JTAGICEmkIITest
             byte[] values = new byte[] { 0x01, 0x02, 0x03 };
 
             // Arrange
-            var txFrame = new TxFrameMoq();
+            var test = CreateFrameForTest();
 
             // Act
-            var result = await txFrame.SendBytesAsync(values, CancellationToken.None);
+            var result = await test.SendBytesAsync(values, CancellationToken.None);
 
             // Assert
             Assert.Equal(values.Length, result);
-            Assert.Equal(values, txFrame.Buffer);
+            Assert.Equal(values, ((TxFrameMoq)test.ComAdaptor).Buffer);
         }
 
 
@@ -118,18 +118,17 @@ namespace JTAGICEmkIITest
         public void TxFrame_shall_send_Command(MasterCommandEnum msgId)
         {
             // Arrange
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             Command command = new Command(msgId);
 
             // Act & Assert
-            var result = test.BuildAndSendTxFrameCommand(command);
+            int result = test.BuildAndSendTxFrameCommand(command);
 
-            var buffer = test.Buffer;
+            byte[] buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-            Assert.Equal(buffer, test.Buffer);
             Assert.Equal(msgId, command.MessageId);
 
         }
@@ -143,7 +142,7 @@ namespace JTAGICEmkIITest
             // Arrange
             var bytes = new byte[] { 0x01, 0x02, 0x03, 0x04 };
 
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             CommandParameter command = new CommandParameter(msgId);
             command.ParameterId = ParameterEnum.PARAM_BAUD_RATE;
             command.Data.AddRange(bytes);
@@ -151,13 +150,11 @@ namespace JTAGICEmkIITest
             // Act & Assert
             var result = test.BuildAndSendTxFrameCommand(command);
 
-            var buffer = test.Buffer;
+            byte[] buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-
-            Assert.Equal(buffer, test.Buffer);
             Assert.Equal(msgId, command.MessageId);
 
         }
@@ -170,19 +167,19 @@ namespace JTAGICEmkIITest
             // Arrange
             var bytes = new byte[] { 0x01, 0x02, 0x03 };
 
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             CommandMultipleByte command = new CommandMultipleByte(msgId);
             command.Data.AddRange(bytes);
 
             // Act & Assert
             var result = test.BuildAndSendTxFrameCommand(command);
 
-            var buffer = test.Buffer;
+            byte[] buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-            Assert.Equal(buffer, test.Buffer);
+            Assert.Equal(buffer, ((TxFrameMoq)test.ComAdaptor).Buffer);
             Assert.Equal(msgId, command.MessageId);
 
         }
@@ -193,7 +190,7 @@ namespace JTAGICEmkIITest
             // Arrange
             var bytes = new byte[] { 0x01, 0x02, 0x03 };
 
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             CommandMemory command = new CommandMemory(MasterCommandEnum.CMND_WRITE_MEMORY);
             command.MemoryType = MemoryTypeEnum.MT_SRAM;
             command.Address = 0x12345678;
@@ -204,12 +201,11 @@ namespace JTAGICEmkIITest
             var result = test.BuildAndSendTxFrameCommand(command);
 
 
-            var buffer = test.Buffer;
+            byte[] buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-            Assert.Equal(buffer, test.Buffer);
             Assert.Equal(MasterCommandEnum.CMND_WRITE_MEMORY, command.MessageId);
 
         }
@@ -220,7 +216,7 @@ namespace JTAGICEmkIITest
             // Arrange
             var bytes = new byte[] { };
 
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             CommandMemory command = new CommandMemory(MasterCommandEnum.CMND_READ_MEMORY);
             command.MemoryType = MemoryTypeEnum.MT_SRAM;
             command.Address = 0x12345678;
@@ -231,12 +227,11 @@ namespace JTAGICEmkIITest
             var result = test.BuildAndSendTxFrameCommand(command);
 
 
-            var buffer = test.Buffer;
+            byte[] buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-            Assert.Equal(buffer, test.Buffer);
             Assert.Equal(MasterCommandEnum.CMND_READ_MEMORY, command.MessageId);
 
         }
@@ -248,19 +243,18 @@ namespace JTAGICEmkIITest
         {
             // Arrange
 
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             CommandProgranCounter command = new CommandProgranCounter(msgId);
             command.ProgrammeCounter = 0x12345678;
 
             // Act & Assert
             var result = test.BuildAndSendTxFrameCommand(command);
 
-            var buffer = test.Buffer;
+            var buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-            Assert.Equal(buffer, test.Buffer);
             Assert.Equal(msgId, command.MessageId);
 
         }
@@ -270,19 +264,18 @@ namespace JTAGICEmkIITest
         {
             // Arrange
             MasterCommandEnum msgId = MasterCommandEnum.CMND_SINGLE_STEP;
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             CommandSingleStep command = new CommandSingleStep(msgId);
             command.StepMode = StepModeEnum.STEP_INTO;
 
             // Act & Assert
             var result = test.BuildAndSendTxFrameCommand(command);
 
-            var buffer = test.Buffer;
+            var buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-            Assert.Equal(buffer, test.Buffer);
             Assert.Equal(msgId, command.MessageId);
 
         }
@@ -293,23 +286,28 @@ namespace JTAGICEmkIITest
         public void TxFrame_shall_send_CommandPCMode(MasterCommandEnum msgId)
         {
             // Arrange
-            var test = new TxFrameMoq();
+            var test = CreateFrameForTest();
             CommandPCMode command = new CommandPCMode(msgId);
             command.ExecutionMode = ExceutionModeEnum.EXMODE_HIGH_LEVEL;
 
             // Act & Assert
             var result = test.BuildAndSendTxFrameCommand(command);
 
-            var buffer = test.Buffer;
+            var buffer = ((TxFrameMoq)test.ComAdaptor).Buffer;
             ValidateTxBuffer(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, command.MessageLength);
-            Assert.Equal(buffer, test.Buffer);
             Assert.Equal(msgId, command.MessageId);
 
         }
 
+        private TxFrame CreateFrameForTest()
+        {
+            TxFrameMoq TxFrameMoq = new TxFrameMoq();
+            TxFrame TxFrame = new TxFrame(TxFrameMoq);
+            return TxFrame;
+        }
 
     }
 }

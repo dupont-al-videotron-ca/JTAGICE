@@ -13,11 +13,11 @@ using MyFramework.Threading;
 using log4net;
 namespace JTAGICEmkII
 {
-    internal abstract class RxFrame : IRxFrame, IDisposable
+    internal sealed class RxFrame : IRxFrame, IDisposable
     {
         #region Constructors 
 
-        internal RxFrame()
+        internal RxFrame(IRxComAdaptor rxComAdaptor)
         {
             Logger = LogManager.GetLogger(this.GetType());
             state = RxStateEnum.WaitStart;
@@ -27,6 +27,7 @@ namespace JTAGICEmkII
 
             PreviousSequenceNumber = -1;
             Timeout = 1000; // Default timeout of 1000 milliseconds
+            this.rxComAdaptor = rxComAdaptor ?? throw new ArgumentNullException(nameof(rxComAdaptor));
         }
 
 
@@ -38,7 +39,7 @@ namespace JTAGICEmkII
         private const byte TOKEN_BYTE = 14;
         private const UInt16 SequenceNumberWrap = 0xFFFF;
         private const UInt16 SequenceNumberEvent = 0xFFFF;
-
+        private readonly IRxComAdaptor rxComAdaptor;
         private RxStateEnum state;
         private bool disposedValue;
         private Task receiveTask;
@@ -57,11 +58,13 @@ namespace JTAGICEmkII
 
         internal int PreviousSequenceNumber { get; set; }
 
-        protected bool TimeoutOccured{ get; set; }
+        internal bool TimeoutOccured{ get; set; }
 
-        protected ILog Logger { get; private set; }
+        internal ILog Logger { get; private set; }
 
         public bool IsReceiving => receiveTask != null && !receiveTask.IsCompleted;
+
+        public IRxComAdaptor ComAdaptor => rxComAdaptor;
 
         /// <summary>
         /// Timeout in milliseconds for receiving each part of the frame (e.g., waiting for start byte, sequence number, token, message bytes, CRC).
@@ -146,15 +149,20 @@ namespace JTAGICEmkII
 
 
         #region Protected Methods 
-        protected internal abstract bool ReadByte(out byte value, int timeout = -1);
 
-        protected internal abstract bool ReadBytes(out byte[]? values, uint length, int timeout = -1);
+        internal bool ReadByte(out byte value, int timeout = -1) 
+            => rxComAdaptor.ReadByte(out value, timeout);
 
-        protected internal abstract Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1);
+        internal bool ReadBytes(out byte[]? values, uint length, int timeout = -1) 
+            => rxComAdaptor.ReadBytes(out values, length, timeout);
 
-        protected internal abstract Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1);
+        internal Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1) 
+            => rxComAdaptor.ReadBytesAsync(out values, length, cancellationToken, timeout);
 
-        protected virtual void OnRxTimeoutOccured()
+        internal Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1) =>
+            rxComAdaptor.ReadByteAsync(out value, cancellationToken, timeout);
+
+        internal void OnRxTimeoutOccured()
         {
             if(TimeoutOccured)
             {
@@ -163,13 +171,13 @@ namespace JTAGICEmkII
             }
         }
 
-        protected virtual void OnReceiveReponse(ISlaveResponse response)
+        internal void OnReceiveReponse(ISlaveResponse response)
         {
             MessageReceived?.Invoke(this, new MessageReceivedEventArgs(response));
         }
 
 
-        protected virtual void Dispose(bool disposing)
+        internal void Dispose(bool disposing)
         {
             if (!disposedValue)
             {

@@ -11,7 +11,7 @@ using Windows.Foundation.Collections;
 
 namespace JTAGICEmkIITest.Moq
 {
-    internal class TxFrameMoq : TxFrame
+    internal class TxFrameMoq : ITxComAdaptor
     {
 
         #region Constructors 
@@ -51,17 +51,23 @@ namespace JTAGICEmkIITest.Moq
 
         #region Protected Methods 
 
-        protected internal override int SendBytes(byte[] values)
+        internal int SendBytes(byte[] values)
         {
             return SendBytesAsync(values, CancellationToken.None).GetAwaiter().GetResult();
         }
 
-        protected internal override Task<int> SendBytesAsync(byte[] values, CancellationToken cancellationToken)
+        internal Task<int> SendBytesAsync(byte[] values, CancellationToken cancellationToken)
         {
             _buffer.AddRange(values);
             _position+= values.Length;
             return Task.FromResult(values.Length);
         }
+
+        int ITxComAdaptor.SendBytes(byte[] values) 
+            => this.SendBytes(values);
+
+        Task<int> ITxComAdaptor.SendBytesAsync(byte[] values, CancellationToken cancellationToken) 
+            => this.SendBytesAsync(values, cancellationToken);
 
         #endregion
 

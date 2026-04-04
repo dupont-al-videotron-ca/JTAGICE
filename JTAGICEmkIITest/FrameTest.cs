@@ -106,7 +106,7 @@ namespace JTAGICEmkIITest
 
         }
 
-        internal ISlaveResponse TestReceiver(Moq.RxFrameMoq test, out bool timerExpired, bool waitTimeout = false, int sleepTimeout = 10)
+        internal ISlaveResponse TestReceiver(RxFrame test, out bool timerExpired, bool waitTimeout = false, int sleepTimeout = 10)
         {
             bool localTimerExpired = false;
             ISlaveResponse? result = null;

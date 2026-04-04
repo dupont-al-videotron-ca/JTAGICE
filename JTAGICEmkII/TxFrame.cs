@@ -9,14 +9,15 @@ using MyFramework;
 
 namespace JTAGICEmkII
 {
-    internal abstract class TxFrame : ITxFrame
+    internal class TxFrame : ITxFrame
     {
 
         #region Constructors 
-        public TxFrame()
+        public TxFrame(ITxComAdaptor txComAdaptor)
         {
             sequenceNumber = 0;
             Logger = LogManager.GetLogger(this.GetType());
+            this.txComAdaptor = txComAdaptor ?? throw new ArgumentNullException(nameof(txComAdaptor));
         }
 
         #endregion
@@ -36,7 +37,11 @@ namespace JTAGICEmkII
 
         #region Properties 
 
-        protected ILog Logger { get; private set; } 
+        public ITxComAdaptor ComAdaptor => txComAdaptor;
+
+        protected ILog Logger { get; private set; }
+
+        private ITxComAdaptor txComAdaptor;
         #endregion
 
 
@@ -67,9 +72,11 @@ namespace JTAGICEmkII
 
         #region Protected Methods 
 
-        protected internal abstract int SendBytes(byte[] values);
+        protected internal int SendBytes(byte[] values) 
+            => txComAdaptor.SendBytes(values);
 
-        protected internal abstract Task<int> SendBytesAsync(byte[] values, CancellationToken cancellationToken);
+        protected internal Task<int> SendBytesAsync(byte[] values, CancellationToken cancellationToken) 
+            => txComAdaptor.SendBytesAsync(values, cancellationToken);
 
         #endregion
 

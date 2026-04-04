@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using JTAGICEmkII;
 using JTAGICEmkII.Slave;
+using JTAGICEmkIITest.Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -20,7 +22,7 @@ namespace JTAGICEmkIITest
         public void GetByte_shall_return_bytes_in_order()
         {
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
-            var rxFrame = new Moq.RxFrameMoq(buffer);
+            var rxFrame = CreateFrameForTest(buffer);
 
             byte value;
             Assert.True(rxFrame.ReadByte(out value));
@@ -34,7 +36,7 @@ namespace JTAGICEmkIITest
         public void GetBytes_shall_return_bytes_in_order()
         {
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
-            var rxFrame = new Moq.RxFrameMoq(buffer);
+            var rxFrame = CreateFrameForTest(buffer);
             Assert.True(rxFrame.ReadBytes(out byte[]? values, (uint)buffer.Length));
             Assert.Equal(buffer, values);
         }
@@ -44,12 +46,12 @@ namespace JTAGICEmkIITest
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
             byte value = 0;
 
-            var rxFrame = new Moq.RxFrameMoq(buffer);
-            Assert.True(await rxFrame.ReadByteAsync(out value ,CancellationToken.None));
+            var rxFrame = CreateFrameForTest(buffer);
+            Assert.True(await rxFrame.ReadByteAsync(out value, CancellationToken.None));
             Assert.Equal(0x01, value);
-            Assert.True(await rxFrame.ReadByteAsync(out value ,CancellationToken.None));
+            Assert.True(await rxFrame.ReadByteAsync(out value, CancellationToken.None));
             Assert.Equal(0x02, value);
-            Assert.True(await rxFrame.ReadByteAsync(out value ,CancellationToken.None));
+            Assert.True(await rxFrame.ReadByteAsync(out value, CancellationToken.None));
             Assert.Equal(0x03, value);
 
         }
@@ -57,8 +59,8 @@ namespace JTAGICEmkIITest
         public async Task GetBytesAsync_shall_return_bytes_in_order()
         {
             byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
-            var rxFrame = new Moq.RxFrameMoq(buffer);
-        
+            var rxFrame = CreateFrameForTest(buffer);
+
             Assert.True(await rxFrame.ReadBytesAsync(out byte[]? values, (uint)buffer.Length, CancellationToken.None));
 
             Assert.Equal(buffer, values);
@@ -80,7 +82,7 @@ namespace JTAGICEmkIITest
         public void StartReceiving_shall_receive_Response(SlaveResponseEnum evtId, Type expectedType)
         {
             var frame = Create1ByteResponse(evtId);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -94,8 +96,7 @@ namespace JTAGICEmkIITest
         public void StartReceiving_shall_receive_message_RSP_OK_and_wait_forever_until_timeout_occured()
         {
             var frame = Create1ByteResponse(SlaveResponseEnum.RSP_OK);
-            var test = new Moq.RxFrameMoq(frame, 100);
-            test.WaitForTimeout = true;
+            var test = CreateFrameForTest(frame, 100);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, true);
 
@@ -114,7 +115,7 @@ namespace JTAGICEmkIITest
         {
             var payload = new byte[] { 0x01, 0x02, 0x03 };
             var frame = CreateBytesResponse(responsesId, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -134,7 +135,7 @@ namespace JTAGICEmkIITest
                 (byte)BreakpointModeEnum.BKPT_MODE_PROGRAM};
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_GET_BREAK, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -156,8 +157,7 @@ namespace JTAGICEmkIITest
                 (byte)McuStateEnum.RUNNING};
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_GET_BREAK, payload);
-            var test = new Moq.RxFrameMoq(frame, 100);
-            test.WaitForTimeout = true;
+            var test = CreateFrameForTest(frame, 100);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, true);
 
@@ -176,7 +176,7 @@ namespace JTAGICEmkIITest
                 (byte)McuStateEnum.RUNNING};
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -196,7 +196,7 @@ namespace JTAGICEmkIITest
             var payload = new byte[] { 0x01, 0x02, 0x03, 0x04 };
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_PC, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -224,7 +224,7 @@ namespace JTAGICEmkIITest
             };
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_SELFTEST, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -268,7 +268,7 @@ namespace JTAGICEmkIITest
             };
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_SIGN_ON, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -320,7 +320,7 @@ namespace JTAGICEmkIITest
             };
 
             var frame = CreateEventResponse(SlaveResponseEnum.EVT_DEBUG, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -352,7 +352,7 @@ namespace JTAGICEmkIITest
             };
 
             var frame = CreateEventResponse(SlaveResponseEnum.EVT_BREAK, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -403,7 +403,7 @@ namespace JTAGICEmkIITest
             };
 
             var frame = CreateEventResponse(evtId, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -424,7 +424,7 @@ namespace JTAGICEmkIITest
             };
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -447,7 +447,7 @@ namespace JTAGICEmkIITest
             };
 
             var frame = CreateBytesResponse(SlaveResponseEnum.EVT_RUN, payload);
-            var test = new Moq.RxFrameMoq(frame);
+            var test = CreateFrameForTest(frame);
 
             ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
 
@@ -537,8 +537,7 @@ namespace JTAGICEmkIITest
             else
                 localTimeout = -1;
 
-            var test = new Moq.RxFrameMoq(frame, localTimeout);
-            test.WaitForTimeout = expectedTimerExpired;
+            var test = CreateFrameForTest(frame, localTimeout);
 
             Assert.Equal(-1, test.PreviousSequenceNumber);
             test.PreviousSequenceNumber = previousSequence;
@@ -556,6 +555,17 @@ namespace JTAGICEmkIITest
                 Assert.IsAssignableFrom<Response>(result);
                 Assert.Equal(expectedSequence, test.PreviousSequenceNumber);
             }
+        }
+
+        private RxFrame CreateFrameForTest(byte[] buffer, int timeout = -1)
+        {
+            RxFrameMoq rxFrameMoq = new RxFrameMoq(buffer, timeout);
+            RxFrame rxFrame = new RxFrame(rxFrameMoq);
+            rxFrameMoq.Attach(rxFrame);
+
+            if (timeout != -1)
+                rxFrameMoq.WaitForTimeout = true;
+            return rxFrame;
         }
     }
 }
