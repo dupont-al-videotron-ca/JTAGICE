@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Master
 {
-    internal enum ParameterEnum
+    public enum ParameterEnum
     {
         PARAM_HWD_VERSION = 0x01,
         PARAM_FW_VERSION = 0x2,
@@ -21,7 +21,7 @@ namespace JTAGICEmkII.Master
         PARAM_BREAK_ADDR1 = 0x0B,
         PARAM_BREAK_ADDR2 = 0x0C,
         PARAM_COMB_BREAK_CTRL = 0x0D,
-        PARAM_JTAGIS_STRING = 0x0E,
+        PARAM_JTAGID_STRING = 0x0E,
         PARAM_UNITS_BEFORE = 0x0F,
         PARAM_UNITS_AFTER = 0x10,
         PARAM_BIT_BEFORE = 0x11,

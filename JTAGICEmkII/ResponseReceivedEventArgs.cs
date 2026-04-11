@@ -2,11 +2,11 @@
 
 namespace JTAGICEmkII
 {
-    public class MessageReceivedEventArgs: EventArgs
+    public class ResponseReceivedEventArgs: EventArgs
     {
 
         #region Constructors 
-        public MessageReceivedEventArgs(Slave.ISlaveResponse response)
+        public ResponseReceivedEventArgs(Slave.ISlaveResponse response)
         {
             this.Response = response;
         }

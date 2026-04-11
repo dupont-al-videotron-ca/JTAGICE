@@ -19,52 +19,38 @@ namespace JTAGICEmkII.Slave
 
         #endregion
 
-
-        #region Fields 
-
-        #endregion
-
-
         #region Properties 
 
         public UInt32 ProgramCounter { get; set; }
         
         public EventBreakCauseEnum BreakCause { get; set; }
+        public override int Size => base.Size + 4 +1;
 
-        internal override void ReadFromBytes(byte[] data)
+        #endregion
+
+        #region Public Methods 
+        public override byte[] WriteToBytes()
+        {
+            var buffer = base.WriteToBytes();
+            buffer = buffer.Concat(BitConverter.GetBytes(ProgramCounter)).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte)BreakCause }).ToArray();
+
+            MessageLength = (uint)buffer.Length;
+            return buffer;
+        }
+
+        public override void ReadFromBytes(byte[] data)
         {
             base.ReadFromBytes(data);
-            if (data.Length < 6)
+            if (data.Length < Size)
                 throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-            ProgramCounter = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(1, 4));
-            BreakCause = (EventBreakCauseEnum)data[5];
+            ProgramCounter = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(base.Size, 4));
+            BreakCause = (EventBreakCauseEnum)data[base.Size + 4];
         }
 
         #endregion
 
-
-        #region Delegates / Events 
-
-        #endregion
-
-
-        #region Public Methods 
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
-
-        #endregion
 
     }
 }

@@ -8,8 +8,8 @@ namespace JTAGICEmkII.Master
 {
     internal enum StepModeEnum: byte
     {
-        STEP_OVER = 0x00,
-        STEP_INTO = 0x01,
-        STEP_OUT = 0x02
+        over = 0x00,
+        Into = 0x01,
+        Out = 0x02
     }
 }

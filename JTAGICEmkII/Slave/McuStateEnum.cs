@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Slave
 {
-    internal enum McuStateEnum : byte
+    public enum McuStateEnum : byte
     {
         STOPPED = 0x00,
         RUNNING = 0x01,
         PROGRAMMING = 0x02,
+        Unknown = 0x3,
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,23 +18,19 @@ namespace JTAGICEmkII.Slave
 
         #endregion
 
-
-        #region Fields 
-
-        #endregion
-
-
         #region Properties 
+        private const int NbSelfTestResult = 8;
+
+        public override int Size => base.Size + NbSelfTestResult;
 
         #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
 
         #region Public Methods 
+
+        public override byte[] WriteToBytes()
+        {
+            return base.WriteToBytes();
+        }
 
         public IEnumerable<SelfTestReponseEnum> SelfTestResults => Data.Select(b => (SelfTestReponseEnum)b);
 
@@ -45,31 +42,23 @@ namespace JTAGICEmkII.Slave
             return (SelfTestReponseEnum)Data[index];
         }
 
-        internal override void ReadFromBytes(byte[] data)
+        public void SetSelfTestResult(int index, SelfTestReponseEnum result)
         {
-            if (data.Length < 9)
+            if (index < 0 || index >= Data.Count)
+                throw new ArgumentOutOfRangeException(nameof(index), "Index must be within the bounds of the data array.");
+
+            Data[index] = (byte)result;
+        }
+
+        public override void ReadFromBytes(byte[] data)
+        {
+            if (data.Length < Size)
                 throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-            Data.Clear();
-            Data.AddRange(data.Skip(1));
-
+            base.ReadFromBytes(data);
         }
 
 
         #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
-
-        #endregion
-
     }
 }

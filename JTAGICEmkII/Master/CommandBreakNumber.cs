@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,6 +25,8 @@ namespace JTAGICEmkII.Master
 
         public byte BreakNumber { get; set; }
 
+        public override int Size => base.Size + 1; // 1 byte for BreakNumber;
+
         #endregion
 
 
@@ -39,6 +43,15 @@ namespace JTAGICEmkII.Master
             // Add BreakNumber bytes to the buffer
             buffer = buffer.Concat(new byte[] { (byte)BreakNumber }).ToArray();
             return buffer;
+        }
+
+        public override void ReadFromBytes(byte[] data)
+        {
+            base.ReadFromBytes(data);
+            if (data == null || data.Length < Size)
+                throw new ArgumentException("Data cannot be null or empty.", nameof(data));
+
+            BreakNumber = data[base.Size];
         }
 
         #endregion

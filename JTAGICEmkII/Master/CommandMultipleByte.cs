@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.Master
 {
@@ -14,10 +17,10 @@ namespace JTAGICEmkII.Master
         {
         }
 
-        protected CommandMultipleByte(MasterCommandEnum messageId, bool writeDataFlg) : base(messageId)
+        protected CommandMultipleByte(MasterCommandEnum messageId, bool immediateDataFlg) : base(messageId)
         {
             Data = new List<byte>();
-            this.writeDataFlg = writeDataFlg;
+            this.ImmediateDataFlg = immediateDataFlg;
         }
 
         #endregion
@@ -25,7 +28,7 @@ namespace JTAGICEmkII.Master
 
         #region Fields 
 
-        private readonly bool writeDataFlg;
+        private readonly bool ImmediateDataFlg;
 
         #endregion
 
@@ -33,6 +36,21 @@ namespace JTAGICEmkII.Master
         #region Properties 
 
         public List<byte> Data { get; }
+
+        public override int Size
+        {
+            get
+            {
+                if (Data.Count != 0)
+                {
+                    return base.Size + Data.Count;
+                }
+                else
+                {
+                    return base.Size;
+                }
+            }
+        }
 
         #endregion
 
@@ -47,7 +65,7 @@ namespace JTAGICEmkII.Master
         public override byte[] WriteToBytes()
         {
             var buffer = base.WriteToBytes();
-            if(writeDataFlg)
+            if (ImmediateDataFlg)
             {
                 buffer = buffer.Concat(Data).ToArray();
                 MessageLength += (byte)Data.Count;
@@ -63,19 +81,22 @@ namespace JTAGICEmkII.Master
             return buffer;
         }
 
-        #endregion
+        public override void ReadFromBytes(byte[] data)
+        {
+            base.ReadFromBytes(data);
+            if (data.Length < Size)
+                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
+            if (ImmediateDataFlg)
+            {
+                ReadDataToBytes(data, base.Size);
+            }
+        }
 
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
-
+        protected void ReadDataToBytes(byte[] data, int offset)
+        {
+            Data.AddRange(data.Skip(offset)); 
+        }
         #endregion
     }
 }

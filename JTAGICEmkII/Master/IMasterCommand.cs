@@ -7,10 +7,14 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.Master
 {
-    internal interface IMasterCommand
+    public interface IMasterCommand 
     {
+
+        void ReadFromBytes(byte[] data);
+        byte[] WriteToBytes();
+
         MasterCommandEnum MessageId { get; }
 
-        int MessageLength { get; }
+        uint MessageLength { get; set; }
     }
 }

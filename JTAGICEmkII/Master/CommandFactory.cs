@@ -66,7 +66,7 @@ namespace JTAGICEmkII.Master
                     return new CommandNParameter(messageId);
 
                 default:
-                    throw new NotImplementedException($"Command {messageId} is not implemented yet.");
+                    return null!;
             }
         }
     }

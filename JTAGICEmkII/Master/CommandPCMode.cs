@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.Master
 {
@@ -25,6 +29,7 @@ namespace JTAGICEmkII.Master
         #region Properties 
         public ExceutionModeEnum ExecutionMode { get; set; }
 
+        public override int Size => base.Size + 1; // Base size plus 1 byte for ExecutionMode
         #endregion
 
 
@@ -43,6 +48,14 @@ namespace JTAGICEmkII.Master
             buffer = buffer.Concat(new byte[] { (byte)ExecutionMode }).ToArray();
             MessageLength += 1; // Increment message length by 1 byte for the ExecutionMode
             return buffer;
+        }
+        public override void ReadFromBytes(byte[] data)
+        {
+            base.ReadFromBytes(data);
+            if (data.Length < Size)
+                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
+
+            ExecutionMode = (ExceutionModeEnum)data[base.Size];
         }
 
         #endregion

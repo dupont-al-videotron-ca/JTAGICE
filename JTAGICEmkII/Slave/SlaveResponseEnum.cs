@@ -31,7 +31,8 @@ namespace JTAGICEmkII.Slave
         RSP_ILLEGAL_POWER_STATE = 0xAD,
 
         // Events
-        EVT_BREAK = 0xE0,
+        EventRangeMin = 0xE0,
+        EVT_BREAK = EventRangeMin,
         EVT_RUN = 0xE1,
         EVT_TARGET_POWER_ON = 0xE4,
         EVT_TARGET_POWER_OFF = 0xE5,
@@ -58,6 +59,7 @@ namespace JTAGICEmkII.Slave
         EVT_ERROR_PHY_OPT_RECEIVE_TIMEOUT = 0xF9,
         EVT_ERROR_PHY_OPT_RECEIVED_BREAK = 0xFA,
         EVT_ERROR_PHY_NO_ACTIVITY = 0xFB,
+        EventRangeMax = 0xFF,
 
     }
 }

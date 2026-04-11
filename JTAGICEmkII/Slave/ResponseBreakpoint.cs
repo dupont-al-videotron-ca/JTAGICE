@@ -19,54 +19,38 @@ namespace JTAGICEmkII.Slave
 
         #endregion
 
-
-        #region Fields 
-
-        #endregion
-
-
         #region Properties 
 
         public BreakpontTypeEnum BreakpontType { get; set; }
-
         public UInt32 Address { get; set; }
-
         public BreakpointModeEnum BreakpointMode { get; set; }
-
-        internal override void ReadFromBytes(byte[] data)
-        {
-            base.ReadFromBytes(data);
-            if (data.Length < 6)
-                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
-
-            BreakpontType = (BreakpontTypeEnum)data[1];
-            Address = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(2, 4));
-            BreakpointMode = (BreakpointModeEnum)data[6];
-        }
-
+        public override int Size => base.Size + 6;
 
         #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
 
         #region Public Methods 
 
-        #endregion
+        public override byte[] WriteToBytes()
+        {
+            var buffer = base.WriteToBytes();
+            buffer = buffer.Concat(new byte[] { (byte)BreakpontType }).ToArray();
+            buffer = buffer.Concat(BitConverter.GetBytes(Address)).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte)BreakpointMode}).ToArray();
 
+            MessageLength = (uint)buffer.Length;
+            return buffer;
+        }
 
-        #region Protected Methods 
+        public override void ReadFromBytes(byte[] data)
+        {
+            base.ReadFromBytes(data);
+            if (data.Length < Size)
+                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
+            BreakpontType = (BreakpontTypeEnum)data[base.Size];
+            Address = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(base.Size+1, 4));
+            BreakpointMode = (BreakpointModeEnum)data[base.Size+5];
+        }
 
         #endregion
     }

@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Media.AppBroadcasting;
 
 namespace JTAGICEmkII.Slave
 {
-    internal class ResponseSignOn : Response
+    public sealed class ResponseSignOn : Response
     {
 
         #region Constructors 
@@ -21,7 +20,7 @@ namespace JTAGICEmkII.Slave
 
         #region Fields 
 
-        private const int SerialNumberSize = 6;
+        public const int SerialNumberSize = 6;
         private const int SerialNumberOffset = 10;
         private const int DeviceIdOffset = SerialNumberOffset + SerialNumberSize;
 
@@ -55,7 +54,7 @@ namespace JTAGICEmkII.Slave
             get
             {
                 var retval = string.Empty;
-                for (int i = SerialNumber.Length-1; i >= 0; i--)
+                for (int i = SerialNumber.Length - 1; i >= 0; i--)
                 {
                     retval += String.Join(string.Empty, SerialNumber[i].ToString());
                 }
@@ -82,50 +81,53 @@ namespace JTAGICEmkII.Slave
 
         public byte[] DeviceId { get; set; } = new byte[1];
 
-        internal override void ReadFromBytes(byte[] data)
+        public override int Size => base.Size + SerialNumberSize + SerialNumberOffset;
+
+
+        #endregion
+
+        #region Public Methods 
+        public override byte[] WriteToBytes()
+        {
+            var buffer = base.WriteToBytes();
+            buffer = buffer.Concat(new byte[] { (byte)CommunicationProtocolVersion }).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte) MasterMcuBootLoaderVersion}).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte) MasterMcuFirmwareVersionMinor}).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte) MasterMcuFirmwareVersionMajor}).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte) MasterMcuHwVersion}).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte) SlaveMcuBootLoaderVersion}).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte) SlaveMcuFirmwareVersionMinor}).ToArray();
+            buffer = buffer.Concat(new byte[] { (byte) SlaveMcuFirmwareVersionMajor}).ToArray();
+            buffer = buffer.Concat(new byte[] {(byte) SlaveMcuHwVersion}).ToArray();
+            
+            buffer = buffer.Concat(SerialNumber).ToArray();
+            buffer = buffer.Concat(DeviceId).ToArray();
+
+            MessageLength = (uint)buffer.Length; 
+            return buffer;
+        }
+
+        public override void ReadFromBytes(byte[] data)
         {
             base.ReadFromBytes(data);
-            if (data.Length < DeviceIdOffset)
+            if (data.Length < Size)
                 throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-            CommunicationProtocolVersion = data[1];
-            MasterMcuBootLoaderVersion = data[2];
-            MasterMcuFirmwareVersionMinor = data[3];
-            MasterMcuFirmwareVersionMajor = data[4];
-            MasterMcuHwVersion = data[5];
-            SlaveMcuBootLoaderVersion = data[6];
-            SlaveMcuFirmwareVersionMinor = data[7];
-            SlaveMcuFirmwareVersionMajor = data[8];
-            SlaveMcuHwVersion = data[9];
+            CommunicationProtocolVersion = data[base.Size];
+            MasterMcuBootLoaderVersion = data[base.Size + 1];
+            MasterMcuFirmwareVersionMinor = data[base.Size + 2];
+            MasterMcuFirmwareVersionMajor = data[base.Size + 3];
+            MasterMcuHwVersion = data[base.Size + 4];
+            SlaveMcuBootLoaderVersion = data[base.Size + 5];
+            SlaveMcuFirmwareVersionMinor = data[base.Size + 6];
+            SlaveMcuFirmwareVersionMajor = data[base.Size + 7];
+            SlaveMcuHwVersion = data[base.Size + 8];
 
-            Array.Copy(data, SerialNumberOffset, SerialNumber, 0, SerialNumberSize);
+            Array.Copy(data, base.Size + 9, SerialNumber, 0, SerialNumberSize);
 
             DeviceId = new byte[data.Length - DeviceIdOffset];
             Array.Copy(data, DeviceIdOffset, DeviceId, 0, data.Length - DeviceIdOffset);
         }
-
-        #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
-
-        #region Public Methods 
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
 
         #endregion
     }

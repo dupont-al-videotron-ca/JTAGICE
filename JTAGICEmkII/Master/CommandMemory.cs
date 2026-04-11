@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.Master
 {
@@ -26,6 +29,8 @@ namespace JTAGICEmkII.Master
         public MemoryTypeEnum MemoryType{ get; set; }
         public UInt32 ByteCount { get; set; }
         public UInt32 Address { get; set; }
+
+        public override int Size => base.Size + 1 + 4 + 4; // MemoryType (1 byte) + ByteCount (4 bytes) + Address (4 bytes) + Data (ByteCount bytes)
 
         #endregion
 
@@ -51,6 +56,19 @@ namespace JTAGICEmkII.Master
             return buffer;
         }
 
+        public override void ReadFromBytes(byte[] data)
+        {
+            base.ReadFromBytes(data);
+            if (data.Length < Size)
+                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
+
+            MemoryType = (MemoryTypeEnum)data[base.Size];
+            ByteCount = BitConverter.ToUInt32(data,  base.Size + 1);
+            Address = BitConverter.ToUInt32(data, base.Size + 5);
+            this.ReadDataToBytes(data, base.Size + 9);
+        }
+
+        
 
         #endregion
 

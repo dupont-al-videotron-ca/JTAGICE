@@ -8,7 +8,7 @@ namespace JTAGICEmkII.Slave
 {
     internal static class ResponseFactory
     {
-        public static ISlaveResponse CreateResponse(SlaveResponseEnum responseId)
+        public static ISlaveResponse? CreateResponse(SlaveResponseEnum responseId)
         {
             switch (responseId)
             {
@@ -88,7 +88,7 @@ namespace JTAGICEmkII.Slave
                     return new ResponseEventDebug(responseId);
 
                 default:
-                    throw new ArgumentException($"Unknown response ID: {responseId}");
+                    return null;
             }
         }
     }

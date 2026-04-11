@@ -11,13 +11,14 @@ using JTAGICEmkII.Slave;
 using MyFramework;
 using MyFramework.Threading;
 using log4net;
+
 namespace JTAGICEmkII
 {
-    internal sealed class RxFrame : IRxFrame, IDisposable
+    public sealed class RxFrame : IRxFrame, IDisposable
     {
         #region Constructors 
 
-        internal RxFrame(IRxComAdaptor rxComAdaptor)
+        internal RxFrame(IRxFrameAdaptor rxComAdaptor)
         {
             Logger = LogManager.GetLogger(this.GetType());
             state = RxStateEnum.WaitStart;
@@ -26,8 +27,8 @@ namespace JTAGICEmkII
             token = source.Token;
 
             PreviousSequenceNumber = -1;
-            Timeout = 1000; // Default timeout of 1000 milliseconds
-            this.rxComAdaptor = rxComAdaptor ?? throw new ArgumentNullException(nameof(rxComAdaptor));
+            Timeout = 1000; // Default _timeout of 1000 milliseconds
+            this.rxFrameAdaptor = rxComAdaptor ?? throw new ArgumentNullException(nameof(rxComAdaptor));
         }
 
 
@@ -39,7 +40,7 @@ namespace JTAGICEmkII
         private const byte TOKEN_BYTE = 14;
         private const UInt16 SequenceNumberWrap = 0xFFFF;
         private const UInt16 SequenceNumberEvent = 0xFFFF;
-        private readonly IRxComAdaptor rxComAdaptor;
+        private readonly IRxFrameAdaptor rxFrameAdaptor;
         private RxStateEnum state;
         private bool disposedValue;
         private Task receiveTask;
@@ -58,13 +59,13 @@ namespace JTAGICEmkII
 
         internal int PreviousSequenceNumber { get; set; }
 
-        internal bool TimeoutOccured{ get; set; }
+        internal bool TimeoutOccured { get; set; }
 
         internal ILog Logger { get; private set; }
 
         public bool IsReceiving => receiveTask != null && !receiveTask.IsCompleted;
 
-        public IRxComAdaptor ComAdaptor => rxComAdaptor;
+        public IRxFrameAdaptor Adaptor => rxFrameAdaptor;
 
         /// <summary>
         /// Timeout in milliseconds for receiving each part of the frame (e.g., waiting for start byte, sequence number, token, message bytes, CRC).
@@ -78,7 +79,8 @@ namespace JTAGICEmkII
 
         #region Delegates / Events 
 
-        public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
+        public event EventHandler<ResponseReceivedEventArgs>? ResponceReceived;
+        public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
         public event EventHandler? RxTimerExpired;
 
         #endregion
@@ -150,32 +152,36 @@ namespace JTAGICEmkII
 
         #region Protected Methods 
 
-        internal bool ReadByte(out byte value, int timeout = -1) 
-            => rxComAdaptor.ReadByte(out value, timeout);
+        internal bool ReadByte(out byte value, int timeout = -1)
+            => rxFrameAdaptor.ReadByte(out value, timeout);
 
-        internal bool ReadBytes(out byte[]? values, uint length, int timeout = -1) 
-            => rxComAdaptor.ReadBytes(out values, length, timeout);
+        internal bool ReadBytes(out byte[]? values, uint length, int timeout = -1)
+            => rxFrameAdaptor.ReadBytes(out values, length, timeout);
 
-        internal Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1) 
-            => rxComAdaptor.ReadBytesAsync(out values, length, cancellationToken, timeout);
+        internal Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1)
+            => rxFrameAdaptor.ReadBytesAsync(out values, length, cancellationToken, timeout);
 
         internal Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1) =>
-            rxComAdaptor.ReadByteAsync(out value, cancellationToken, timeout);
+            rxFrameAdaptor.ReadByteAsync(out value, cancellationToken, timeout);
 
         internal void OnRxTimeoutOccured()
         {
-            if(TimeoutOccured)
+            if (TimeoutOccured)
             {
                 TimeoutOccured = false;
                 RxTimerExpired?.Invoke(this, EventArgs.Empty);
             }
         }
 
-        internal void OnReceiveReponse(ISlaveResponse response)
+        internal void OnReponseReceived(ISlaveResponse response)
         {
-            MessageReceived?.Invoke(this, new MessageReceivedEventArgs(response));
+            ResponceReceived?.Invoke(this, new ResponseReceivedEventArgs(response));
         }
 
+        internal void OnCommandReceived(Master.IMasterCommand command)
+        {
+            CommandReceived?.Invoke(this, new CommandReceivedEventArgs(command));
+        }
 
         internal void Dispose(bool disposing)
         {
@@ -279,22 +285,30 @@ namespace JTAGICEmkII
             }
         }
 
-        private void DispathMessageBody(List<byte> messageBuffer)
+        private void DispathMessageBody(List<byte> messageBuffer, uint messageLength)
         {
             try
             {
-                SlaveResponseEnum responseId = (SlaveResponseEnum)messageBuffer[0]; // Assuming the response id is at index 0
-                ISlaveResponse? response = Slave.ResponseFactory.CreateResponse(responseId);
+                ISlaveResponse? response = null;
+                Master.IMasterCommand? command = null;
 
-                if (response != null)
+                if ((response = Slave.ResponseFactory.CreateResponse((SlaveResponseEnum)messageBuffer[0])) != null)
                 {
+                    response.MessageLength = messageLength;
                     response.ReadFromBytes(messageBuffer.ToArray());
                     // Now you can use the 'response' object as needed
-                    OnReceiveReponse(response);
+
+                    OnReponseReceived(response);
+                }
+                else if ((command = Master.CommandFactory.CreateCommand((Master.MasterCommandEnum)messageBuffer[0])) != null)
+                {
+                    command.MessageLength = messageLength;
+                    command.ReadFromBytes(messageBuffer.ToArray());
+                    OnCommandReceived(command);
                 }
                 else
                 {
-                    Logger.Fatal($"Handle unknown response id: {responseId}.");
+                    Logger.Fatal($"Handle unknown message id: {messageBuffer[0]}.");
                 }
             }
             catch (Exception ex)
@@ -385,7 +399,7 @@ namespace JTAGICEmkII
 
                     break;
                 case RxStateEnum.WaitToken:
-                    if(!ReadByte(out rxbyte, Timeout))
+                    if (!ReadByte(out rxbyte, Timeout))
                     {
                         OnRxTimeoutOccured();
                         GoWaitStart();
@@ -405,7 +419,7 @@ namespace JTAGICEmkII
                     }
                     break;
                 case RxStateEnum.WaitMessage:
-                    if(!ReadBytes(out byte[]? messageBytes, messageLength, Timeout))
+                    if (!ReadBytes(out byte[]? messageBytes, messageLength, Timeout))
                     {
                         OnRxTimeoutOccured();
                         GoWaitStart();
@@ -426,7 +440,7 @@ namespace JTAGICEmkII
                     }
                     break;
                 case RxStateEnum.WaitCRC:
-                    if(!ReadBytes(out byte[]? crcBytes, 2, Timeout))
+                    if (!ReadBytes(out byte[]? crcBytes, 2, Timeout))
                     {
                         OnRxTimeoutOccured();
                         GoWaitStart();
@@ -442,7 +456,8 @@ namespace JTAGICEmkII
                             if (ManageSequenceNumber())
                             {
                                 // Accept the message and dispatch it for processing
-                                DispathMessageBody(messageBuffer);
+                                Logger.Debug($"Message length: {messageLength} & messageBuffer.count: {messageBuffer.Count}.");
+                                DispathMessageBody(messageBuffer, messageLength);
                             }
                             // else, allredy received, just ignore this message and wait for next message with correct sequence number.
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -28,37 +29,29 @@ namespace JTAGICEmkII.Slave
 
         public UInt32 ProgramCounter { get; set; }
 
+        public override int Size => base.Size + 4; 
 
         #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
 
         #region Public Methods 
-        internal override void ReadFromBytes(byte[] data) 
-        { 
-            base.ReadFromBytes(data);
-            if (data.Length < 5)
-                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-            ProgramCounter = BitConverter.ToUInt32(data, 1);
+        public override byte[] WriteToBytes()
+        {
+            var buffer = base.WriteToBytes();
+            buffer = buffer.Concat(BitConverter.GetBytes(ProgramCounter)).ToArray();
+
+            MessageLength = (uint)buffer.Length;
+            return buffer;
         }
 
-        #endregion
+        public override void ReadFromBytes(byte[] data) 
+        { 
+            base.ReadFromBytes(data);
+            if (data.Length < Size)
+                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
+            ProgramCounter = BitConverter.ToUInt32(data, base.Size);
+        }
 
         #endregion
     }

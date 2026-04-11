@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,53 +15,37 @@ namespace JTAGICEmkII.Slave
         internal ResponseMcuState(SlaveResponseEnum messageId) : base(messageId)
         {
         }
-
-        internal override void ReadFromBytes(byte[] data)
-        {
-            base.ReadFromBytes(data);
-            if (data.Length < 2)
-                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
-
-            State = (McuStateEnum)data[1];
-
-        }
-
         #endregion
-
-
-        #region Fields 
-
-        #endregion
-
 
         #region Properties 
 
         public McuStateEnum State { get; set; }
 
-        #endregion
-
-
-        #region Delegates / Events 
+        public override int Size => base.Size + 1;
 
         #endregion
-
 
         #region Public Methods 
 
+        public override byte[] WriteToBytes()
+        {
+            var buffer = base.WriteToBytes();
+            buffer = buffer.Concat(new byte[] { (byte)State }).ToArray();
+
+            MessageLength = (uint)buffer.Length;
+            return buffer;
+        }
+
+        public override void ReadFromBytes(byte[] data)
+        {
+            base.ReadFromBytes(data);
+            if (data.Length < Size)
+                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
+
+            State = (McuStateEnum)data[base.Size];
+
+        }
+
         #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
-
-        #endregion
-
     }
 }

@@ -6,13 +6,18 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII
 {
-    internal interface IRxFrame
+    public interface IRxFrame
     {
-        event EventHandler<MessageReceivedEventArgs>? MessageReceived;
+        event EventHandler<ResponseReceivedEventArgs>? ResponceReceived;
+        event EventHandler<CommandReceivedEventArgs>? CommandReceived;
         event EventHandler? RxTimerExpired;
         void StartReceiving();
         void StopReceiving();
 
         bool IsReceiving { get; }
+
+        IRxFrameAdaptor Adaptor { get; }
+
     }
+
 }

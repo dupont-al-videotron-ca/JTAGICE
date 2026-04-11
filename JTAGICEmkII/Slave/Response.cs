@@ -6,13 +6,14 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Slave
 {
-    internal class Response : ISlaveResponse
+    public class Response : ISlaveResponse
     {
 
         #region Constructors 
         internal Response(SlaveResponseEnum messageId)
         {
             ResponseId = messageId;
+            MessageLength = 0;
         }
 
         #endregion
@@ -26,19 +27,34 @@ namespace JTAGICEmkII.Slave
 
 
         #region Properties 
-        public SlaveResponseEnum ResponseId { get; set; }
+        public SlaveResponseEnum ResponseId { get; protected set; }
+
+        // This property will be serialize/deserialized when building frame.
+        public uint MessageLength { get; set; }
+
+        public virtual bool IsEvent
+        {
+            get
+            {
+                return ResponseId >= SlaveResponseEnum.EventRangeMin && ResponseId <= SlaveResponseEnum.EventRangeMax;
+            }
+        }
+
+        public virtual int Size => 1;
 
         #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
 
         #region Public Methods 
 
-        internal virtual void ReadFromBytes(byte[] data)
+        public virtual byte[] WriteToBytes()
+        {
+            byte[] buffer = new byte[1];
+            buffer[MessageIdOffset] = (byte)ResponseId;
+            MessageLength = (uint)buffer.Length; // Default length is 1 byte for the message ID.
+            return buffer;
+        }
+
+        public virtual void ReadFromBytes(byte[] data)
         {
             if (data == null || data.Length == 0)
                 throw new ArgumentException("Data cannot be null or empty.", nameof(data));
@@ -48,20 +64,6 @@ namespace JTAGICEmkII.Slave
         }
 
         void ISlaveResponse.ReadFromBytes(byte[] data) => this.ReadFromBytes(data);
-
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
 
         #endregion
 

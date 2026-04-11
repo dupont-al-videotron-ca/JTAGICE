@@ -1,8 +1,12 @@
-﻿using System;
+﻿
+using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.Master
 {
@@ -18,14 +22,11 @@ namespace JTAGICEmkII.Master
         #endregion
 
 
-        #region Fields 
-
-        #endregion
-
-
         #region Properties 
 
         public StepModeEnum StepMode { get; set; }
+
+        public override int Size => base.Size+1; // Size of base command + 1 byte for StepMode
 
         #endregion
 
@@ -44,6 +45,15 @@ namespace JTAGICEmkII.Master
             buffer = buffer.Concat(new byte[] { (byte)StepMode }).ToArray();
             MessageLength += 1; // Increment message length by 1 byte for the StepMode
             return buffer;
+        }
+
+        public override void ReadFromBytes(byte[] data)
+        {
+            base.ReadFromBytes(data);
+            if (data.Length < Size)
+                throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
+
+            StepMode = (StepModeEnum)data[base.Size];
         }
 
         #endregion

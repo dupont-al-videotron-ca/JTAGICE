@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,6 +25,8 @@ namespace JTAGICEmkII.Master
         public BreakpointTypeEnum Type { get; set; }
         public BreakpointModeEnum Mode { get; set; }
 
+        override public int Size => base.Size + 2; 
+
         public override byte[] WriteToBytes()
         {
             var buffer = new byte[3];
@@ -36,6 +39,18 @@ namespace JTAGICEmkII.Master
 
             buffer = buffer.Concat(new byte[] { (byte)Mode }).ToArray();
             return buffer;
+        }
+
+        public override void ReadFromBytes(byte[] data)
+        {
+            if (data == null || data.Length < Size)
+                throw new ArgumentException("Data cannot be null or empty.", nameof(data));
+
+            MessageId = (MasterCommandEnum)data[0];
+            Type = (BreakpointTypeEnum)data[1];
+            BreakNumber = data[2];
+            Address = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(3, 4));
+            Mode = (BreakpointModeEnum)data[7];
         }
 
         #endregion
