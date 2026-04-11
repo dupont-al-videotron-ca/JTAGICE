@@ -1,21 +1,266 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
+using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using JTAGICEmkIITest.Moq;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace JTAGICEmkIITest
 {
-    public class RxFrameTest : FrameTest
+    public class RxFrameMoqTest : FrameTest
     {
-        public RxFrameTest() : base()
+        public RxFrameMoqTest() : base()
         {
 
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_SignOff()
+        {
+
+            var frame = Create1ByteCommand(MasterCommandEnum.CMND_SIGN_OFF);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<Command>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_SIGN_OFF, result.MessageId);
+
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_SignOn()
+        {
+
+            var frame = Create1ByteCommand(MasterCommandEnum.CMND_GET_SIGN_ON);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<Command>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_GET_SIGN_ON, result.MessageId);
+
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_Address()
+        {
+            byte[] payload = new byte[] { 0x01, 0x02, 0x03, 04 };
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_ERASEPAGE_SPM, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandAddress>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_ERASEPAGE_SPM, result.MessageId);
+            Assert.Equal(payload, BitConverter.GetBytes(((CommandAddress)result).Address));
+
+        }
+        [Fact]
+        public void StartReceiving_shall_receive_Command_BreakAddress()
+        {
+            byte[] payload = new byte[] {0x55, 0x01, 0x02, 0x03, 04 };
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_CLR_BREAK, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandBreakAddress>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_CLR_BREAK, result.MessageId);
+            Assert.Equal(payload[0],(byte)((CommandBreakAddress)result).BreakNumber);
+            Assert.Equal(payload.AsSpan<byte>().Slice(1, 4).ToArray(), BitConverter.GetBytes(((CommandBreakAddress)result).Address));
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_BreakNumber()
+        {
+            byte[] payload = new byte[] { 0x55 };
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_GET_BREAK, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandBreakNumber>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_GET_BREAK, result.MessageId);
+            Assert.Equal(payload[0], (byte)((CommandBreakNumber)result).BreakNumber);
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_Breakpoint()
+        {
+            byte[] payload = new byte[] { (byte)BreakpointTypeEnum.BKPT_PRG_MEMORY, 
+                            0x55, 
+                            0x01, 0x02, 0x03, 0x04, 
+                            (byte)JTAGICEmkII.Master.BreakpointModeEnum.BKPT_MODE_PROGRAM };
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_SET_BREAK, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandBreakpoint>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_SET_BREAK, result.MessageId);
+            Assert.Equal(payload[0], (byte)((CommandBreakpoint)result).Type);
+            Assert.Equal(payload[1], (byte)((CommandBreakpoint)result).BreakNumber);
+            Assert.Equal(payload.AsSpan<byte>().Slice(2, 4).ToArray(), BitConverter.GetBytes(((CommandBreakpoint)result).Address));
+            Assert.Equal(payload[6], (byte)((CommandBreakpoint)result).Mode);
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_Memory()
+        {
+            byte[] payload = new byte[] { (byte)MemoryTypeEnum.MT_FLASH_PAGE,
+                            0x01, 0x00, 0x00, 0x00, // ByteCount 1
+                            0x01, 0x02, 0x03, 0x04, // address 0x04030201
+                            0xff};
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_WRITE_MEMORY, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandMemory>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_WRITE_MEMORY, result.MessageId);
+            Assert.Equal(payload[0], (byte)((CommandMemory)result).MemoryType);
+            Assert.Equal(payload.AsSpan<byte>().Slice(1, 4).ToArray(), BitConverter.GetBytes(((CommandMemory)result).ByteCount));
+            Assert.Equal(payload.AsSpan<byte>().Slice(5, 4).ToArray(), BitConverter.GetBytes(((CommandMemory)result).Address));
+            Assert.Equal(payload.AsSpan<byte>().Slice(9, 1).ToArray(), ((CommandMemory)result).Data.ToArray());
+            Assert.Equal(((CommandMemory)result).ByteCount, (UInt32)((CommandMemory)result).Data.Count);
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_MultipleByte()
+        {
+            byte[] payload = new byte[] { 0x00,
+                            0x01, 0x00, 0x00, 0x00, 
+                            0x01, 0x02, 0x03, 0x04, 
+                            0xff};
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_SELFTEST, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandMultipleByte>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_SELFTEST, result.MessageId);
+            Assert.Equal(payload, ((CommandMultipleByte)result).Data);
+            Assert.Equal(payload.Length, (Int32)((CommandMultipleByte)result).Data.Count);
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_NParameter()
+        {
+            byte[] payload = new byte[] { 0x01, (byte)ParameterEnum.PARAM_BAUD_RATE,
+                            0x01, 0x00, 0x00, 0x00 // value
+            };
+
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_SET_N_PARAMETERS, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandNParameter>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_SET_N_PARAMETERS, result.MessageId);
+            Assert.Equal(payload[0], ((CommandNParameter)result).NumberOfParameters);
+            Assert.Equal(payload[0], ((CommandNParameter)result).Parameters.Count);
+            var paramResult = ((CommandNParameter)result).Parameters[0];
+
+            Assert.Equal(payload[1], (byte)paramResult.ParameterId);
+            Assert.Equal(payload.AsSpan<byte>().Slice(2, 4).ToArray(), BitConverter.GetBytes(paramResult.ParameterData));
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_Parameter()
+        {
+            byte[] payload = new byte[] { (byte)ParameterEnum.PARAM_BAUD_RATE,
+                            0x01, 0x00, 0x00, 0x00 // value
+            };
+
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_SET_PARAMETER, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandParameter>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_SET_PARAMETER, result.MessageId);
+            Assert.Equal(payload[0], (byte)((CommandParameter)result).ParameterId);
+            Assert.Equal(payload.AsSpan<byte>().Slice(1, 4).ToArray(), ((CommandParameter)result).Data);
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_ProgramCounter()
+        {
+            byte[] payload = new byte[] { 0x01, 0x02, 0x03, 0x04 // value
+            };
+
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_RUN_TO_ADDR, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandProgranCounter>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_RUN_TO_ADDR, result.MessageId);
+            Assert.Equal(payload.AsSpan<byte>().Slice(0, 4).ToArray(), BitConverter.GetBytes(((CommandProgranCounter)result).ProgrammeCounter));
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_SingleStep()
+        {
+            byte[] payload = new byte[] { (byte)ExceutionModeEnum.EXMODE_LOW_LEVEL,
+            (byte)StepModeEnum.Into};
+
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_SINGLE_STEP, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandSingleStep>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_SINGLE_STEP, result.MessageId);
+            Assert.Equal(payload[0], (byte)((CommandSingleStep)result).ExecutionMode);
+            Assert.Equal(payload[1], (byte)((CommandSingleStep)result).StepMode);
+        }
+
+        [Fact]
+        public void StartReceiving_shall_receive_Command_PCMode()
+        {
+            byte[] payload = new byte[] { (byte)ExceutionModeEnum.EXMODE_LOW_LEVEL};
+
+            var frame = CreateBytesCommand(MasterCommandEnum.CMND_FORCED_STOP, payload);
+            var test = CreateFrameForTest(frame);
+
+            IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
+
+            Assert.IsAssignableFrom<CommandPCMode>(result);
+            Assert.False(timerExpired);
+            Assert.NotNull(result);
+            Assert.Equal(MasterCommandEnum.CMND_FORCED_STOP, result.MessageId);
+            Assert.Equal(payload[0], (byte)((CommandPCMode)result).ExecutionMode);
         }
 
         [Fact]
@@ -84,7 +329,7 @@ namespace JTAGICEmkIITest
             var frame = Create1ByteResponse(evtId);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -98,7 +343,7 @@ namespace JTAGICEmkIITest
             var frame = Create1ByteResponse(SlaveResponseEnum.RSP_OK);
             var test = CreateFrameForTest(frame, 100);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, true);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired, true);
 
             Assert.True(timerExpired);
             Assert.NotNull(result);
@@ -117,7 +362,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(responsesId, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -132,12 +377,12 @@ namespace JTAGICEmkIITest
             var payload = new byte[] {
                 (byte)BreakpontTypeEnum.BKPT_PRG_MEMORY,
                 0x01, 0x00, 0x00, 0x00, // Address 0x00000001 
-                (byte)BreakpointModeEnum.BKPT_MODE_PROGRAM};
+                (byte)JTAGICEmkII.Slave.BreakpointModeEnum.BKPT_MODE_PROGRAM};
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_GET_BREAK, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -146,7 +391,7 @@ namespace JTAGICEmkIITest
             Assert.IsAssignableFrom<ResponseBreakpoint>(result);
             ResponseBreakpoint responseBreakpoint = (ResponseBreakpoint)result;
             Assert.Equal(BreakpontTypeEnum.BKPT_PRG_MEMORY, responseBreakpoint.BreakpontType);
-            Assert.Equal(BreakpointModeEnum.BKPT_MODE_PROGRAM, responseBreakpoint.BreakpointMode);
+            Assert.Equal(JTAGICEmkII.Slave.BreakpointModeEnum.BKPT_MODE_PROGRAM, responseBreakpoint.BreakpointMode);
             Assert.Equal((UInt32)0x000001, responseBreakpoint.Address);
         }
 
@@ -159,7 +404,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_GET_BREAK, payload);
             var test = CreateFrameForTest(frame, 100);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, true);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired, true);
 
             Assert.True(timerExpired);
             Assert.Null(result);
@@ -178,7 +423,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -198,7 +443,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_PC, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -226,7 +471,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_SELFTEST, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -270,7 +515,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_SIGN_ON, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -322,7 +567,7 @@ namespace JTAGICEmkIITest
             var frame = CreateEventResponse(SlaveResponseEnum.EVT_DEBUG, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -354,7 +599,7 @@ namespace JTAGICEmkIITest
             var frame = CreateEventResponse(SlaveResponseEnum.EVT_BREAK, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -405,7 +650,7 @@ namespace JTAGICEmkIITest
             var frame = CreateEventResponse(evtId, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -426,7 +671,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -449,7 +694,7 @@ namespace JTAGICEmkIITest
             var frame = CreateBytesResponse(SlaveResponseEnum.EVT_RUN, payload);
             var test = CreateFrameForTest(frame);
 
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired);
 
             Assert.False(timerExpired);
             Assert.NotNull(result);
@@ -541,7 +786,7 @@ namespace JTAGICEmkIITest
 
             Assert.Equal(-1, test.PreviousSequenceNumber);
             test.PreviousSequenceNumber = previousSequence;
-            ISlaveResponse? result = this.TestReceiver(test, out bool timerExpired, expectedTimerExpired);
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired, expectedTimerExpired);
 
             Assert.Equal(expectedTimerExpired, timerExpired);
             if (expectedTimerExpired)
@@ -557,7 +802,7 @@ namespace JTAGICEmkIITest
             }
         }
 
-        private RxFrame CreateFrameForTest(byte[] buffer, int timeout = -1)
+        protected virtual RxFrame CreateFrameForTest(byte[] buffer, int timeout = -1)
         {
             RxFrameMoq rxFrameMoq = new RxFrameMoq(buffer, timeout);
             RxFrame rxFrame = new RxFrame(rxFrameMoq);

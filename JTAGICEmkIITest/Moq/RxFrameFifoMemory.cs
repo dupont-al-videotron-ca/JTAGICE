@@ -1,45 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
-using Newtonsoft.Json.Linq;
+using MyFramework;
 
 namespace JTAGICEmkIITest.Moq
 {
-    internal class RxFrameMoq : IRxFrameAdaptor
+    internal class RxFrameFifoMemory : IRxFrameAdaptor
     {
-        private byte[] _buffer;
-        private int _position;
-
-        public int RxTimeout { get; private set; }
+        public int RxTimeout 
+        {
+            get;
+            private set; 
+        }
 
         private const int _defaultWaitDelay = 100;
+        private readonly FifoBuffer<byte> _fifoBuffer;
         private int waitDelay = _defaultWaitDelay;
         private RxFrame _rxFrame = null!;
 
-        public RxFrameMoq(byte[] buffer) : this(buffer, -1)
+        public RxFrameFifoMemory(FifoBuffer<byte> fifoBuffer) : this(fifoBuffer, -1)
         {
         }
 
-        public RxFrameMoq(byte[] buffer, int timeout) : base()
+        public RxFrameFifoMemory(FifoBuffer<byte> fifoBuffer, int timeout) : base()
         {
-            this._buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
-            _position = 0;
+            _fifoBuffer = fifoBuffer ?? throw new ArgumentNullException(nameof(fifoBuffer));
             RxTimeout = timeout;
         }
+
+        public bool IsEndOfFrame => _fifoBuffer.IsEmpty;
+
+        public bool WaitForTimeout { get; set; } = false;
 
         public void Attach(RxFrame rxFrame)
         {
             ArgumentNullException.ThrowIfNull(rxFrame);
             _rxFrame = rxFrame;
         }
-
-        public bool IsEndOfFrame => _position >= _buffer.Length;
-
-        public bool WaitForTimeout { get; set; } = false;
 
         public bool ReadByte(out byte value, int timeout = -1)
         {
@@ -68,6 +70,7 @@ namespace JTAGICEmkIITest.Moq
         public Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1)
         {
             bool timeoutOccured = false;
+            values = null;
             if (_rxFrame.Timeout != -1)
             {
                 // force timeout to occured.
@@ -77,14 +80,32 @@ namespace JTAGICEmkIITest.Moq
             else
             {
                 waitDelay = _defaultWaitDelay;
-            }
+            }   
 
             if (!IsEndOfFrame)
             {
                 values = new byte[length];
-                Array.Copy(_buffer, _position, values, 0, length);
-                _position += (int)length;
-                return Task.FromResult(true);
+                Task<byte[]> task = Task.Run(() => _fifoBuffer.Out((int)length));
+                if (task.Wait(RxTimeout))
+                {
+                    byte[] result = task.Result;
+                    if (result.Length == length)
+                    {                 
+                        values = result;
+                        return Task.FromResult(true);
+                    }
+                    else
+                    {
+                        _rxFrame.Logger.Debug($"Expected to read {length} bytes but only read {result} bytes.");
+                    }
+                }
+                else
+                {
+                    _rxFrame.Logger.Debug($"Read operation timed out after {RxTimeout} milliseconds.");
+                }
+
+                return Task.FromResult(false);
+
             }
             else
             {
@@ -127,18 +148,17 @@ namespace JTAGICEmkIITest.Moq
                     }
                 }
 
-                values = null!;
                 return Task.FromResult(false);
 
             }
         }
 
         bool IRxFrameAdaptor.ReadByte(out byte value, int timeout) => this.ReadByte(out value, timeout);
-
+    
         Task<bool> IRxFrameAdaptor.ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout) => this.ReadByteAsync(out value, cancellationToken, timeout);
-
+        
         bool IRxFrameAdaptor.ReadBytes(out byte[]? values, uint length, int timeout) => this.ReadBytes(out values, length, timeout);
-
+        
         Task<bool> IRxFrameAdaptor.ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout) => this.ReadBytesAsync(out values, length, cancellationToken, timeout);
     }
 }

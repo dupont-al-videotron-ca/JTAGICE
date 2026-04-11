@@ -42,6 +42,34 @@ namespace JTAGICEmkIITest
 
         }
 
+        internal byte[] Create1ByteCommand(MasterCommandEnum commandId, UInt16 sequenceNumber = 0x0001)
+        {
+            List<byte> message = new List<byte>();
+            // Start of message
+            message.Add(ESC);
+            // Sequence number
+            message.Add((byte)(sequenceNumber & 0xFF));
+            message.Add((byte)((sequenceNumber >> 8) & 0xFF));
+            // message size
+            message.Add(0x01);
+            message.Add(0x00);
+            message.Add(0x00);
+            message.Add(0x00);
+            // token
+            message.Add(TOKEN);
+            // payload
+            message.Add((byte)commandId);
+
+            ushort crc = Crc16.ComputeCrc(message.ToArray());
+
+            // crc
+            message.Add((byte)(crc & 0xFF)); // payload length LSB
+            message.Add((byte)((crc >> 8) & 0xFF)); // payload length Msb
+            Logger.Info($"Created frame: commandId: {commandId}, crc: 0x{crc:x4}");
+            return message.ToArray();
+
+        }
+
         internal byte[] CreateBytesResponse(SlaveResponseEnum responseId, byte[] payload)
         {
             List<byte> message = new List<byte>();
@@ -69,6 +97,37 @@ namespace JTAGICEmkIITest
             message.Add((byte)((crc >> 8) & 0xFF)); // payload length Msb
 
             Logger.Info($"Created frame: responseId: {responseId}, crc: 0x{crc:x4}, messageSize: {messageSize}.");
+
+            return message.ToArray();
+
+        }
+        internal byte[] CreateBytesCommand(MasterCommandEnum commandId, byte[] payload)
+        {
+            List<byte> message = new List<byte>();
+            // Start of message
+            message.Add(ESC);
+            // Sequence number
+            message.Add(SequenceNumberLsb);
+            message.Add(SequenceNumberMsb);
+            // message size
+            var messageSize = (uint)payload.Length + 1;
+            message.Add((byte)(messageSize & 0xFF));
+            message.Add((byte)((messageSize >> 8) & 0xFF));
+            message.Add((byte)((messageSize >> 16) & 0xFF));
+            message.Add((byte)((messageSize >> 24) & 0xFF));
+            // token
+            message.Add(TOKEN);
+            // payload
+            message.Add((byte)commandId);
+            message.AddRange(payload);
+
+            ushort crc = Crc16.ComputeCrc(message.ToArray());
+
+            // crc
+            message.Add((byte)(crc & 0xFF)); // payload length LSB
+            message.Add((byte)((crc >> 8) & 0xFF)); // payload length Msb
+
+            Logger.Info($"Created frame: commandId: {commandId}, crc: 0x{crc:x4}, messageSize: {messageSize}.");
 
             return message.ToArray();
 
@@ -105,11 +164,38 @@ namespace JTAGICEmkIITest
             return message.ToArray();
 
         }
+        internal ISlaveResponse TestReceiverSlave(RxFrame test, out bool timerExpired, bool waitTimeout = false, int sleepTimeout = 10)
+        {
+            var responce = TestReceiverLocal(test, out timerExpired, waitTimeout, sleepTimeout);
 
-        internal ISlaveResponse TestReceiver(RxFrame test, out bool timerExpired, bool waitTimeout = false, int sleepTimeout = 10)
+            if (!timerExpired || responce != null)
+            {
+                return (ISlaveResponse)responce;
+            }
+            else
+            {
+                return null!;
+            }
+        }
+
+        internal IMasterCommand TestReceiverMaster(RxFrame test, out bool timerExpired, bool waitTimeout = false, int sleepTimeout = 10)
+        {
+            var responce = TestReceiverLocal(test, out timerExpired, waitTimeout, sleepTimeout);
+            if (!timerExpired || responce != null)
+            {
+                Assert.NotNull(responce);
+                return (IMasterCommand)(responce);
+            }
+            else
+            {
+                return null!;
+            }
+        }
+
+        private object TestReceiverLocal(RxFrame test, out bool timerExpired, bool waitTimeout, int sleepTimeout)
         {
             bool localTimerExpired = false;
-            ISlaveResponse? result = null;
+            object? result = null;
 
             test.RxTimerExpired += (s, e) =>
             {
@@ -117,10 +203,16 @@ namespace JTAGICEmkIITest
                 localTimerExpired = true;
             };
 
-            test.MessageReceived += (s, e) =>
+            test.ResponceReceived += (s, e) =>
             {
                 Logger.Info($"Message received: responseId: {e.Response.ResponseId}.");
                 result = e.Response;
+            };
+
+            test.CommandReceived += (s, e) =>
+            {
+                Logger.Info($"Message received: commandId: {e.Command.MessageId}.");
+                result = e.Command;
             };
 
             test.StartReceiving();
@@ -138,7 +230,7 @@ namespace JTAGICEmkIITest
 
         }
 
-        internal void ValidateTxBuffer(byte[] buffer)
+        internal void ValidateCRC(byte[] buffer)
         {
             var crc = Crc16.ComputeCrc(buffer.Take(buffer.Length - 2).ToArray());
             Assert.Equal((byte)(crc & 0xFF), buffer[buffer.Length - 2]);
