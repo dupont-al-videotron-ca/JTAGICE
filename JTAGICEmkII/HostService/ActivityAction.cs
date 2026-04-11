@@ -59,17 +59,5 @@ namespace JTAGICEmkII.HostService
 
         #endregion
 
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
-
-        #endregion
     }
 }
