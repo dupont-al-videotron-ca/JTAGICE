@@ -28,23 +28,23 @@ namespace JTAGICEmkII.HostService
         public override bool ActivityAction()
         {
             bool retval = false;
-            if (!this.ActivityStructure.HostService.SignOn(out ResponseSignOn? response))
+            if (!this.ActivityStructure.HostService.SignOn(out ResponseSignOn? response).IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to sign on to the target device.");
             }
-            else if(!this.ActivityStructure.HostService.Reset())
+            else if(!this.ActivityStructure.HostService.Reset().IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to reset the target device.");
             }
-            else if(!this.ActivityStructure.HostService.SetDeviceDescriptor())
+            else if(!this.ActivityStructure.HostService.SetDeviceDescriptor().IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to set device descriptor.");
             }
-            else if (!this.ActivityStructure.HostService.ClearEvents())
+            else if (!this.ActivityStructure.HostService.ClearEvents().IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to clear events.");
             }
-            else if (!this.ActivityStructure.HostService.GetAllParameter())
+            else if (!this.ActivityStructure.HostService.GetAllParameter().IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to get all parameters.");
             }
@@ -52,7 +52,7 @@ namespace JTAGICEmkII.HostService
             {
                 this.ActivityStructure.Logger.Error("Failed to modify all parameters.");
             }
-            else if (!this.ActivityStructure.HostService.SetAllParameter())
+            else if (!this.ActivityStructure.HostService.SetAllParameter().IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to set all parameters.");
             }

@@ -23,15 +23,6 @@ namespace JTAGICEmkII.HostService
             return visitor.Visit(this);
         }
 
-        public override bool ActivityEntry()
-        {
-            Logger.Debug($"{this.GetType()} Executing activity entry called.");
-            if (!this.ActivityStructure.HostService.SetDeviceDescriptor())
-                return false;
-
-            return true;
-        }
-
         public override bool CanSendCommand(IMasterCommand command)
         {
             switch (command.MessageId)

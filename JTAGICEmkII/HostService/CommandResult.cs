@@ -20,9 +20,9 @@ namespace JTAGICEmkII.HostService
             this.ErrorCode = (int)response;
         }
 
-        private static Dictionary<int, ResultMetadata> ResultMetadatas;
-        public static CommandResult Successs = new CommandResult(SlaveResponseEnum.RSP_OK);
-        public static CommandResult Failed = new CommandResult(SlaveResponseEnum.RSP_FAILED);
+        private readonly static Dictionary<int, ResultMetadata> ResultMetadatas;
+        public static readonly CommandResult Successs = new (SlaveResponseEnum.RSP_OK);
+        public static readonly CommandResult Failed = new (SlaveResponseEnum.RSP_FAILED);
 
 
         private readonly ISlaveResponse? response;
@@ -56,7 +56,6 @@ namespace JTAGICEmkII.HostService
         static CommandResult()
         {
             ResultMetadatas = new Dictionary<int, ResultMetadata>();
-            var rm = (new ResultMetadata(SlaveResponseEnum.RSP_OK, "Ok"));
 
             ResultMetadatas.Add((int)SlaveResponseEnum.RSP_OK, (new ResultMetadata(SlaveResponseEnum.RSP_OK, "The command was executed.")));
             ResultMetadatas.Add((int)SlaveResponseEnum.RSP_FAILED, new ResultMetadata(SlaveResponseEnum.RSP_FAILED, $"The command was not understood by the {HostDeviceService.HostDeviceName}."));

@@ -72,6 +72,11 @@ namespace JTAGICEmkII.HostService
             return element.CommandSent();
         }
 
+        public override bool Visit(ActivityWriteMemory element)
+        {
+            return element.CommandSent();
+        }
+
         #endregion
 
     }

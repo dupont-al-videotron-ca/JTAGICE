@@ -34,7 +34,7 @@ namespace JTAGICEmkII.HostService
             if (!this.ActivityStructure.TargetMcuState.IsProgramming)
             {
                 Logger.Debug("Entering programming mode...");
-                if (!this.ActivityStructure.HostService.EnterPrograming())
+                if (!this.ActivityStructure.HostService.EnterPrograming().IsSuccess)
                 {
                     GoStoppedFail();
                     PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_MODE_FAIL;
@@ -55,7 +55,7 @@ namespace JTAGICEmkII.HostService
                 UInt64 currentAddress = PrgOption.Address;
                 while (currentAddress < PrgOption.Address + PrgOption.ByteCount)
                 {
-                    if (!this.ActivityStructure.HostService.EraseMemory((byte)PrgOption.MemoryType, currentAddress, PrgOption.PageSize))
+                    if (!this.ActivityStructure.HostService.EraseMemory((byte)PrgOption.MemoryType, currentAddress, PrgOption.PageSize).IsSuccess)
                     {
                         PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_ERASE_FAIL;
                         PrgOption.ResultErrorAddress = currentAddress;
@@ -73,7 +73,7 @@ namespace JTAGICEmkII.HostService
                 while (currentAddress < PrgOption.Address + PrgOption.ByteCount)
                 {
                     byte[] buffer = PrgOption.Data.Skip((int)(currentAddress - PrgOption.Address)).Take((int)PrgOption.PageSize).ToArray();
-                    if (!this.ActivityStructure.HostService.WriteMemory((byte)PrgOption.MemoryType, currentAddress, buffer))
+                    if (!this.ActivityStructure.HostService.WriteMemory((byte)PrgOption.MemoryType, currentAddress, buffer).IsSuccess)
                     {
                         PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_PROGRAM_FAIL;
                         PrgOption.ResultErrorAddress = currentAddress;
@@ -91,7 +91,7 @@ namespace JTAGICEmkII.HostService
                 while (currentAddress < PrgOption.Address + PrgOption.ByteCount)
                 {
                     var srcBuffer = PrgOption.Data.Skip((int)(currentAddress - PrgOption.Address)).Take((int)PrgOption.PageSize).ToArray();
-                    if (!this.ActivityStructure.HostService.ReadMemory((byte)PrgOption.MemoryType, currentAddress, PrgOption.PageSize, out var readBuffer))
+                    if (!this.ActivityStructure.HostService.ReadMemory((byte)PrgOption.MemoryType, currentAddress, PrgOption.PageSize, out var readBuffer).IsSuccess)
                     {
                         PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_VERIFY_FAIL;
                         PrgOption.ResultErrorAddress = currentAddress;

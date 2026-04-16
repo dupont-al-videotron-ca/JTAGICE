@@ -64,6 +64,12 @@ namespace JTAGICEmkII.HostService
             return element.OnReceivedResponse(this.Response);
         }
 
+        public override bool Visit(ActivityWriteMemory element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+
+
         #endregion
 
 

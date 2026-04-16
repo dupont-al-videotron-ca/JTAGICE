@@ -27,7 +27,7 @@ namespace JTAGICEmkII.HostService
         public override bool ActivityAction()
         {
             this.ActivityStructure.TargetMcuState.ResetState();
-            if (!this.ActivityStructure.HostService.SignOff())
+            if (!this.ActivityStructure.HostService.SignOff().IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to sign off from the target device.");
             }

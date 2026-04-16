@@ -35,31 +35,31 @@ namespace JTAGICEmkIITest.Moq
 
         public bool ForceSuccess { get; set; } = true;
 
-        public bool ClearBreakpoint(int Index, ulong Breakpoint) => throw new NotImplementedException();
-        public bool ClearEvents() => ForceSuccess;
-        public bool EnterPrograming() => throw new NotImplementedException();
-        public bool EraseDevice() => throw new NotImplementedException();
-        public bool EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
-        public bool GetAllParameter() => ForceSuccess;
-        public bool GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
-        public bool GetParameter(int paramId, out uint value)
+        public ICommandResult ClearBreakpoint(int Index, ulong Breakpoint) => throw new NotImplementedException();
+        public ICommandResult ClearEvents() => (CommandResult)ForceSuccess;
+        public ICommandResult EnterPrograming() => throw new NotImplementedException();
+        public ICommandResult EraseDevice() => throw new NotImplementedException();
+        public ICommandResult EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
+        public ICommandResult GetAllParameter() => (CommandResult)ForceSuccess;
+        public ICommandResult GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+        public ICommandResult GetParameter(int paramId, out uint value)
         {
             value = 0;
-            return ForceSuccess;
+            return (CommandResult)ForceSuccess;
         }
          
-        public bool LeavePrograming() => throw new NotImplementedException();
+        public ICommandResult LeavePrograming() => throw new NotImplementedException();
         public bool ModifyAllParameter() => ForceSuccess;
-        public bool ReadMemory(int memType, ulong Address, ulong Length, out byte Values) => throw new NotImplementedException();
-        public bool ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
-        public bool Reconnect() => throw new NotImplementedException();
-        public bool Reset() => ForceSuccess;
-        public bool SetAllParameter() => ForceSuccess;
-        public bool SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
-        public bool SetDeviceDescriptor() => ForceSuccess;
-        public bool SetParameter(int paramId, uint value) => ForceSuccess;
-        public bool SignOff() => throw new NotImplementedException();
-        public bool SignOn(out ResponseSignOn? response)
+        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte Values) => throw new NotImplementedException();
+        public ICommandResult ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult Reconnect() => throw new NotImplementedException();
+        public ICommandResult Reset() => (CommandResult)ForceSuccess;
+        public ICommandResult SetAllParameter() => (CommandResult)ForceSuccess;
+        public ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+        public ICommandResult SetDeviceDescriptor() => (CommandResult)ForceSuccess;
+        public ICommandResult SetParameter(int paramId, uint value) => (CommandResult)ForceSuccess;
+        public ICommandResult SignOff() => throw new NotImplementedException();
+        public ICommandResult SignOn(out ResponseSignOn? response)
         {
             response = new ResponseSignOn(SlaveResponseEnum.RSP_SIGN_ON)
             {
@@ -75,18 +75,18 @@ namespace JTAGICEmkIITest.Moq
                 SerialNumber = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 },
                 DeviceId = new byte[] { 0x10, 0x20, 0x30, 0x40 }
             };
-            return ForceSuccess;
+            return (CommandResult)ForceSuccess;
         }
-        public bool StartRunning() => throw new NotImplementedException();
-        public bool StartRunningUntil(ulong Breakpoint) => throw new NotImplementedException();
-        public bool StepIn(ulong ProgramCounter) => throw new NotImplementedException();
-        public bool StopRunning() => throw new NotImplementedException();
-        public bool VerifiyPrograming() => throw new NotImplementedException();
-        public bool WriteMemory(int MemType, ulong Address, byte Values) => throw new NotImplementedException();
-        public bool WriteProgramCount(ulong ProgramCounter) => throw new NotImplementedException();
-        public bool WritePrograming(ulong Address, byte Values) => throw new NotImplementedException();
-        public bool GetSync() => throw new NotImplementedException();
-        public bool WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
-        public bool ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
+        public ICommandResult StartRunning() => throw new NotImplementedException();
+        public ICommandResult StartRunningUntil(ulong Breakpoint) => throw new NotImplementedException();
+        public ICommandResult StepIn(ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult StopRunning() => throw new NotImplementedException();
+        public ICommandResult VerifiyPrograming() => throw new NotImplementedException();
+        public ICommandResult WriteMemory(int MemType, ulong Address, byte Values) => throw new NotImplementedException();
+        public ICommandResult WriteProgramCount(ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult WritePrograming(ulong Address, byte Values) => throw new NotImplementedException();
+        public ICommandResult GetSync() => throw new NotImplementedException();
+        public ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
+        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
     }
 }

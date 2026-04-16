@@ -37,7 +37,8 @@ namespace JTAGICEmkII.HostService
 
         public abstract bool Visit(ActivityGetParameter element);
         public abstract bool Visit(ActivitySetParameter element);
-        
+        public abstract bool Visit(ActivityWriteMemory element);
+
         #endregion
 
 

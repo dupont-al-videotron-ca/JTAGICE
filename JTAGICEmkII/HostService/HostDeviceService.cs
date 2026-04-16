@@ -43,10 +43,10 @@ namespace JTAGICEmkII.HostService
 
         #region Fields 
 
-        private CancellationTokenSource _cancellationSource;
+        private readonly CancellationTokenSource _cancellationSource;
         private readonly RxFrame _rxFrame;
         private readonly TxFrame _txFrame;
-        private StructureActivity _activityStructure;
+        private readonly StructureActivity _activityStructure;
 
         public ILog Logger { get; private set; }
         public ResponseSignOn? SignOnResponse { get; set; }
@@ -54,9 +54,9 @@ namespace JTAGICEmkII.HostService
         private bool _disposedValue;
         private CommandRequestBase<IMasterCommand, ISlaveResponse>? _request;
 
-        private Parameters _parameters;
-        private HostSession _hostSession;
-        private MyBackgroundService<IActivityElement, bool> _backgroundService;
+        private readonly Parameters _parameters;
+        private readonly HostSession _hostSession;
+        private readonly MyBackgroundService<IActivityElement, bool> _backgroundService;
 
         #endregion
 
@@ -100,7 +100,7 @@ namespace JTAGICEmkII.HostService
 
         public ICommandResult RestoreTarget()
         {
-            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_RESTORE_TARGET))
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_RESTORE_TARGET))
             {
                 return ProcessCommand(request, out ISlaveResponse? rxResponse);
             }

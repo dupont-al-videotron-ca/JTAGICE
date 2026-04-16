@@ -43,17 +43,6 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public override bool ActivityEntry()
-        {
-            if(!this.ActivityStructure.HostService.SignOn(out ResponseSignOn? response))
-                return false;
-            if (response is null)
-                return false;
-
-            this.ActivityStructure.HostService.SignOnResponse = response;
-            return base.ActivityEntry();
-        }
-
         #endregion
     }
 }
