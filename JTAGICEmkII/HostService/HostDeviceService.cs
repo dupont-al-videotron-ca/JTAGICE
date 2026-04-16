@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
+using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using log4net;
 using log4net.Repository.Hierarchy;
@@ -19,7 +20,6 @@ namespace JTAGICEmkII.HostService
 
 
         #region Constructors 
-
 
         internal HostDeviceService(RxFrame rxFrame, TxFrame txFrame)
         {
@@ -32,7 +32,9 @@ namespace JTAGICEmkII.HostService
             _parameters = new Parameters();
             Logger = LogManager.GetLogger(this.GetType());
             SignOnResponse = null;
+            _cancellationSource = new CancellationTokenSource();
 
+            _hostSession = new HostSession(this._activityStructure);
         }
 
         #endregion
@@ -40,6 +42,7 @@ namespace JTAGICEmkII.HostService
 
         #region Fields 
 
+        private CancellationTokenSource _cancellationSource;
         private readonly RxFrame _rxFrame;
         private readonly TxFrame _txFrame;
         private StructureActivity _activityStructure;
@@ -48,9 +51,10 @@ namespace JTAGICEmkII.HostService
         public ResponseSignOn? SignOnResponse { get; set; }
 
         private bool _disposedValue;
-        private CommandRequest<Master.Command, ISlaveResponse>? _request;
+        private CommandRequest<IMasterCommand, ISlaveResponse>? _request;
 
         private Parameters _parameters;
+        private HostSession _hostSession;
 
         #endregion
 
@@ -64,6 +68,13 @@ namespace JTAGICEmkII.HostService
 
         #region Delegates / Events 
 
+        public event EventHandler<RequestEventArgs>? RequestCompleted;
+        public event EventHandler<RequestEventArgs>? RequestTimeout;
+
+        public event EventHandler<ResponseReceivedEventArgs>? ResponseReceived;
+        public event EventHandler<EventReceivedEventArgs>? EventReceived;
+        public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
+
         #endregion
 
 
@@ -73,12 +84,12 @@ namespace JTAGICEmkII.HostService
         public bool Initialise()
         {
             // Build activity diagram
-            StructureActivityBuilder.Build(this._activityStructure);
 
             _rxFrame.Timeout = 1000;
             _rxFrame.RxTimerExpired += this._rxFrame_RxTimerExpired;
-            _rxFrame!.ResponceReceived += RxFrame_Received;
+            _rxFrame!.ResponseReceived += RxFrame_Received;
             _rxFrame.StartReceiving();
+            this.EventReceived += HostService_EventReceived;
 
             if (this._activityStructure.CurrentActivity == null)
                 throw new InvalidOperationException("Activity structure is not properly initialized. No current activity.");
@@ -86,17 +97,39 @@ namespace JTAGICEmkII.HostService
             return _rxFrame.IsReceiving;
         }
 
-
-        public bool ConnectToTarget()
+        public bool RestoreTarget()
         {
-            if (this._activityStructure.CurrentActivity != null
-                && this._activityStructure.CurrentActivity is TargetConnecting)
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_RESTORE_TARGET))
             {
-                var activity = this._activityStructure.CurrentActivity;
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public bool CloseDebugSession()
+        {
+            Logger.Debug($"Closing session by user.");
+
+            if(this.RestoreTarget())
+                this._hostSession.WaitEndSession();
+
+            if (!this._cancellationSource.IsCancellationRequested)
+            {
+                this._cancellationSource.Cancel();
+                this._cancellationSource.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(60));
+            }
+
+            Logger.Debug($"Session is closed.");
+            return true;
+        }
+        public bool OpenDebugSession()
+        {
+            Logger.Debug($"Opening session by user.");
+
+            if (this._activityStructure.CurrentActivity != null)
+            {
                 try
-                {
-                    RunActivityDiagram(activity);
-                    return true;
+                {                    
+                    return RunActivityDiagram(this._hostSession!); ;
                 }
                 catch (Exception ex)
                 {
@@ -110,36 +143,31 @@ namespace JTAGICEmkII.HostService
                 throw new InvalidOperationException("Activity structure is not properly initialized. No current activity.");
             }
         }
+
         public bool ClearEvents()
         {
-            Master.Command command = (Master.CommandFactory.CreateCommand(Master.MasterCommandEnum.CMND_CLEAR_EVENTS) as Master.Command)!;
-            return ProcessCommand(command, out ISlaveResponse? rxResponse);
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_CLEAR_EVENTS))
+            {
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
         }
-
-
 
         public bool SetDeviceDescriptor()
         {
-            Master.CommandMultipleByte command = (Master.CommandFactory.CreateCommand(Master.MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR) as Master.CommandMultipleByte)!;
-
-            // TODO: fill structure with real data
-            DeviceDescriptorFields deviceDescriptorFields = new DeviceDescriptorFields();
-
-            byte[] deviceDescriptorBytes = new byte[Marshal.SizeOf<DeviceDescriptorFields>()];
-            Span<byte> deviceDescriptorSpan = new Span<byte>(deviceDescriptorBytes);
-
-            MemoryMarshal.Write(deviceDescriptorSpan, deviceDescriptorFields);
-            command.Data.AddRange(deviceDescriptorBytes);
-
-            if (ProcessCommand(command, out ISlaveResponse? rxResponse))
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR))
             {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
 
+                // TODO: fill structure with real data
+                DeviceDescriptorFields deviceDescriptorFields = new DeviceDescriptorFields();
+
+                byte[] deviceDescriptorBytes = new byte[Marshal.SizeOf<DeviceDescriptorFields>()];
+                Span<byte> deviceDescriptorSpan = new Span<byte>(deviceDescriptorBytes);
+
+                MemoryMarshal.Write(deviceDescriptorSpan, deviceDescriptorFields);
+                ((Master.CommandMultipleByte)request.Command).Data.AddRange(deviceDescriptorBytes);
+
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
         }
 
 
@@ -148,6 +176,10 @@ namespace JTAGICEmkII.HostService
         public bool EraseDevice() => throw new NotImplementedException();
         public bool EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
         public bool GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+
+        public bool GetSync() => throw new NotImplementedException();
+        public bool WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
+        public bool ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
 
         public bool GetParameter(int paramId, out uint value)
         {
@@ -222,9 +254,11 @@ namespace JTAGICEmkII.HostService
         public bool ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
         public bool Reconnect() => throw new NotImplementedException();
         public bool Reset()
-        {
-            Master.Command command = (Master.CommandFactory.CreateCommand(Master.MasterCommandEnum.CMND_RESET) as Master.Command)!;
-            return ProcessCommand(command, out ISlaveResponse? rxResponse);
+        {                                                                                                                            
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_RESET))
+            {
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
         }
 
         public bool SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
@@ -250,18 +284,22 @@ namespace JTAGICEmkII.HostService
 
         public bool SignOn(out ResponseSignOn? response)
         {
-            Master.Command command = (Master.CommandFactory.CreateCommand(Master.MasterCommandEnum.CMND_GET_SIGN_ON) as Master.Command)!;
-            if (ProcessCommand(command, out ISlaveResponse? response1))
-            {
-                response = response1 as ResponseSignOn;
-                return true;
-            }
-            else
-            {
-                response = null;
-                return false;
-            }
+            bool retval = false;
 
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GET_SIGN_ON))
+            {
+                if (ProcessCommand(request, out ISlaveResponse? response1))
+                {
+                    response = response1 as ResponseSignOn;
+                    retval = true;
+                }
+                else
+                {
+                    response = null;
+                    retval = false;
+                }
+            }
+            return retval;
         }
 
 
@@ -280,7 +318,8 @@ namespace JTAGICEmkII.HostService
             {
                 if (disposing)
                 {
-                    _rxFrame.ResponceReceived -= RxFrame_Received;
+                    this.EventReceived -= HostService_EventReceived;
+                    _rxFrame.ResponseReceived -= RxFrame_Received;
                     _rxFrame.Dispose();
                     _txFrame.Dispose();
                     // TODO: dispose managed state (managed objects)
@@ -323,135 +362,169 @@ namespace JTAGICEmkII.HostService
 
         public bool SetParameterLocal(Parameter parameter, bool lastRequest)
         {
-            Master.CommandParameter command = (Master.CommandFactory.CreateCommand(Master.MasterCommandEnum.CMND_SET_PARAMETER) as Master.CommandParameter)!;
-            command.ParameterId = parameter.ParameterId;
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_SET_PARAMETER))
+            {
+                ((Master.CommandParameter)request.Command).ParameterId = parameter.ParameterId;
+                if (parameter.Size == 1)
+                {
+                    ((Master.CommandParameter)request.Command).Data.Add((byte)parameter.Value);
+                }
+                else if (parameter.Size == 2)
+                {
+                    ((Master.CommandParameter)request.Command).Data.Add((byte)(parameter.Value & 0xff));
+                    ((Master.CommandParameter)request.Command).Data.Add((byte)((parameter.Value >> 8) & 0xff));
+                }
+                else if (parameter.Size == 4)
+                {
+                    ((Master.CommandParameter)request.Command).Data.Add((byte)(parameter.Value & 0xff));
+                    ((Master.CommandParameter)request.Command).Data.Add((byte)((parameter.Value >> 8) & 0xff));
+                    ((Master.CommandParameter)request.Command).Data.Add((byte)((parameter.Value >> 16) & 0xff));
+                    ((Master.CommandParameter)request.Command).Data.Add((byte)((parameter.Value >> 24) & 0xff));
+                }
+                else
+                {
+                    Logger.Warn($"Unsupported parameter size {parameter.Size} for parameter {parameter.ParameterId}.");
+                    throw new InvalidOperationException($"Unsupported parameter size {parameter.Size}.");
+                }
 
-            if (parameter.Size == 1)
-            {
-                command.Data.Add((byte)parameter.Value);
+                return ProcessCommand(request, out ISlaveResponse? response, lastRequest);
             }
-            else if (parameter.Size == 2)
-            {
-                command.Data.Add((byte)(parameter.Value & 0xff));
-                command.Data.Add((byte)((parameter.Value >> 8) & 0xff));
-            }
-            else if (parameter.Size == 4)
-            {
-                command.Data.Add((byte)(parameter.Value & 0xff));
-                command.Data.Add((byte)((parameter.Value >> 8) & 0xff));
-                command.Data.Add((byte)((parameter.Value >> 16) & 0xff));
-                command.Data.Add((byte)((parameter.Value >> 24) & 0xff));
-            }
-            else
-            {
-                Logger.Warn($"Unsupported parameter size {parameter.Size} for parameter {parameter.ParameterId}.");
-                throw new InvalidOperationException($"Unsupported parameter size {parameter.Size}.");
-            }
-
-            return ProcessCommand(command, out ISlaveResponse? response, lastRequest);
         }
 
         private bool GetParameterLocal(Parameter parameter, bool lastRequest)
         {
-            Master.CommandParameter command = (Master.CommandFactory.CreateCommand(Master.MasterCommandEnum.CMND_GET_PARAMETER) as Master.CommandParameter)!;
-            command.ParameterId = parameter.ParameterId;
-
-            if (ProcessCommand(command, out ISlaveResponse? response1, lastRequest))
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_GET_PARAMETER))
             {
-                var response = response1 as ResponseMultipleByte;
-                if (response != null)
+                ((Master.CommandParameter)request.Command).ParameterId = parameter.ParameterId;
+                if (ProcessCommand(request, out ISlaveResponse? response1, lastRequest))
                 {
-                    if (parameter.Size == 1)
+                    var response = response1 as ResponseMultipleByte;
+
+                    if (response != null)
                     {
-                        parameter.Value = response.GetDataBytes()[0];
-                    }
-                    else if (parameter.Size == 2)
-                    {
-                        parameter.Value = BitConverter.ToUInt16(response.GetDataBytes(), 0); ;
-                    }
-                    else if (parameter.Size == 4)
-                    {
-                        parameter.Value = BitConverter.ToUInt32(response.GetDataBytes(), 0); ;
+                        if (parameter.Size == 1)
+                        {
+                            parameter.Value = response.GetDataBytes()[0];
+                        }
+                        else if (parameter.Size == 2)
+                        {
+                            parameter.Value = BitConverter.ToUInt16(response.GetDataBytes(), 0); ;
+                        }
+                        else if (parameter.Size == 4)
+                        {
+                            parameter.Value = BitConverter.ToUInt32(response.GetDataBytes(), 0); ;
+                        }
+                        else
+                        {
+                            Logger.Warn($"Unsupported parameter size {parameter.Size} for parameter {parameter.ParameterId}.");
+                            throw new InvalidOperationException($"Unsupported parameter size {parameter.Size}.");
+                        }
+
+                        return true;
                     }
                     else
                     {
-                        Logger.Warn($"Unsupported parameter size {parameter.Size} for parameter {parameter.ParameterId}.");
-                        throw new InvalidOperationException($"Unsupported parameter size {parameter.Size}.");
+                        Logger.Warn($"Unexpected response type received for parameter {parameter.ParameterId}.");
+                        throw new InvalidOperationException($"Unexpected response type.");
                     }
-
-                    return true;
                 }
                 else
                 {
-                    Logger.Warn($"Unexpected response type received for parameter {parameter.ParameterId}.");
-                    throw new InvalidOperationException($"Unexpected response type.");
+                    return false;
                 }
-            }
-            else
-            {
-                return false;
             }
         }
 
 
-        private bool ProcessCommand(Master.Command command, out ISlaveResponse? response, bool lastRequest = true)
+        private bool ProcessCommand(CommandRequest<IMasterCommand, ISlaveResponse> commandRequest, out ISlaveResponse? response, bool lastRequest = true)
         {
             response = null;
             bool retval = false;
-            using (_request = new CommandRequest<Master.Command, ISlaveResponse>(command))
+            _request = commandRequest;
+            Command command = (Command)_request.Command;
+            Logger.Debug($"Processing command: {command.MessageId}");
+            while (_request.RetryCount-- > 0 && !retval)
             {
-                Logger.Debug($"Processing command: {command.MessageId}");
-                while (_request.RetryCount-- > 0 && !retval)
+                Logger.Debug($"Retry count: {_request.RetryCount}");
+                if (_activityStructure.CanSendCommand(command))
                 {
-                    Logger.Debug($"Retry count: {_request.RetryCount}");
-                    if (_activityStructure.CanSendCommand(command))
+                    Logger.Debug($"Building and Sending command: {command.MessageId}");
+                    if (_txFrame.BuildAndSendFrameCommand(command) != 0)
                     {
-                        Logger.Debug($"Building and Sending command: {command.MessageId}");
-                        if (_txFrame.BuildAndSendFrameCommand(command) != 0)
-                        {
-                            _activityStructure.CommandSent(command);
-                            Logger.Debug($"Command sent waiting for response.");
+                        _activityStructure.CommandSent(command);
+                        Logger.Debug($"Command sent waiting for response.");
 
-                            if (_request.WaitForResponse() && _request.Response != null)
+                        if (_request.WaitForResponse() && _request.Response != null)
+                        {
+                            Logger.Debug($"Response received for command: {_request.Response.ResponseId}");
+                            if (_activityStructure.OnReceivedResponse(_request.Response))
                             {
-                                Logger.Debug($"Response received for command: {_request.Response.ResponseId}");
-                                if (_activityStructure.OnReceivedResponse(_request.Response))
-                                {
-                                    response = _request.Response;
-                                    retval = _activityStructure.ExitActivity(lastRequest);
-                                }
-                            }
-                            else
-                            {
-                                Logger.Debug($"Command {command.MessageId} timeout , {_request.RetryCount} retries left.");
+                                response = _request.Response;
+                                OnRequestCompleted(this, new RequestEventArgs(_request));
+
+                                retval = _activityStructure.ExitActivity(lastRequest);
                             }
                         }
                         else
                         {
-                            Logger.Debug($"Command {command.MessageId} failed to send, {_request.RetryCount} retries left.");
+                            Logger.Debug($"Command {_request.Command.MessageId} timeout , {_request.RetryCount} retries left.");
                         }
                     }
                     else
                     {
-                        Logger.Debug($"Command {command.MessageId} cannot be sent in current activity state.");
-                        break;
+                        Logger.Debug($"Command {command.MessageId} failed to send, {_request.RetryCount} retries left.");
                     }
                 }
+                else
+                {
+                    Logger.Debug($"Command {command.MessageId} cannot be sent in current activity state.");
+                    break;
+                }
             }
+
+            if ( _request.IsRequestTimeout)
+            {
+                this.OnRequestTimeout(this, new RequestEventArgs(_request));
+            }
+
             _request = null;
             return retval;
+        }
+
+        private void OnRequestCompleted(object? sender, RequestEventArgs e)
+        {
+            this.RequestCompleted?.Invoke(this, e);
+            this._activityStructure.OnRequestCompleted(e.Request);
         }
 
         private void RxFrame_Received(object? sender, ResponseReceivedEventArgs e)
         {
             if (e.Response.IsEvent)
             {
+                OnReceivedEvent(this, new EventReceivedEventArgs(e.Response));
                 _activityStructure.OnReceivedEvent(e.Response);
             }
             else if (_request != null)
             {
+                OnReceivedResponse(sender, e);
                 _request.ReceivedResponse(e.Response);
             }
+
+        }
+
+        private void OnReceivedEvent(object ? sender, EventReceivedEventArgs e)
+        {
+            EventReceived?.Invoke(sender, e);
+        }
+
+        private void OnReceivedResponse(object? sender, ResponseReceivedEventArgs e)
+        {
+            this.ResponseReceived?.Invoke(this, e);
+        }
+
+        private void OnReceivedCommand(object? sender, CommandReceivedEventArgs e)
+        {
+            this.CommandReceived?.Invoke(this, e);
         }
 
         private void _rxFrame_RxTimerExpired(object? sender, EventArgs e)
@@ -459,29 +532,102 @@ namespace JTAGICEmkII.HostService
             Logger.Warn("Rx timer expired.");
         }
 
-        private void RunActivityDiagram(IActivityElement flowElement)
+        private void OnRequestTimeout(object? sender, RequestEventArgs e)
         {
-            Task t = Task.Run(() =>
-            {
-                if (flowElement != null)
-                {
-                    if (!flowElement.Accept(new VisitorActivityEntry()))
-                        throw new InvalidOperationException($"Failed to execute activity entry for activity {flowElement.GetType()}.");
-                    if (!flowElement.Accept(new VisitorActivityAction()))
-                        throw new InvalidOperationException($"Failed to execute activity action for activity {flowElement.GetType()}.");
-                    if (!flowElement.Accept(new VisitorActivityExit(true)))
-                        throw new InvalidOperationException($"Failed to execute activity exit for activity {flowElement.GetType()}.");
+            _activityStructure.OnRequestTimeout(e.Request);
+            this.RequestTimeout?.Invoke(this, e);
+        }
 
+        private bool RunActivityDiagram(IActivityElement flowElement)
+        {
+            ArgumentNullException.ThrowIfNull(flowElement);
+            if (_cancellationSource.IsCancellationRequested)
+            {
+                _cancellationSource = new CancellationTokenSource();
+            }
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    if (!this._activityStructure.RunActivity(flowElement))
+                        return;
+                }
+                catch (OperationCanceledException ex)
+                {
+                    // Handle cancellation if necessary
+                    Logger.Debug("RunActivityDiagram task OperationCanceledException.", ex);
                     return;
                 }
-                else
+                catch (Exception ex)
                 {
-                    throw new InvalidOperationException("Activity structure is not properly initialized. No current activity or current activity is not TargetConnecting.");
+                    Logger.Fatal("RunActivityDiagram Exception:", ex);
+                    return;
                 }
-            });
 
-            t.Wait();
-            return;
+            }, this._cancellationSource.Token);
+
+            return true;
+        }
+
+        private void HostService_EventReceived(object? sender, EventReceivedEventArgs e)
+        {
+            var response = e.Event;
+            switch (response?.ResponseId)
+            {
+                case SlaveResponseEnum.EVT_PROGRAM_BREAK:
+                case SlaveResponseEnum.EVT_BREAK:
+                case SlaveResponseEnum.EVT_PDSB_BREAK:
+                case SlaveResponseEnum.EVT_PDSMB_BREAK:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetStopped);
+                    break;
+                case SlaveResponseEnum.EVT_RUN:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_TARGET_POWER_ON:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is );
+                    break;
+
+                case SlaveResponseEnum.EVT_DEBUG:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_EXTERNAL_RESET:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_TARGET_SLEEP:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_TARGET_WAKEUP:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_ICE_POWER_ERROR_STATE:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_ICE_POWER_OK:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_IDR_DIRTY:
+                    //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
+                    break;
+                case SlaveResponseEnum.EVT_NONE:
+                case SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_RELEASE_BREAK_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_MAX_BIT_LENGHT_DIFF:
+                case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT_BAUD:
+                case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_OUT_OF_RANGE:
+                case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_WAIT_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_RECEIVE_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_RECEIVE_BREAK:
+                case SlaveResponseEnum.EVT_ERROR_PHY_OPT_RECEIVE_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_OPT_RECEIVED_BREAK:
+                case SlaveResponseEnum.EVT_ERROR_PHY_NO_ACTIVITY:
+
+                    break;
+                default:
+                    this.Logger.Debug($"Event handling not implemented for event: {response?.ResponseId}.");
+                    throw new NotImplementedException($"Event handling not implemented for event: {response?.ResponseId}.");
+            }
         }
 
         #endregion

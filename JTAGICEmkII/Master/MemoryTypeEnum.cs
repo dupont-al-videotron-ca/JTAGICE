@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Master
 {
-    internal enum MemoryTypeEnum : byte
+    public enum MemoryTypeEnum : byte
     {
         MT_IO_SHADOW = 0x30,
         MT_SRAM = 0x20,

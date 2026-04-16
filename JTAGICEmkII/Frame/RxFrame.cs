@@ -79,7 +79,7 @@ namespace JTAGICEmkII
 
         #region Delegates / Events 
 
-        public event EventHandler<ResponseReceivedEventArgs>? ResponceReceived;
+        public event EventHandler<ResponseReceivedEventArgs>? ResponseReceived;
         public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
         public event EventHandler? RxTimerExpired;
 
@@ -175,7 +175,7 @@ namespace JTAGICEmkII
 
         internal void OnReponseReceived(ISlaveResponse response)
         {
-            ResponceReceived?.Invoke(this, new ResponseReceivedEventArgs(response));
+            ResponseReceived?.Invoke(this, new ResponseReceivedEventArgs(response));
         }
 
         internal void OnCommandReceived(Master.IMasterCommand command)
@@ -191,13 +191,20 @@ namespace JTAGICEmkII
                 {
                     source.Cancel();
                     source.Dispose();
-                    receiveTask?.Wait();
-                    receiveTask?.Dispose();
-                }
+                    try
+                    {
+                        receiveTask?.Wait();
+                        receiveTask?.Dispose();
+                    }
+                    catch (AggregateException ex)
+                    {
+                        Logger.Debug($"Dispose AggregateException: {ex.Message}");
+                    }
 
-                // free unmanaged resources (unmanaged objects) and override finalizer
-                // set large fields to null
-                disposedValue = true;
+                    // free unmanaged resources (unmanaged objects) and override finalizer
+                    // set large fields to null
+                    disposedValue = true;
+                }
             }
         }
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Master
 {
-    public enum MasterCommandEnum :byte
+    public enum MasterCommandEnum
     {
         CMND_SIGN_OFF = 0x00,
         CMND_GET_SIGN_ON = 0x01,

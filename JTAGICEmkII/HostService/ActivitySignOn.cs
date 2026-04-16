@@ -8,58 +8,36 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    internal sealed class ActivitySignOn : ActivityProcessCommand
+    public sealed class ActivitySignOn : ActivityProcessCommand
     {
 
 
         #region Constructors 
-        public ActivitySignOn(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent!)
+
+        public ActivitySignOn(StructureActivity activityStructure) : 
+            base(activityStructure, 
+                MasterCommandEnum.CMND_GET_SIGN_ON, 
+                SlaveResponseEnum.RSP_SIGN_ON)
         {
         }
-        #endregion
-
-
-        #region Fields 
-
-        #endregion
-
-
-        #region Properties 
-
-        #endregion
-
-
-        #region Delegates / Events 
 
         #endregion
 
 
         #region Public Methods 
+
         public override bool Accept(IVisitorCommand visitor)
         {
             ArgumentNullException.ThrowIfNull(visitor);
             return visitor.Visit(this);
         }
 
-        public override bool CanSendCommand(IMasterCommand command)
-        {
-            switch(command.MessageId)
-            {
-                case MasterCommandEnum.CMND_GET_SIGN_ON:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         public override bool OnReceivedResponse(ISlaveResponse response)
         {
-            _nextIndex = -1;
             switch (response.ResponseId)
             {
                 case SlaveResponseEnum.RSP_SIGN_ON:
-                    _nextIndex = 0;
-                    return true;
+                        return true;
                 default:
                     return base.OnReceivedResponse(response);
             }
@@ -67,28 +45,14 @@ namespace JTAGICEmkII.HostService
 
         public override bool ActivityEntry()
         {
-            Logger.Debug($"{this.GetType()} Executing activity entry called.");
             if(!this.ActivityStructure.HostService.SignOn(out ResponseSignOn? response))
                 return false;
             if (response is null)
                 return false;
 
             this.ActivityStructure.HostService.SignOnResponse = response;
-            return true;
+            return base.ActivityAction();
         }
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
 
         #endregion
     }

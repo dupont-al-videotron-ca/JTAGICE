@@ -57,11 +57,25 @@ namespace JTAGICEmkII.HostService
                 }
             }
         }
+
+        public IActivityElement? Child
+        {
+            get
+            {
+                if (_nexts.Count > 0)
+                {
+                    return _nexts[0];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
         public bool HasParent => Parent is not null;
 
         public bool HasChild => _nexts.Count != 0;
-
-        protected internal int _nextIndex = -1;
 
 
         #endregion
@@ -69,39 +83,59 @@ namespace JTAGICEmkII.HostService
 
         #region Properties 
 
-        public IReadOnlyList<IActivityElement> Nexts => _nexts;
+        protected List<IActivityElement> Nexts => _nexts;
 
-        public IReadOnlyList<IActivityElement> Parents => _parents;
+        protected List<IActivityElement> Parents => _parents;
 
+        public IActivityElement? NextActivity { get; set; }
         #endregion
-
 
         #region Public Methods 
 
+        protected IActivityElement? Find<T>() where T : IActivityElement
+        {
+            if (this.GetType() is T)
+                return this;
+
+            var nextIndex = this.Nexts.FindIndex(n => n.GetType() is T);
+            if (nextIndex == -1)
+            {
+                IActivityElement? found = this.ActivityStructure.Find<T>();
+                return found;
+            }
+            else
+            {
+                return _nexts[nextIndex];
+            }
+        }
+
+        public override bool ActivityEntry()
+        {
+            Logger.Debug($"{this.GetType()} has {this._nexts.Count} next activities.");
+            Logger.Debug($"{this.GetType()} has {this._parents.Count} parent activities.");
+            return base.ActivityEntry();
+        }
 
         public override bool ActivityExit(bool lastRequest)
         {
-            Logger.Debug($"{this.GetType()} Executing activity exit called with lastRequest: {lastRequest}.");
             if (lastRequest)
             {
-                if (this.HasChild && _nextIndex != -1 && this.Nexts.Count > _nextIndex)
+                if (NextActivity == null)
                 {
-                    this.ActivityStructure.CurrentActivity = this.Nexts[_nextIndex];
-                    _nextIndex = -1;
-                    var result = this.ActivityStructure.CurrentActivity.ActivityEntry();
-                    return result;
+                    Logger.Error($"{this.GetType()} ActivityExit called with lastRequest true but no next activity to transition to.");
+                    return false;
                 }
                 else
                 {
-                    Logger.Error($"{this.GetType()} ActivityExit called with lastRequest true but no next activity to transition to.");
-                    _nextIndex = -1;
-                    return false;
+                    this.ActivityStructure.CurrentActivity = this.NextActivity;
+                    return true;
                 }
             }
             else
             {
                 // keep _nextIndex until last request is done.;
-                return false;
+                Logger.Debug($"{this.GetType()} ActivityExit called with lastRequest false.");
+                return true;
             }
         }
 

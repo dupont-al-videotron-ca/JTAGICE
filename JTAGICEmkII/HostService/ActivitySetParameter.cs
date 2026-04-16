@@ -8,17 +8,16 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class ActivityClearEvents : ActivityProcessCommand
+    public sealed class ActivitySetParameter : ActivityProcessCommand
     {
 
 
         #region Constructors 
-        public ActivityClearEvents(StructureActivity activityStructure) : 
-            base(activityStructure, MasterCommandEnum.CMND_CLEAR_EVENTS, SlaveResponseEnum.RSP_OK)
+        public ActivitySetParameter(StructureActivity activityStructure) : 
+            base(activityStructure, MasterCommandEnum.CMND_SET_PARAMETER, SlaveResponseEnum.RSP_OK)
         {
         }
         #endregion
-
 
         #region Public Methods 
         public override bool Accept(IVisitorCommand visitor)
@@ -31,14 +30,13 @@ namespace JTAGICEmkII.HostService
         {
             switch(command.MessageId)
             {
-                case MasterCommandEnum.CMND_CLEAR_EVENTS:
-                    return this.ActivityStructure.TargetMcuState.IsStopped;
+                case MasterCommandEnum.CMND_GET_PARAMETER:
+                    return this.ActivityStructure.TargetMcuState.IsStopped; 
                 default:
                     return false;
             }
         }
 
         #endregion
-
     }
 }

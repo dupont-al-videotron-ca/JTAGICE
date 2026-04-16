@@ -18,6 +18,8 @@ namespace JTAGICEmkIITest
 
         protected HostDeviceMoq _hostService;
         protected Mock<IVisitorActivity> _visitorActivityMoq;
+        protected Mock<IVisitorCommand> _visitorCommandMoq;
+        protected StructureActivity _activityStructure;
 
         #endregion
 
@@ -28,6 +30,8 @@ namespace JTAGICEmkIITest
             _hostService = new HostDeviceMoq();
 
             _visitorActivityMoq = this.MockRepository.Create<IVisitorActivity>();
+            _visitorCommandMoq = this.MockRepository.Create<IVisitorCommand>();
+            _activityStructure = new StructureActivity(_hostService);   
 
         }
 

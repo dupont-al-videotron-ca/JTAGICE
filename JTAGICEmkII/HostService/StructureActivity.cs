@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
+using log4net;
 
 namespace JTAGICEmkII.HostService
 {
@@ -17,18 +18,18 @@ namespace JTAGICEmkII.HostService
         internal StructureActivity(IHostDeviceService hostService)
         {
             _activities = new List<IActivityElement>();
-            CurrentActivity = null;
             this._hostService = hostService ?? throw new ArgumentNullException(nameof(hostService));
-
+            Logger = LogManager.GetLogger(this.GetType());
         }
         #endregion
 
 
         #region Fields 
 
-        private IActivityElement? _currentActivity;
         private List<IActivityElement> _activities;
         private readonly IHostDeviceService _hostService;
+
+        public ILog Logger { get; }
 
         #endregion
 
@@ -43,7 +44,7 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public IActivityElement? CurrentActivity { get => this._currentActivity; set => this._currentActivity = value; }
+        public IActivityElement? CurrentActivity { get; set; }
 
         public IHostDeviceService HostService => this._hostService;
 
@@ -81,14 +82,18 @@ namespace JTAGICEmkII.HostService
             if (CurrentActivity is null)
                 throw new InvalidOperationException("No current activity to accept visitor.");
 
-            return CurrentActivity.Accept(visitor);
+            if (CurrentActivity is IActivityElement)
+            {
+                return ((IActivityElement)CurrentActivity).Accept(visitor);
+            }
+
+            return false;
         }
 
         internal bool CanSendCommand(Master.IMasterCommand command)
         {
             ArgumentNullException.ThrowIfNull(command);
             return AcceptVisitor(new VisitorCanSendCommand(command));
-
         }
 
         internal bool CommandSent(Master.IMasterCommand command)
@@ -102,7 +107,7 @@ namespace JTAGICEmkII.HostService
         {
             ArgumentNullException.ThrowIfNull(response);
             return AcceptVisitor(new VisitorOnReceivedResponse(response));
-            
+
         }
 
         internal bool OnReceivedEvent(Slave.ISlaveResponse response)
@@ -113,17 +118,18 @@ namespace JTAGICEmkII.HostService
                 if (activity.Accept(v))
                     return true;
             }
-            return false;   
+            return false;
         }
 
         internal bool ExitActivity(bool lastRequest)
         {
             if (CurrentActivity is null)
                 throw new InvalidOperationException("No current activity to exit.");
-            return CurrentActivity.Accept(new VisitorActivityExit(lastRequest));
+            var retval = CurrentActivity.Accept(new VisitorActivityExit(lastRequest));
+            return retval;
         }
 
-        internal bool EntryActivity(bool lastRequest)
+        internal bool EntryActivity()
         {
             if (CurrentActivity is null)
                 throw new InvalidOperationException("No current activity to enter.");
@@ -137,12 +143,96 @@ namespace JTAGICEmkII.HostService
             return CurrentActivity.Accept(new VisitorActivityAction());
         }
 
+        internal bool OnRequestCompleted(CommandRequest<Master.IMasterCommand, Slave.ISlaveResponse> request)
+        {
+            if (CurrentActivity is null)
+                throw new InvalidOperationException("No current activity to action.");
+
+            return CurrentActivity.Accept(new VisitorActivityRequestCompleted(request));
+        }
+
+
+        internal bool OnRequestTimeout(CommandRequest<Master.IMasterCommand, Slave.ISlaveResponse> request)
+        {
+            if (CurrentActivity is null)
+                throw new InvalidOperationException("No current activity to action.");
+
+            return CurrentActivity.Accept(new VisitorActivityRequestTimeout(request));
+        }
+
+        internal bool OnReceivedEvevnt(Slave.ISlaveResponse eventResponse)
+        {
+            if (CurrentActivity is null)
+                throw new InvalidOperationException("No current activity to action.");
+
+            return CurrentActivity.Accept(new VisitorActivityEventReceived(eventResponse));
+        }
+
         internal void AddActivity(ActivityBase activity)
         {
             ArgumentNullException.ThrowIfNull(activity);
             _activities.Add(activity);
         }
-        #endregion
 
+        internal bool RunActivity(IActivityElement? activity)
+        {
+            try
+            {
+                if (activity is null)
+                {
+                    // TODO: end off activity!
+                    return true;
+                }
+
+                if (!this.EntryActivity())
+                {
+                    throw new InvalidOperationException($"Activity {activity} entry failed.");
+                }
+                else if (!ReferenceEquals(activity, this.CurrentActivity))
+                {
+                    if(RunActivity(this.CurrentActivity))
+                        this.CurrentActivity = activity;
+                }
+
+                if (!this.ActionActivity())
+                {
+                    throw new InvalidOperationException($"Activity {activity} action failed.");
+                }
+                else if (!ReferenceEquals(activity, this.CurrentActivity))
+                {
+                    if (RunActivity(this.CurrentActivity))
+                        this.CurrentActivity = activity;
+                }
+
+                bool useless = true;
+                if (!this.ExitActivity(useless))
+                {
+                    throw new InvalidOperationException($"Activity {activity} exit failed.");
+                }
+                else if (!ReferenceEquals(activity, this.CurrentActivity))
+                {
+                    if (RunActivity(this.CurrentActivity))
+                        this.CurrentActivity = activity;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException == null)
+                {
+                    Logger.Error(ex.Message);
+                }
+
+                throw;
+            }
+
+            return true;
+        }
+
+        internal IActivityElement? Find<T>()
+        {
+            return this._activities.FirstOrDefault(n => n is T);
+        }
+
+        #endregion
     }
 }

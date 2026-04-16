@@ -7,13 +7,17 @@ using JTAGICEmkII;
 
 namespace JTAGICEmkII.HostService
 {
-    internal interface IActivityComElement
+    public interface IActivityComElement
     {
         bool Accept(IVisitorCommand visitor);
 
         bool CanSendCommand(Master.IMasterCommand command);
-
         bool OnReceivedResponse(Slave.ISlaveResponse response);
+
+
+        bool CanSendResponse(Slave.ISlaveResponse command);
+
+        bool OnReceivedCommand(Master.IMasterCommand response);
 
         bool CommandSent();
 

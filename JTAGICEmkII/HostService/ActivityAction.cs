@@ -20,21 +20,6 @@ namespace JTAGICEmkII.HostService
         #endregion
 
 
-        #region Fields 
-
-        #endregion
-
-
-        #region Properties 
-
-        #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
-
         #region Public Methods 
         public override bool Accept(IVisitorActivity visitor)
         {
@@ -44,14 +29,14 @@ namespace JTAGICEmkII.HostService
 
         public override bool ActivityEntry()
         {
-            if(_action == null)
-                throw new InvalidOperationException("Action cannot be null.");
+            if(_action == null || !this.HasChild || !this.HasParent)
+                throw new InvalidOperationException("Action cannot be null or there are no child activities or parent.");
 
             var result = _action();
 
-            if(result && this.HasChild)
+            if(result)
             {
-                _nextIndex = 0;
+                NextActivity = this.Child;
             }
             
             return result;

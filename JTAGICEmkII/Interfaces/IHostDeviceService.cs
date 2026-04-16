@@ -25,18 +25,20 @@ namespace JTAGICEmkII
 
 		bool SignOn(out ResponseSignOn? response);
 
-		/// 
-		/// <param name="MemType"></param>
-		/// <param name="Address"></param>
-		/// <param name="Values"></param>
-		bool WriteMemory(int MemType, ulong Address, byte Values);
+        bool GetSync();
+
+        /// 
+        /// <param name="MemType"></param>
+        /// <param name="Address"></param>
+        /// <param name="Values"></param>
+        bool WriteMemory(int MemType, ulong Address, byte[] Values);
 
 		/// 
 		/// <param name="memType"></param>
 		/// <param name="Address"></param>
 		/// <param name="Length"></param>
 		/// <param name="Values"></param>
-		bool ReadMemory(int memType, ulong Address, ulong Length, out byte Values);
+		bool ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values);
 
         /// 
         /// <param name="Info"></param>
@@ -119,6 +121,13 @@ namespace JTAGICEmkII
         bool GetAllParameter();
 
         bool ModifyAllParameter();
+
+        // for host caller if needed
+        event EventHandler<RequestEventArgs>? RequestCompleted;
+        event EventHandler<EventReceivedEventArgs>? EventReceived;
+        event EventHandler<RequestEventArgs>? RequestTimeout;
+        event EventHandler<ResponseReceivedEventArgs>? ResponseReceived;
+        event EventHandler<CommandReceivedEventArgs>? CommandReceived;
 
     }
 }

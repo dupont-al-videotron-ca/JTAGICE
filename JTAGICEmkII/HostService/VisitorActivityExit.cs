@@ -31,11 +31,6 @@ namespace JTAGICEmkII.HostService
             return element.ActivityExit(this.LastRequest);
         }
 
-        public override bool Visit(ActivityFinal element)
-        {
-            return element.ActivityExit(this.LastRequest);
-        }
-
         public override bool Visit(ActivityAction element)
         {
             return element.ActivityExit(this.LastRequest);
@@ -49,6 +44,30 @@ namespace JTAGICEmkII.HostService
         public override bool Visit(TargetConnected element)
         {
             return element.ActivityExit(this.LastRequest);
+        }
+
+        public override bool Visit(TargetDisonnecting element)
+        {
+            return element.ActivityExit(this.LastRequest);
+        }
+
+        public override bool Visit(TargetStopped element)
+        {
+            return element.ActivityExit(this.LastRequest);
+        }
+
+        public override bool Visit(TargetRunning element) 
+        {
+            return element.ActivityExit(this.LastRequest);
+        }
+        public override bool Visit(TargetProgramming element)
+        {
+            return element.ActivityExit(this.LastRequest);
+        }
+
+        public override bool Visit(HostSession element)
+        {
+            return element.ActivityExit(this.LastRequest); 
         }
 
         #endregion

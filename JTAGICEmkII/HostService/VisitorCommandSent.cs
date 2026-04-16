@@ -62,15 +62,16 @@ namespace JTAGICEmkII.HostService
         {
             return element.CommandSent();
         }
-        public override bool Visit(ActivityGetAllParameter element)
+        public override bool Visit(ActivityGetParameter element)
         {
             return element.CommandSent();
         }
 
-        public override bool Visit(ActivitySetAllParameter element)
+        public override bool Visit(ActivitySetParameter element)
         {
             return element.CommandSent();
         }
+
         #endregion
 
     }

@@ -8,27 +8,14 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class TargetConnected : ActivityBaseComp
+    public sealed class TargetStopped : ActivityBaseComp
     {
-        private TargetStopped _targetStopped;
-        private TargetRunning _targetRunning;
-        private TargetProgramming _targetProgramming;
-
-        public TargetConnected(StructureActivity activityStructure) : this(activityStructure, null)
+        public TargetStopped(StructureActivity activityStructure) : this(activityStructure, null)
         {
         }
 
-        public TargetConnected(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent)
+        public TargetStopped(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent)
         {
-            _targetStopped = new TargetStopped(activityStructure, this);
-            this.AddNext(_targetStopped);
-
-            _targetRunning = new TargetRunning(activityStructure, this);
-            this.AddNext(_targetRunning);
-
-            _targetProgramming = new TargetProgramming(activityStructure, this);
-            this.AddNext(_targetProgramming);
-
         }
 
         public override bool Accept(IVisitorActivity visitor)
@@ -43,16 +30,8 @@ namespace JTAGICEmkII.HostService
         }
         public override bool ActivityEntry()
         {
-            if(this.ActivityStructure.CurrentActivity == this)
-                this.ActivityStructure.CurrentActivity = this._targetStopped;
-
+            this.ActivityStructure.TargetMcuState.GoStopped();
             return base.ActivityEntry();
-        }
-
-        public override bool ActivityExit(bool lastRequest)
-        {
-            NextActivity = this.Find<TargetDisonnecting>();
-            return base.ActivityExit(lastRequest);
         }
 
         public override bool RequestCompleted(CommandRequest<IMasterCommand, ISlaveResponse> request)
@@ -68,20 +47,15 @@ namespace JTAGICEmkII.HostService
                         case MasterCommandEnum.CMND_RESTORE_TARGET:
                             NextActivity = this.Find<TargetDisonnecting>();
                             break;
-                        case MasterCommandEnum.CMND_LEAVE_PROGMODE:
-                            NextActivity = this.Find<TargetStopped>();
-                            break;
-                        case MasterCommandEnum.CMND_ENTER_PROGMODE:
-                            NextActivity = this.Find<TargetProgramming>();
-                            break;
                         case MasterCommandEnum.CMND_SINGLE_STEP:
                         case MasterCommandEnum.CMND_RUN_TO_ADDR:
                         case MasterCommandEnum.CMND_GO:
                             NextActivity = this.Find<TargetRunning>();
                             break;
+                        case MasterCommandEnum.CMND_ENTER_PROGMODE:
+                            NextActivity = this.Find<TargetProgramming>();
+                            break;
 
-                        case MasterCommandEnum.CMND_GET_SYNC:
-                        case MasterCommandEnum.CMND_RESET:
                         case MasterCommandEnum.CMND_FORCED_STOP:
                         case MasterCommandEnum.CMND_CHIP_ERASE:
                         case MasterCommandEnum.CMND_SELFTEST:
@@ -90,18 +64,24 @@ namespace JTAGICEmkII.HostService
                         case MasterCommandEnum.CMND_ERASEPAGE_SPM:
                         case MasterCommandEnum.CMND_SPI_CMD:
                         case MasterCommandEnum.CMND_CLR_BREAK:
+                        case MasterCommandEnum.CMND_GET_SYNC:
                         case MasterCommandEnum.CMND_WRITE_MEMORY:
                         case MasterCommandEnum.CMND_READ_MEMORY:
                         case MasterCommandEnum.CMND_READ_PC:
                         case MasterCommandEnum.CMND_WRITE_PC:
+                        case MasterCommandEnum.CMND_RESET:
                         case MasterCommandEnum.CMND_CLEAR_EVENTS:
+                        case MasterCommandEnum.CMND_LEAVE_PROGMODE:
+                            NextActivity = this.Find<TargetStopped>();
+                            break;
+
                         case MasterCommandEnum.CMND_SIGN_OFF:
                         case MasterCommandEnum.CMND_GET_SIGN_ON:
                         case MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR:
                         case MasterCommandEnum.CMND_SET_PARAMETER:
                         case MasterCommandEnum.CMND_GET_PARAMETER:
                         case MasterCommandEnum.CMND_SET_N_PARAMETERS:
-                        default:                            
+                        default:
                             break;
                     }
                     break;
@@ -126,6 +106,18 @@ namespace JTAGICEmkII.HostService
             }
 
             return true;
+        }
+
+        public override bool RequestTimeout(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        {
+            this.Logger.Debug("Host service request timed out.");
+            NextActivity = this.Find<TargetStopped>();
+            return true;
+        }   
+
+        public override bool ActivityExit(bool lastRequest)
+        {
+            return base.ActivityExit(lastRequest);
         }
 
     }

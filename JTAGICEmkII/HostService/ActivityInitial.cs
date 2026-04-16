@@ -22,14 +22,23 @@ namespace JTAGICEmkII.HostService
 
         public override bool ActivityEntry()
         {
-            if (this.HasChild)
+            if(this.HasParent)
             {
-                if (this.Nexts.Count == 1)
+                if (this.Parents.Count == 1)
                 {
-                    this.ActivityStructure.CurrentActivity = this.Nexts[0];
-                    return this.ActivityStructure.CurrentActivity.ActivityEntry();
+                    this.ActivityStructure.CurrentActivity = this.Parents[0];
                 }
                 else
+                {
+                    // TODO: support multiple parent activities.
+                    Logger.Error($"Activity {this.GetType()} has multiple parent activities, which is not supported yet.");
+                    throw new NotImplementedException($"Activity {this.GetType()} has multiple parent activities, which is not supported yet.");
+                }
+            }
+
+            if (this.HasChild)
+            {
+                if (this.Nexts.Count > 1)
                 {
                     // TODO: support multiple child activities.
                     Logger.Error($"Activity {this.GetType()} has multiple child activities, which is not supported yet.");
@@ -41,12 +50,14 @@ namespace JTAGICEmkII.HostService
                 Logger.Error($"Activity {this.GetType()} has no child activity to enter.");
                 throw new InvalidOperationException($"Activity {this.GetType()} has no child activity to enter.");
             }
-            
-//            return false;
+
+            return base.ActivityEntry();
+
         }
 
         public override bool ActivityExit(bool lastRequest)
         {
+            this.ActivityStructure.CurrentActivity = this.Nexts[0];
             return base.ActivityExit(lastRequest);
         }
 

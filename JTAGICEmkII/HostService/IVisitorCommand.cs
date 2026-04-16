@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.HostService
 {
-    internal interface IVisitorCommand
+    public interface IVisitorCommand
     {
         //        bool Visit(IAcitityElement element);
         bool Visit(ActivitySignOn element);
@@ -16,8 +16,8 @@ namespace JTAGICEmkII.HostService
 
         bool Visit(ActivitySetDeviceDescriptor element);
 
-        bool Visit(ActivityGetAllParameter element);
-        bool Visit(ActivitySetAllParameter element);
+        bool Visit(ActivityGetParameter element);
+        bool Visit(ActivitySetParameter element);
 
     }
 }

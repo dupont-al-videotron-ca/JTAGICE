@@ -11,23 +11,23 @@ using MyFramework.Threading;
 
 namespace JTAGICEmkII.HostService
 {
-    internal class CommandRequest<S,R> : IDisposable
+    public class CommandRequest<S, R> : IDisposable
         where S : class // send command type
         where R : class // receive response type
     {
 
         #region Constructors 
-        public CommandRequest(S command): this(command, TimeSpan.FromSeconds(45))
+        public CommandRequest(S command, IActivityComElement activityElement) : this(command, activityElement, TimeSpan.FromSeconds(45))
         {
-        }   
-
-        public CommandRequest(S command, TimeSpan timeout) 
-        { 
+        }
+        public CommandRequest(S command, IActivityComElement activityElement, TimeSpan timeout)
+        {
+            ArgumentNullException.ThrowIfNull(activityElement);
             Command = command ?? throw new ArgumentNullException(nameof(command));
             this._timeout = timeout;
             Response = null!;
-            _waitHandle= new ManualResetEvent(false);
-
+            _waitHandle = new ManualResetEvent(false);
+            CommandElement = activityElement;
         }
 
 
@@ -40,6 +40,8 @@ namespace JTAGICEmkII.HostService
 
         private bool disposedValue;
         private TimeSpan _timeout;
+        private bool _timeoutOccured;
+
 
         #endregion
 
@@ -50,6 +52,16 @@ namespace JTAGICEmkII.HostService
 
         public int RetryCount { get; set; } = 3;
 
+        public bool IsRequestTimeout
+        {
+            get
+            {
+                return _timeoutOccured && RetryCount <= 0;
+            }
+        }
+
+        internal IActivityComElement CommandElement { get; private set; }
+
         #endregion
 
         #region Public Methods 
@@ -58,13 +70,14 @@ namespace JTAGICEmkII.HostService
         {
             ArgumentNullException.ThrowIfNull(response);
             _waitHandle.Set();
-            Response = (R)response;
+            Response = response;
         }
 
         public bool WaitForResponse()
         {
             RetryCount--;
-            return _waitHandle.WaitOne(_timeout);
+            _timeoutOccured = _waitHandle.WaitOne(_timeout);
+            return _timeoutOccured;
         }
 
         #endregion

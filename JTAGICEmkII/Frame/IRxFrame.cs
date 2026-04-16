@@ -8,7 +8,7 @@ namespace JTAGICEmkII
 {
     public interface IRxFrame
     {
-        event EventHandler<ResponseReceivedEventArgs>? ResponceReceived;
+        event EventHandler<ResponseReceivedEventArgs>? ResponseReceived;
         event EventHandler<CommandReceivedEventArgs>? CommandReceived;
         event EventHandler? RxTimerExpired;
         void StartReceiving();

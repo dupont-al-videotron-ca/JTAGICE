@@ -20,11 +20,6 @@ namespace JTAGICEmkII.HostService
         {
             return element.ActivityAction();
         }
-        public override bool Visit(ActivityFinal element)
-        {
-            return element.ActivityAction();
-        }
-
         public override bool Visit(ActivityAction element)
         {
             return element.ActivityAction();
@@ -39,27 +34,34 @@ namespace JTAGICEmkII.HostService
         {
             return element.ActivityAction();
         }
+
+        public override bool Visit(TargetDisonnecting element)
+        {
+            return element.ActivityAction();
+        }
+
+        public override bool Visit(TargetStopped element)
+        {
+            return element.ActivityAction();
+        }
+
+        public override bool Visit(TargetRunning element) 
+        {
+            return element.ActivityAction();
+        }
+        public override bool Visit(TargetProgramming element)
+        {
+            return element.ActivityAction();
+        }
+
+        public override bool Visit(HostSession element)
+        {
+            return element.ActivityAction();
+        }
+
+
         #endregion
 
-
-        #region Fields 
-
-        #endregion
-
-
-        #region Properties 
-
-        #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
-
-        #region Public Methods 
-
-        #endregion
 
     }
 }

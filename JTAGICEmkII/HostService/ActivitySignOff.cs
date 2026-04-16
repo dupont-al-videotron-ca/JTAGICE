@@ -8,76 +8,25 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    internal sealed class ActivitySignOff : ActivityProcessCommand
+    public sealed class ActivitySignOff : ActivityProcessCommand
     {
 
 
         #region Constructors 
-        public ActivitySignOff(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent!)
+        public ActivitySignOff(StructureActivity activityStructure) : 
+            base(activityStructure, MasterCommandEnum.CMND_SIGN_OFF, SlaveResponseEnum.RSP_OK)
         {
         }
         #endregion
 
 
-        #region Fields 
-
-        #endregion
-
-
-        #region Properties 
-
-        #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
-
         #region Public Methods 
+
         public override bool Accept(IVisitorCommand visitor)
         {
             ArgumentNullException.ThrowIfNull(visitor);
             return visitor.Visit(this);
         }
-
-
-        public override bool CanSendCommand(IMasterCommand command)
-        {
-            switch(command.MessageId)
-            {
-                case MasterCommandEnum.CMND_SIGN_OFF:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        public override bool OnReceivedResponse(ISlaveResponse response)
-        {
-            _nextIndex = -1;
-            switch (response.ResponseId)
-            {
-                case SlaveResponseEnum.RSP_OK:
-                    _nextIndex = 0;
-                    return true;
-                default:
-                    return base.OnReceivedResponse(response);
-            }
-        }
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
 
         #endregion
     }

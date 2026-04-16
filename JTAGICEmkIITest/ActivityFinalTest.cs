@@ -11,7 +11,7 @@ using Xunit;
 
 namespace JTAGICEmkIITest
 {
-    public class ActivityFinalTest  : ActivityBaseTest
+    public class ActivityFinalTest : ActivityBaseTest
     {
 
         #region Declarations --------------------------------------------------
@@ -48,7 +48,7 @@ namespace JTAGICEmkIITest
         public void ActivityFinal_Shall_Constructor_with_parent()
         {
             //--- Setup
-            var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);           
+            var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
             var parent = new ActivityBaseMoq(activityStructure);
             //--- Expectations
 
@@ -105,7 +105,7 @@ namespace JTAGICEmkIITest
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
             var parent = new ActivityBaseMoq(activityStructure);
             var test = new ActivityFinal(activityStructure, parent);
-            activityStructure.CurrentActivity = test;
+            activityStructure.PushActivity(test);
 
             //--- Expectations
 
@@ -125,7 +125,7 @@ namespace JTAGICEmkIITest
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
             var parent = new ActivityBaseMoq(activityStructure);
             var test = new ActivityFinal(activityStructure, parent);
-            activityStructure.CurrentActivity = test;
+            activityStructure.PushActivity(test);
 
             //--- Expectations
 
@@ -145,7 +145,7 @@ namespace JTAGICEmkIITest
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
             var parent = new ActivityBaseMoq(activityStructure);
             var test = new ActivityFinal(activityStructure, parent);
-            activityStructure.CurrentActivity = test;
+            activityStructure.PushActivity(test);
             var child = new ActivityBaseMoq(activityStructure);
 
             //--- Expectations
@@ -164,7 +164,7 @@ namespace JTAGICEmkIITest
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
             var parent = new ActivityBaseMoq(activityStructure);
             var test = new ActivityFinal(activityStructure, parent);
-            activityStructure.CurrentActivity = test;
+            activityStructure.PushActivity(test);
             var child = new ActivityBaseMoq(activityStructure);
 
             //--- Expectations
@@ -183,7 +183,7 @@ namespace JTAGICEmkIITest
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
             var parent = new ActivityBaseMoq(activityStructure);
             var test = new ActivityFinal(activityStructure, parent, true);
-            activityStructure.CurrentActivity = test;
+            activityStructure.PushActivity(test);
             var child = new ActivityBaseMoq(activityStructure);
 
             //--- Expectations

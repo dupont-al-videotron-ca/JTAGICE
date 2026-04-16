@@ -8,12 +8,13 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    internal sealed class ActivitySetAllParameter : ActivityProcessCommand
+    public sealed class ActivityGetParameter : ActivityProcessCommand
     {
 
 
         #region Constructors 
-        public ActivitySetAllParameter(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent!)
+        public ActivityGetParameter(StructureActivity activityStructure) : 
+            base(activityStructure, MasterCommandEnum.CMND_GET_PARAMETER, SlaveResponseEnum.RSP_PARAMETER)
         {
         }
         #endregion
@@ -37,17 +38,16 @@ namespace JTAGICEmkII.HostService
         #region Public Methods 
         public override bool Accept(IVisitorCommand visitor)
         {
-            ArgumentNullException.ThrowIfNull(visitor);
             return visitor.Visit(this);
         }
-
 
         public override bool CanSendCommand(IMasterCommand command)
         {
             switch(command.MessageId)
             {
                 case MasterCommandEnum.CMND_GET_PARAMETER:
-                    return true;
+                    // TODO: We should check the parameter ID here, but for now we just check if the target is stopped, which is a requirement for all parameters.
+                    return this.ActivityStructure.TargetMcuState.IsStopped; 
                 default:
                     return false;
             }
@@ -55,29 +55,14 @@ namespace JTAGICEmkII.HostService
 
         public override bool OnReceivedResponse(ISlaveResponse response)
         {
-            _nextIndex = -1;
             switch (response.ResponseId)
             {
-                case SlaveResponseEnum.RSP_OK:
-                    _nextIndex = 0;
+                case SlaveResponseEnum.RSP_PARAMETER:
                     return true;
                 default:
                     return base.OnReceivedResponse(response);
             }
         }
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
 
         #endregion
     }

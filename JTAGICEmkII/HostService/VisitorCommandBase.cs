@@ -35,8 +35,9 @@ namespace JTAGICEmkII.HostService
 
         public abstract bool Visit(ActivitySetDeviceDescriptor element);
 
-        public abstract bool Visit(ActivityGetAllParameter element);
-        public abstract bool Visit(ActivitySetAllParameter element);
+        public abstract bool Visit(ActivityGetParameter element);
+        public abstract bool Visit(ActivitySetParameter element);
+        
         #endregion
 
 

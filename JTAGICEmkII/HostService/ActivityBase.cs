@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using log4net;
@@ -64,6 +66,25 @@ namespace JTAGICEmkII.HostService
             Logger.Debug($"{this.GetType()} Executing activity entry called.");
             return true;
         }
+
+        public virtual bool EventReceived(ISlaveResponse responceEvent)
+        {
+            Logger.Debug($"{this.GetType()} Event received {responceEvent.ResponseId}.");
+            return true;
+        }
+
+        public virtual bool RequestTimeout(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        {
+            Logger.Debug($"{this.GetType()} timout.");
+            return true;
+        }
+
+        public virtual bool RequestCompleted(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        {
+            Logger.Debug($"{this.GetType()} Request completed.");
+            return true;
+        }
+
 
         #endregion
     }

@@ -6,61 +6,65 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.HostService
 {
-    internal class VisitorActivityEntry : VisitorOperationBase
+    internal class VisitorActivityEventReceived: VisitorOperationBase
     {
-
-
         #region Constructors 
 
-        internal VisitorActivityEntry() : base()
+        internal VisitorActivityEventReceived(Slave.ISlaveResponse responce) : base()
         {
+            this.EventResponse = responce;
         }
+
+        public Slave.ISlaveResponse EventResponse { get; }
+
         #endregion
 
         #region Public Methods 
 
         public override bool Visit(ActivityInitial element)
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
 
         public override bool Visit(ActivityAction element)
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
 
         public override bool Visit(TargetConnecting element)
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
 
         public override bool Visit(TargetConnected element)
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
 
         public override bool Visit(TargetDisonnecting element) 
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
 
         public override bool Visit(TargetStopped element)
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
 
         public override bool Visit(TargetRunning element) 
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
         public override bool Visit(TargetProgramming element)
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
+
         public override bool Visit(HostSession element)
         {
-            return element.ActivityEntry();
+            return element.EventReceived(EventResponse);
         }
+
         #endregion
 
     }

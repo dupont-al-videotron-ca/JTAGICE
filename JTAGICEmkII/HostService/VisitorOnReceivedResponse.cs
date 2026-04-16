@@ -54,12 +54,12 @@ namespace JTAGICEmkII.HostService
             return element.OnReceivedResponse(this.Response);
         }
 
-        public override bool Visit(ActivityGetAllParameter element)
+        public override bool Visit(ActivityGetParameter element)
         {
             return element.OnReceivedResponse(this.Response);
         }
 
-        public override bool Visit(ActivitySetAllParameter element)
+        public override bool Visit(ActivitySetParameter element)
         {
             return element.OnReceivedResponse(this.Response);
         }

@@ -12,26 +12,31 @@ namespace JTAGICEmkII.HostService
 
         public TargetState() 
         { 
-            TargetMcuState = McuStateEnum.Unknown;
+            State = McuStateEnum.Unknown;
         }
 
-        public McuStateEnum TargetMcuState { get; set; } = McuStateEnum.Unknown;
+        public McuStateEnum State { get; set; } = McuStateEnum.Unknown;
 
-        public bool IsRunning => TargetMcuState == McuStateEnum.RUNNING;
-        public bool IsStopped => TargetMcuState == McuStateEnum.STOPPED;
-        public bool IsProgramming=> TargetMcuState == McuStateEnum.PROGRAMMING;
+        public bool IsRunning => State == McuStateEnum.RUNNING;
+        public bool IsStopped => State == McuStateEnum.STOPPED;
+        public bool IsProgramming=> State == McuStateEnum.PROGRAMMING;
 
         public void GoRunning()
         {
-            TargetMcuState = McuStateEnum.RUNNING;
+            State = McuStateEnum.RUNNING;
         }
         public void GoStopped()
         {
-            TargetMcuState = McuStateEnum.STOPPED;
+            State = McuStateEnum.STOPPED;
         }
         public void GoProgramming()
         {
-            TargetMcuState = McuStateEnum.PROGRAMMING;
+            State = McuStateEnum.PROGRAMMING;
         }
+
+        public void ResetState()
+        {
+            State = McuStateEnum.Unknown;
+        }   
     }
 }

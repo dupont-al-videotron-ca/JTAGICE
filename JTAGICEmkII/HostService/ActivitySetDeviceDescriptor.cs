@@ -9,10 +9,11 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    internal sealed class ActivitySetDeviceDescriptor : ActivityProcessCommand
+    public sealed class ActivitySetDeviceDescriptor : ActivityProcessCommand
     {
 
-        public ActivitySetDeviceDescriptor(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent!)
+        public ActivitySetDeviceDescriptor(StructureActivity activityStructure) :
+            base(activityStructure, MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR, SlaveResponseEnum.RSP_OK)
         {
         }
 
@@ -22,41 +23,26 @@ namespace JTAGICEmkII.HostService
             return visitor.Visit(this);
         }
 
+        public override bool ActivityEntry()
+        {
+            Logger.Debug($"{this.GetType()} Executing activity entry called.");
+            if (!this.ActivityStructure.HostService.SetDeviceDescriptor())
+                return false;
+
+            return true;
+        }
+
         public override bool CanSendCommand(IMasterCommand command)
         {
             switch (command.MessageId)
             {
                 case MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR:
-                    if(this.ActivityStructure.TargetMcuState.IsStopped)
+                    if (this.ActivityStructure.TargetMcuState.IsStopped)
                         return true;
                     else
                         return false;
                 default:
                     return false;
-            }
-        }
-        public override bool OnReceivedResponse(ISlaveResponse response)
-        {
-            _nextIndex = -1;
-            switch (response.ResponseId)
-            {
-                case SlaveResponseEnum.RSP_OK:
-                    if (this.HasParent)
-                    {
-                        if (this.Parent is ActivityReset)
-                        {
-                            _nextIndex = 0;
-                            return true;
-                        }
-                        else
-                        { 
-                            // todo:
-                            return false;
-                        }
-                    }
-                    return false;
-                default:
-                    return base.OnReceivedResponse(response);
             }
         }
     }

@@ -18,22 +18,14 @@ namespace JTAGICEmkII.HostService
         internal ActivityComposite(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent)
         {
             Initial = new ActivityInitial(activityStructure);
+            
         }
 
-
         #endregion
-
-
-        #region Fields 
-
-        #endregion
-
 
         #region Properties 
+
         public ActivityInitial Initial { get; set; }
-
-        public ActivityFinal? Final { get; set; }
-
 
         #endregion
 
@@ -46,6 +38,13 @@ namespace JTAGICEmkII.HostService
         #region Public Methods 
         public override bool ActivityEntry()
         {
+            Logger.Debug($"ActivityComposite: ActivityEntry has been called.");
+            if (!this.HasParent)
+            {
+                Logger.Error($"Activity {this.GetType()} has an invalid Final activity, which is not supported yet.");
+                throw new InvalidOperationException($"Activity {this.GetType()} has an invalid Final activity, which is not supported yet.");
+            }
+
             if (this.Initial is not null)
             {
                 if (!this.Initial.HasChild)
@@ -56,7 +55,7 @@ namespace JTAGICEmkII.HostService
                 else
                 {
                     this.ActivityStructure.CurrentActivity = this.Initial;
-                    return this.ActivityStructure.CurrentActivity.ActivityEntry();
+                    return base.ActivityEntry();
                 }
             }
             else
@@ -64,46 +63,12 @@ namespace JTAGICEmkII.HostService
                 Logger.Error($"Activity {this.GetType()} has no initial activity to enter.");
                 throw new InvalidOperationException($"Activity {this.GetType()} has no initial activity to enter.");
             }
-
         }
 
         public override bool ActivityExit(bool lastRequest)
         {
-            if (lastRequest)
-            {
-                if (this.Final is not null)
-                {
-                    if(this.Final.IsExitPoint)
-                    {
-                        return true;
-                    }
-                    else if (!this.Final.ActivityExit(lastRequest))
-                    {
-                        Logger.Error($"Activity {this.GetType()} final activity exit returned false, so the composite activity exit will also return false.");
-                        return false;
-                    }
+            return base.ActivityExit(lastRequest);
 
-                    else if (this.HasChild)
-                    {
-                        this.ActivityStructure.CurrentActivity = this.Nexts[0];
-                        return this.ActivityStructure.CurrentActivity.ActivityExit(lastRequest);
-                    }
-                    else
-                    {
-                        Logger.Error($"Activity {this.GetType()} has no final activity to exit.");
-                        throw new InvalidOperationException($"Activity {this.GetType()} has no final activity to exit.");
-                    }
-                }
-                else
-                {
-                    Logger.Error($"Activity {this.GetType()} has no final activity to exit.");
-                    throw new InvalidOperationException($"Activity {this.GetType()} has no final activity to exit.");
-                }
-            }
-            else
-            {
-                return true;
-            }
         }
 
         #endregion

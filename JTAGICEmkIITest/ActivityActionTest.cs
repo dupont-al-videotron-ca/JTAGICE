@@ -54,12 +54,14 @@ namespace JTAGICEmkIITest
             //--- Setup
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
             var parent = new ActivityBaseCompMoq(activityStructure);
+            var next = new ActivityBaseCompMoq(activityStructure);
             bool isActionExecuted = false;
             var test = new ActivityAction(activityStructure, parent, () =>
             {
                 isActionExecuted = true;
                 return true;
             });
+            test.AddNext(next);
 
             //--- Expectations
 

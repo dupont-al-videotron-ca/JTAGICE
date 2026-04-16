@@ -37,10 +37,14 @@ namespace JTAGICEmkII.HostService
         #region Public Methods 
 
         public abstract bool Visit(ActivityInitial element);
-        public abstract bool Visit(ActivityFinal element);
         public abstract bool Visit(ActivityAction element);
         public abstract bool Visit(TargetConnecting element);
         public abstract bool Visit(TargetConnected element);
+        public abstract bool Visit(TargetDisonnecting element);
+        public abstract bool Visit(TargetStopped element);
+        public abstract bool Visit(TargetRunning element);
+        public abstract bool Visit(TargetProgramming element);
+        public abstract bool Visit(HostSession element);
 
         #endregion
 
