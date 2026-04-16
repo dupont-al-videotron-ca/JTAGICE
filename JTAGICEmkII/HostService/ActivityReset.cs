@@ -8,7 +8,7 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class ActivityReset : ActivityProcessCommand
+    public sealed class ActivityReset : ActivityProcessCommandBase
     {
 
         #region Constructors 

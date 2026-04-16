@@ -5,12 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
+using Windows.Web.Http.Diagnostics;
 
 namespace JTAGICEmkII.HostService
 {
-    public abstract class ActivityProcessCommand : ActivityBase, IActivityComElement
+    public abstract class ActivityProcessCommandBase : ActivityBase, IActivityComElement
     {
-        internal ActivityProcessCommand(StructureActivity activityStructure,
+        internal ActivityProcessCommandBase(StructureActivity activityStructure,
             MasterCommandEnum commandEnum,
             SlaveResponseEnum responseEnum) : base(activityStructure)
         {
@@ -103,8 +104,12 @@ namespace JTAGICEmkII.HostService
                     return true;
 
                 case SlaveResponseEnum.RSP_FAILED:
-                case SlaveResponseEnum.RSP_ILLEGAL_PARAMETER:
+                    OnFailed(response);
+                    return true;
                 case SlaveResponseEnum.RSP_ILLEGAL_MEMORY_TYPE:
+                    OnIllegalMemoryType(response);
+                    return true;
+                case SlaveResponseEnum.RSP_ILLEGAL_PARAMETER:
                 case SlaveResponseEnum.RSP_ILLEGAL_MEMORY_RANGE:
                 case SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE:
                 case SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE:
@@ -123,6 +128,17 @@ namespace JTAGICEmkII.HostService
                     this.Logger.Debug($"Response handling not implemented for response: {response.ResponseId}.");
                     throw new NotImplementedException($"Response handling not implemented for response: {response.ResponseId}.");
             }
+        }
+
+        protected virtual void OnFailed(ISlaveResponse response)
+        {
+        }
+
+        protected virtual void OnIllegalMemoryType(ISlaveResponse response)
+        {
+        }
+        protected virtual void OnIllegalMemoryRange(ISlaveResponse response)
+        {
         }
     }
 }

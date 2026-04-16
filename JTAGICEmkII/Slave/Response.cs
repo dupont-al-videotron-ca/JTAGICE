@@ -32,11 +32,26 @@ namespace JTAGICEmkII.Slave
         // This property will be serialize/deserialized when building frame.
         public uint MessageLength { get; set; }
 
-        public virtual bool IsEvent
+        public bool IsEvent
         {
             get
             {
                 return ResponseId >= SlaveResponseEnum.EventRangeMin && ResponseId <= SlaveResponseEnum.EventRangeMax;
+            }
+        }
+
+        public bool IsSuccess
+        {
+            get
+            {
+                return IsEvent || (ResponseId & SlaveResponseEnum.RSP_MASK) == SlaveResponseEnum.RSP_SUCCESS_MASK;
+            }
+        }
+        public bool IsFailed
+        {
+            get
+            {
+                return (ResponseId & SlaveResponseEnum.RSP_MASK) == SlaveResponseEnum.RSP_FAILED_MASK;
             }
         }
 

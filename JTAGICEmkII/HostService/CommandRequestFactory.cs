@@ -14,31 +14,31 @@ namespace JTAGICEmkII.HostService
 {
     internal static class CommandRequestFactory 
     {
-        public static CommandRequest<IMasterCommand, ISlaveResponse> CreateRequest(StructureActivity structureElement, MasterCommandEnum messageId)
+        public static CommandRequest CreateRequest(StructureActivity structureElement, MasterCommandEnum messageId)
         {
             return CreateRequest(structureElement, messageId, TimeSpan.FromSeconds(45));
 
         }
-        public static CommandRequest<IMasterCommand, ISlaveResponse> CreateRequest(StructureActivity structureElement, MasterCommandEnum messageId, TimeSpan timeout)
+        public static CommandRequest CreateRequest(StructureActivity structureElement, MasterCommandEnum messageId, TimeSpan timeout)
         {
             var command = CommandFactory.CreateCommand(messageId);
             switch (messageId)
             {
                 // Single byte commands
                 case MasterCommandEnum.CMND_SIGN_OFF:
-                    return new CommandRequest<IMasterCommand, ISlaveResponse>(command, new ActivitySignOff(structureElement), timeout);
+                    return new CommandRequest(command, new ActivitySignOff(structureElement), timeout);
                 case MasterCommandEnum.CMND_GET_SIGN_ON:
-                    return new CommandRequest<IMasterCommand, ISlaveResponse>(command, new ActivitySignOn(structureElement), timeout);
+                    return new CommandRequest(command, new ActivitySignOn(structureElement), timeout);
                 case MasterCommandEnum.CMND_CLEAR_EVENTS:
-                    return new CommandRequest<IMasterCommand, ISlaveResponse>(command, new ActivityClearEvents(structureElement), timeout);
+                    return new CommandRequest(command, new ActivityClearEvents(structureElement), timeout);
                 case MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR:
-                    return new CommandRequest<IMasterCommand, ISlaveResponse>(command, new ActivitySetDeviceDescriptor(structureElement), timeout);
+                    return new CommandRequest(command, new ActivitySetDeviceDescriptor(structureElement), timeout);
                 case MasterCommandEnum.CMND_RESET:
-                    return new CommandRequest<IMasterCommand, ISlaveResponse>(command, new ActivityReset(structureElement), timeout);
+                    return new CommandRequest(command, new ActivityReset(structureElement), timeout);
                 case MasterCommandEnum.CMND_SET_PARAMETER:
-                    return new CommandRequest<IMasterCommand, ISlaveResponse>(command, new ActivitySetParameter(structureElement), timeout);
+                    return new CommandRequest(command, new ActivitySetParameter(structureElement), timeout);
                 case MasterCommandEnum.CMND_GET_PARAMETER:
-                    return new CommandRequest<IMasterCommand, ISlaveResponse>(command, new ActivityGetParameter(structureElement), timeout);
+                    return new CommandRequest(command, new ActivityGetParameter(structureElement), timeout);
 
                 case MasterCommandEnum.CMND_READ_PC:
                 case MasterCommandEnum.CMND_GO:

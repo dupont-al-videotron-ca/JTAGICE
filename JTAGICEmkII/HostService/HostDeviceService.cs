@@ -17,7 +17,7 @@ namespace JTAGICEmkII.HostService
 {
     public class HostDeviceService : IHostDeviceService, IDisposable
     {
-
+        public readonly static string HostDeviceName = "JTAGICE mkII";
 
         #region Constructors 
 
@@ -35,7 +35,7 @@ namespace JTAGICEmkII.HostService
             _cancellationSource = new CancellationTokenSource();
 
             _hostSession = new HostSession(this._activityStructure);
-            _backgroundService= new MyBackgroundService<IActivityElement, bool>(this._activityStructure.RunActivity, _hostSession);
+            _backgroundService = new MyBackgroundService<IActivityElement, bool>(this._activityStructure.RunActivity, _hostSession);
         }
 
         #endregion
@@ -52,7 +52,7 @@ namespace JTAGICEmkII.HostService
         public ResponseSignOn? SignOnResponse { get; set; }
 
         private bool _disposedValue;
-        private CommandRequest<IMasterCommand, ISlaveResponse>? _request;
+        private CommandRequestBase<IMasterCommand, ISlaveResponse>? _request;
 
         private Parameters _parameters;
         private HostSession _hostSession;
@@ -98,7 +98,7 @@ namespace JTAGICEmkII.HostService
             return _rxFrame.IsReceiving;
         }
 
-        public bool RestoreTarget()
+        public ICommandResult RestoreTarget()
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_RESTORE_TARGET))
             {
@@ -106,11 +106,11 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public void CloseDebugSession()
+        public ICommandResult CloseDebugSession()
         {
             Logger.Debug($"Closing session by user.");
-
-            if (this.RestoreTarget())
+            ICommandResult retval = this.RestoreTarget();
+            if (retval.IsSuccess)
                 this._hostSession.WaitEndSession();
 
             this._cancellationSource.Cancel();
@@ -118,9 +118,11 @@ namespace JTAGICEmkII.HostService
             task.Wait(TimeSpan.FromSeconds(60));
 
             Logger.Debug($"Session is closed.");
+
+            return retval;
         }
 
-        public void OpenDebugSession()
+        public ICommandResult OpenDebugSession()
         {
             Logger.Debug($"Opening session by user.");
 
@@ -133,9 +135,11 @@ namespace JTAGICEmkII.HostService
                 Logger.Error("Activity structure is not properly initialized. No current activity or current activity is not TargetConnecting.");
                 throw new InvalidOperationException("Activity structure is not properly initialized. No current activity.");
             }
+
+            return CommandResult.Successs;
         }
 
-        public bool ClearEvents()
+        public ICommandResult ClearEvents()
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_CLEAR_EVENTS))
             {
@@ -143,7 +147,7 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public bool SetDeviceDescriptor()
+        public ICommandResult SetDeviceDescriptor()
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR))
             {
@@ -162,57 +166,57 @@ namespace JTAGICEmkII.HostService
         }
 
 
-        public bool ClearBreakpoint(int Index, ulong Breakpoint) => throw new NotImplementedException();
-        public bool EnterPrograming() => throw new NotImplementedException();
-        public bool EraseDevice() => throw new NotImplementedException();
-        public bool EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
-        public bool GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+        public ICommandResult ClearBreakpoint(int Index, ulong Breakpoint) => throw new NotImplementedException();
+        public ICommandResult EnterPrograming() => throw new NotImplementedException();
+        public ICommandResult EraseDevice() => throw new NotImplementedException();
+        public ICommandResult EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
+        public ICommandResult GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
 
-        public bool GetSync() => throw new NotImplementedException();
-        public bool WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
-        public bool ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
+        public ICommandResult GetSync() => throw new NotImplementedException();
+        public ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
+        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
 
-        public bool GetParameter(int paramId, out uint value)
+        public ICommandResult GetParameter(int paramId, out uint value)
         {
             return GetParameter((Master.ParameterEnum)paramId, out value);
         }
 
-        public bool GetParameter(Master.ParameterEnum paramId, out uint value)
+        public ICommandResult GetParameter(Master.ParameterEnum paramId, out uint value)
         {
             Parameter? parameterToRead = _parameters.Values.FirstOrDefault(p => p.ParameterId == paramId && p.IsRead && !p.IsUsed);
             if (parameterToRead != null && GetParameterLocal(parameterToRead, true))
             {
                 value = parameterToRead.Value;
-                return true;
+                return CommandResult.Successs;
             }
             else
             {
                 value = 0;
-                return false;
+                return CommandResult.Failed;
             }
         }
 
-        public bool GetAllParameter()
+        public ICommandResult GetAllParameter()
         {
             var parametersToRead = _parameters.GetAllRead();
             foreach (var param in parametersToRead)
             {
                 if (!GetParameterLocal(param.Value, param.Value == parametersToRead.Last().Value))
                 {
-                    return false;
+                    return (CommandResult)false;
                 }
             }
 
-            return true;
+            return (CommandResult)true;
         }
 
 
-        public bool SetParameter(int paramId, uint value)
+        public ICommandResult SetParameter(int paramId, uint value)
         {
             return SetParameter((Master.ParameterEnum)paramId, value);
         }
 
-        public bool SetParameter(Master.ParameterEnum paramId, uint value)
+        public ICommandResult SetParameter(Master.ParameterEnum paramId, uint value)
         {
             Parameter? parameterToWrite = _parameters.Values.FirstOrDefault(p => p.IsWrite && !p.IsUsed);
 
@@ -222,29 +226,29 @@ namespace JTAGICEmkII.HostService
                 return SetParameterLocal(parameterToWrite, true);
             }
 
-            return false;
+            return (CommandResult)false;
         }
 
-        public bool SetAllParameter()
+        public ICommandResult SetAllParameter()
         {
             var writeParameters = _parameters.GetAllWrite();
             foreach (KeyValuePair<Master.ParameterEnum, Parameter> param in writeParameters)
             {
                 if (!SetParameterLocal(param.Value, param.Value == writeParameters.Last().Value))
-                    return false;
+                    return (CommandResult)false;
             }
 
-            return true;
+            return (CommandResult)true;
 
         }
 
 
-        //public bool GetTargetInfo(out DeviceInfo Info) => throw new NotImplementedException();
-        public bool LeavePrograming() => throw new NotImplementedException();
-        public bool ReadMemory(int memType, ulong Address, ulong Length, out byte Values) => throw new NotImplementedException();
-        public bool ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
-        public bool Reconnect() => throw new NotImplementedException();
-        public bool Reset()
+        //public ICommandResult GetTargetInfo(out DeviceInfo Info) => throw new NotImplementedException();
+        public ICommandResult LeavePrograming() => throw new NotImplementedException();
+        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte Values) => throw new NotImplementedException();
+        public ICommandResult ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult Reconnect() => throw new NotImplementedException();
+        public ICommandResult Reset()
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_RESET))
             {
@@ -252,20 +256,20 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public bool SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
-        public bool SignOff() => throw new NotImplementedException();
+        public ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+        public ICommandResult SignOff() => throw new NotImplementedException();
 
-        public async Task<bool> SignOnAsync()
+        public async Task<ICommandResult> SignOnAsync()
         {
-            Task<bool> task = Task.Run(() =>
+            Task<CommandResult> task = Task.Run(() =>
             {
-                if (SignOn(out ResponseSignOn? response))
+                if (SignOn(out ResponseSignOn? response).IsSuccess)
                 {
                     SignOnResponse = response;
-                    return true;
+                    return (CommandResult)true;
                 }
 
-                return false;
+                return (CommandResult)false;
             });
 
             await task;
@@ -273,35 +277,51 @@ namespace JTAGICEmkII.HostService
             return task.Result;
         }
 
-        public bool SignOn(out ResponseSignOn? response)
+        public ICommandResult SignOn(out ResponseSignOn? response)
         {
-            bool retval = false;
+            CommandResult retval = CommandResult.Failed;
 
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GET_SIGN_ON))
             {
                 if (ProcessCommand(request, out ISlaveResponse? response1))
                 {
                     response = response1 as ResponseSignOn;
-                    retval = true;
+                    retval = (CommandResult)response!;
                 }
                 else
                 {
                     response = null;
-                    retval = false;
                 }
             }
+
             return retval;
         }
 
 
-        public bool StartRunning() => throw new NotImplementedException();
-        public bool StartRunningUntil(ulong Breakpoint) => throw new NotImplementedException();
-        public bool StepIn(ulong ProgramCounter) => throw new NotImplementedException();
-        public bool StopRunning() => throw new NotImplementedException();
-        public bool VerifiyPrograming() => throw new NotImplementedException();
-        public bool WriteMemory(int MemType, ulong Address, byte Values) => throw new NotImplementedException();
-        public bool WriteProgramCount(ulong ProgramCounter) => throw new NotImplementedException();
-        public bool WritePrograming(ulong Address, byte Values) => throw new NotImplementedException();
+        public ICommandResult StartRunning() => throw new NotImplementedException();
+        public ICommandResult StartRunningUntil(ulong Breakpoint) => throw new NotImplementedException();
+        public ICommandResult StepIn(ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult StopRunning() => throw new NotImplementedException();
+        public ICommandResult VerifiyPrograming() => throw new NotImplementedException();
+        public ICommandResult WriteMemory(int MemType, ulong Address, byte Values)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_WRITE_MEMORY))
+            {
+                if (ProcessCommand(request, out ISlaveResponse? response))
+                {
+                    return new CommandResult(response!);
+                }
+                else
+                {
+                    return CommandResult.Failed;
+                }
+            }
+
+
+        }
+
+        public ICommandResult WriteProgramCount(ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult WritePrograming(ulong Address, byte Values) => throw new NotImplementedException();
 
         protected virtual void Dispose(bool disposing)
         {
@@ -351,7 +371,7 @@ namespace JTAGICEmkII.HostService
 
         #region Private Methods 
 
-        public bool SetParameterLocal(Parameter parameter, bool lastRequest)
+        public CommandResult SetParameterLocal(Parameter parameter, bool lastRequest)
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_SET_PARAMETER))
             {
@@ -427,33 +447,35 @@ namespace JTAGICEmkII.HostService
         }
 
 
-        private bool ProcessCommand(CommandRequest<IMasterCommand, ISlaveResponse> commandRequest, out ISlaveResponse? response, bool lastRequest = true)
+        private CommandResult ProcessCommand(CommandRequestBase<IMasterCommand, ISlaveResponse> commandRequest, out ISlaveResponse? response, bool lastRequest = true)
         {
             response = null;
-            bool retval = false;
+            CommandResult retval = CommandResult.Failed;
+
             _request = commandRequest;
             Command command = (Command)_request.Command;
+            IActivityComElement commandElement = _request.CommandElement;
+
             Logger.Debug($"Processing command: {command.MessageId}");
-            while (_request.RetryCount-- > 0 && !retval)
+            while (_request.RetryCount-- > 0 && !retval.IsSuccess)
             {
                 Logger.Debug($"Retry count: {_request.RetryCount}");
-                if (_activityStructure.CanSendCommand(command))
+                if (commandElement.CanSendCommand(command))
                 {
                     Logger.Debug($"Building and Sending command: {command.MessageId}");
                     if (_txFrame.BuildAndSendFrameCommand(command) != 0)
                     {
-                        _activityStructure.CommandSent(command);
+                        commandElement.CommandSent();
                         Logger.Debug($"Command sent waiting for response.");
 
                         if (_request.WaitForResponse() && _request.Response != null)
                         {
                             Logger.Debug($"Response received for command: {_request.Response.ResponseId}");
-                            if (_activityStructure.OnReceivedResponse(_request.Response))
+                            if (commandElement.OnReceivedResponse(_request.Response))
                             {
                                 response = _request.Response;
+                                retval = (CommandResult)response;
                                 OnRequestCompleted(this, new RequestEventArgs(_request));
-
-                                retval = _activityStructure.ExitActivity(lastRequest);
                             }
                         }
                         else

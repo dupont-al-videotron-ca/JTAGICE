@@ -19,5 +19,9 @@ namespace JTAGICEmkII.Slave
 
         bool IsEvent { get; }
 
+        bool IsSuccess { get; }
+
+        bool IsFailed { get; }
+
     }
 }

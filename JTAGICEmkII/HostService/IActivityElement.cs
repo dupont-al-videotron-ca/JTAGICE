@@ -21,9 +21,9 @@ namespace JTAGICEmkII.HostService
 
         bool EventReceived(ISlaveResponse response);
 
-        bool RequestTimeout(CommandRequest<IMasterCommand, ISlaveResponse> request);
+        bool RequestTimeout(CommandRequestBase<IMasterCommand, ISlaveResponse> request);
 
-        bool RequestCompleted(HostService.CommandRequest<Master.IMasterCommand, Slave.ISlaveResponse> request);
+        bool RequestCompleted(HostService.CommandRequestBase<Master.IMasterCommand, Slave.ISlaveResponse> request);
 
     }
 }

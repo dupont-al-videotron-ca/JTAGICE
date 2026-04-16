@@ -9,7 +9,7 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class ActivitySetDeviceDescriptor : ActivityProcessCommand
+    public sealed class ActivitySetDeviceDescriptor : ActivityProcessCommandBase
     {
 
         public ActivitySetDeviceDescriptor(StructureActivity activityStructure) :

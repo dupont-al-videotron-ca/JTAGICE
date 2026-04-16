@@ -73,13 +73,13 @@ namespace JTAGICEmkII.HostService
             return true;
         }
 
-        public virtual bool RequestTimeout(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        public virtual bool RequestTimeout(CommandRequestBase<IMasterCommand, ISlaveResponse> request)
         {
             Logger.Debug($"{this.GetType()} timout.");
             return true;
         }
 
-        public virtual bool RequestCompleted(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        public virtual bool RequestCompleted(CommandRequestBase<IMasterCommand, ISlaveResponse> request)
         {
             Logger.Debug($"{this.GetType()} Request completed.");
             return true;

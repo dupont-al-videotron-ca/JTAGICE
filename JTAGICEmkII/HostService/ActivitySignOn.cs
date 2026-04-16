@@ -8,7 +8,7 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class ActivitySignOn : ActivityProcessCommand
+    public sealed class ActivitySignOn : ActivityProcessCommandBase
     {
 
 

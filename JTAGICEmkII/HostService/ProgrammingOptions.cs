@@ -2,7 +2,7 @@
 
 namespace JTAGICEmkII.HostService
 {
-    public partial class ProgrammingOptions
+    public class ProgrammingOptions
     {
 
         public ProgrammingOptions() 

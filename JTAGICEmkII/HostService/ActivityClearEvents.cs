@@ -8,7 +8,7 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class ActivityClearEvents : ActivityProcessCommand
+    public sealed class ActivityClearEvents : ActivityProcessCommandBase
     {
 
 

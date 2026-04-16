@@ -8,12 +8,12 @@ namespace JTAGICEmkII
     {
 
         #region Constructors 
-        public RequestEventArgs(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        public RequestEventArgs(CommandRequestBase<IMasterCommand, ISlaveResponse> request)
         {
             this.Request = request;
         }
 
-        public CommandRequest<IMasterCommand, ISlaveResponse> Request { get; private set; }
+        public CommandRequestBase<IMasterCommand, ISlaveResponse> Request { get; private set; }
 
         #endregion
 

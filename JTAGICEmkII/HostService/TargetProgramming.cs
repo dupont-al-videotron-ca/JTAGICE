@@ -37,13 +37,13 @@ namespace JTAGICEmkII.HostService
                 if (!this.ActivityStructure.HostService.EnterPrograming())
                 {
                     GoStoppedFail();
-                    PrgOption.ProgrammingResult = ProgrammingOptions.ProgrammingResultEnum.PR_MODE_FAIL;
+                    PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_MODE_FAIL;
                     Logger.Debug($"Programming mode failed: {PrgOption.ToString()}.");
                     return true;
                 }
                 else if (!this.ActivityStructure.TargetMcuState.IsProgramming)
                 {
-                    PrgOption.ProgrammingResult = ProgrammingOptions.ProgrammingResultEnum.PR_MODE_FAIL;
+                    PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_MODE_FAIL;
                     GoStoppedFail();
                     Logger.Debug($"Programming mode failed: {PrgOption.ToString()}.");
                     return true;
@@ -57,7 +57,7 @@ namespace JTAGICEmkII.HostService
                 {
                     if (!this.ActivityStructure.HostService.EraseMemory((byte)PrgOption.MemoryType, currentAddress, PrgOption.PageSize))
                     {
-                        PrgOption.ProgrammingResult = ProgrammingOptions.ProgrammingResultEnum.PR_ERASE_FAIL;
+                        PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_ERASE_FAIL;
                         PrgOption.ResultErrorAddress = currentAddress;
                         GoStoppedFail();
                         Logger.Debug($"Erase memory failed: {PrgOption.ToString()}.");
@@ -75,7 +75,7 @@ namespace JTAGICEmkII.HostService
                     byte[] buffer = PrgOption.Data.Skip((int)(currentAddress - PrgOption.Address)).Take((int)PrgOption.PageSize).ToArray();
                     if (!this.ActivityStructure.HostService.WriteMemory((byte)PrgOption.MemoryType, currentAddress, buffer))
                     {
-                        PrgOption.ProgrammingResult = ProgrammingOptions.ProgrammingResultEnum.PR_PROGRAM_FAIL;
+                        PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_PROGRAM_FAIL;
                         PrgOption.ResultErrorAddress = currentAddress;
                         Logger.Debug($"Programming memory failed: {PrgOption.ToString()}.");
                         GoStoppedFail();
@@ -93,7 +93,7 @@ namespace JTAGICEmkII.HostService
                     var srcBuffer = PrgOption.Data.Skip((int)(currentAddress - PrgOption.Address)).Take((int)PrgOption.PageSize).ToArray();
                     if (!this.ActivityStructure.HostService.ReadMemory((byte)PrgOption.MemoryType, currentAddress, PrgOption.PageSize, out var readBuffer))
                     {
-                        PrgOption.ProgrammingResult = ProgrammingOptions.ProgrammingResultEnum.PR_VERIFY_FAIL;
+                        PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_VERIFY_FAIL;
                         PrgOption.ResultErrorAddress = currentAddress;
                         Logger.Debug($"Programming verify failed: {PrgOption.ToString()}.");
                         GoStoppedFail();
@@ -105,7 +105,7 @@ namespace JTAGICEmkII.HostService
                         {
                             if(readBuffer[i] != srcBuffer[+i])
                             {
-                                PrgOption.ProgrammingResult = ProgrammingOptions.ProgrammingResultEnum.PR_VERIFY_FAIL;
+                                PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_VERIFY_FAIL;
                                 PrgOption.ResultErrorAddress = currentAddress + (UInt64)i;
                                 PrgOption.ExpectedData = srcBuffer[i];
                                 PrgOption.ReadData = readBuffer[i];
@@ -121,7 +121,7 @@ namespace JTAGICEmkII.HostService
                 }
             }
 
-            PrgOption.ProgrammingResult = ProgrammingOptions.ProgrammingResultEnum.PR_SUCCESS;
+            PrgOption.ProgrammingResult = ProgrammingResultEnum.PR_SUCCESS;
             Logger.Debug($"Programming successful: {PrgOption.ToString()}.");
             this.ActivityStructure.HostService.LeavePrograming();
             NextActivity = this.Find<TargetStopped>();

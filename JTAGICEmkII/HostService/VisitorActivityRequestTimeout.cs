@@ -12,12 +12,12 @@ namespace JTAGICEmkII.HostService
 
         #region Constructors 
 
-        internal VisitorActivityRequestTimeout(CommandRequest<Master.IMasterCommand, Slave.ISlaveResponse> request) : base()
+        internal VisitorActivityRequestTimeout(CommandRequestBase<Master.IMasterCommand, Slave.ISlaveResponse> request) : base()
         {
             this.Request = request;
         }
 
-        public HostService.CommandRequest<Master.IMasterCommand, Slave.ISlaveResponse> Request { get; }
+        public HostService.CommandRequestBase<Master.IMasterCommand, Slave.ISlaveResponse> Request { get; }
 
         #endregion
 

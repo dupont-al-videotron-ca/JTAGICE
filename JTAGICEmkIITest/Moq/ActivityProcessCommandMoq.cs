@@ -11,7 +11,7 @@ using log4net;
 
 namespace JTAGICEmkIITest.Moq
 {
-    internal class ActivityProcessCommandMoq : ActivityProcessCommand
+    internal class ActivityProcessCommandMoq : ActivityProcessCommandBase
     {
         internal ActivityProcessCommandMoq(StructureActivity activityStructure) : 
             base(activityStructure, MasterCommandEnum.CMND_RESET, SlaveResponseEnum.RSP_OK)

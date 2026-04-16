@@ -18,6 +18,7 @@ namespace JTAGICEmkII.HostService
 
         bool Visit(ActivityGetParameter element);
         bool Visit(ActivitySetParameter element);
+        bool Visit(ActivityWriteMemory element);
 
     }
 }

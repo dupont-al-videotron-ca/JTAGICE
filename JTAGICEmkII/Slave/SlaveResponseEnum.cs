@@ -6,8 +6,13 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Slave
 {
-    public enum SlaveResponseEnum
+    [Flags]
+    public enum SlaveResponseEnum 
     {
+        RSP_SUCCESS_MASK = 0x80,
+        RSP_FAILED_MASK = 0xA0,
+        RSP_MASK = 0XF0,
+
         RSP_OK = 0x80,
         RSP_FAILED = 0xA0,
         RSP_ILLEGAL_PARAMETER = 0xA1,

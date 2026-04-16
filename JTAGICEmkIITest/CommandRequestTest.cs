@@ -62,7 +62,7 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            //var test = new CommandRequest<Response, Command>(_response, TimeSpan.FromSeconds(45));
+            //var test = new CommandRequestBase<Response, Command>(_response, TimeSpan.FromSeconds(45));
 
             ////--- Verification
             //Assert.NotNull(test.Command);
@@ -79,7 +79,7 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            //Assert.Throws<ArgumentNullException>(() => new CommandRequest<Response, Command>(null!, TimeSpan.FromSeconds(45)));
+            //Assert.Throws<ArgumentNullException>(() => new CommandRequestBase<Response, Command>(null!, TimeSpan.FromSeconds(45)));
 
             //--- Verification
         }

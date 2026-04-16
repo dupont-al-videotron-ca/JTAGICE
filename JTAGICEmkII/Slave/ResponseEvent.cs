@@ -22,14 +22,6 @@ namespace JTAGICEmkII.Slave
 
         #region Properties 
 
-        public override bool IsEvent
-        {
-            get
-            {
-                return (this.ResponseId >= SlaveResponseEnum.EventRangeMin && this.ResponseId <= SlaveResponseEnum.EventRangeMax);
-            }
-        }
-
         #endregion
 
     }

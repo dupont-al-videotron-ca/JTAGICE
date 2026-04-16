@@ -21,104 +21,104 @@ namespace JTAGICEmkII
 
         TargetState TargetMcuState { get; set; }
 
-        bool SignOff();
+        ICommandResult SignOff();
 
-		bool SignOn(out ResponseSignOn? response);
+		ICommandResult SignOn(out ResponseSignOn? response);
 
-        bool GetSync();
+        ICommandResult GetSync();
 
         /// 
         /// <param name="MemType"></param>
         /// <param name="Address"></param>
         /// <param name="Values"></param>
-        bool WriteMemory(int MemType, ulong Address, byte[] Values);
+        ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values);
 
 		/// 
 		/// <param name="memType"></param>
 		/// <param name="Address"></param>
 		/// <param name="Length"></param>
 		/// <param name="Values"></param>
-		bool ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values);
+		ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values);
 
         /// 
         /// <param name="Info"></param>
-        //bool GetTargetInfo(out DeviceInfo Info);
+        //ICommandResult GetTargetInfo(out DeviceInfo Info);
 
         /// 
         /// <param name="param"></param>
-        bool GetParameter(int paramId, out uint value);
+        ICommandResult GetParameter(int paramId, out uint value);
 
-        bool SetParameter(int paramId, uint value);
-
-		/// 
-		/// <param name="ProgramCounter"></param>
-		bool WriteProgramCount(ulong ProgramCounter);
+        ICommandResult SetParameter(int paramId, uint value);
 
 		/// 
 		/// <param name="ProgramCounter"></param>
-		bool ReadProgramCount(out ulong ProgramCounter);
+		ICommandResult WriteProgramCount(ulong ProgramCounter);
 
-		bool StartRunning();
+		/// 
+		/// <param name="ProgramCounter"></param>
+		ICommandResult ReadProgramCount(out ulong ProgramCounter);
 
-		bool StopRunning();
+		ICommandResult StartRunning();
+
+		ICommandResult StopRunning();
 
 		/// 
 		/// <param name="Breakpoint"></param>
-		bool StartRunningUntil(ulong Breakpoint);
+		ICommandResult StartRunningUntil(ulong Breakpoint);
 
 		/// 
 		/// <param name="ProgramCounter"></param>
-		bool StepIn(ulong ProgramCounter);
+		ICommandResult StepIn(ulong ProgramCounter);
 
-		bool Reset();
+		ICommandResult Reset();
 
 		/// 
 		/// <param name="MemType"></param>
 		/// <param name="Address"></param>
 		/// <param name="Length"></param>
-		bool EraseMemory(int MemType, ulong Address, ulong Length);
+		ICommandResult EraseMemory(int MemType, ulong Address, ulong Length);
 
-		bool Reconnect();
+		ICommandResult Reconnect();
 
 		/// 
 		/// <param name="index"></param>
 		/// <param name="Breakpoint"></param>
 		/// <param name="BreakpointType"></param>
 		/// <param name="BrakpointMode"></param>
-		bool SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode);
+		ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode);
 
 		/// 
 		/// <param name="Index"></param>
 		/// <param name="Breakpoint"></param>
 		/// <param name="BreakpointType"></param>
 		/// <param name="BrakpointMode"></param>
-		bool GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode);
+		ICommandResult GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode);
 
-		bool EraseDevice();
+		ICommandResult EraseDevice();
 
-		bool EnterPrograming();
+		ICommandResult EnterPrograming();
 
-		bool LeavePrograming();
+		ICommandResult LeavePrograming();
 
-		bool VerifiyPrograming();
+		ICommandResult VerifiyPrograming();
 
 		/// 
 		/// <param name="Address"></param>
 		/// <param name="Values"></param>
-		bool WritePrograming(ulong Address, byte Values);
+		ICommandResult WritePrograming(ulong Address, byte Values);
 
 		/// 
 		/// <param name="Index"></param>
 		/// <param name="Breakpoint"></param>
-		bool ClearBreakpoint(int Index, ulong Breakpoint);
+		ICommandResult ClearBreakpoint(int Index, ulong Breakpoint);
 
-        bool SetDeviceDescriptor();
+        ICommandResult SetDeviceDescriptor();
 
-        bool ClearEvents();
+        ICommandResult ClearEvents();
 
-        bool SetAllParameter();
+        ICommandResult SetAllParameter();
 
-        bool GetAllParameter();
+        ICommandResult GetAllParameter();
 
         bool ModifyAllParameter();
 

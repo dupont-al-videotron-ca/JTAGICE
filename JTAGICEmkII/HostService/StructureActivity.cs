@@ -143,7 +143,7 @@ namespace JTAGICEmkII.HostService
             return CurrentActivity.Accept(new VisitorActivityAction());
         }
 
-        internal bool OnRequestCompleted(CommandRequest<Master.IMasterCommand, Slave.ISlaveResponse> request)
+        internal bool OnRequestCompleted(CommandRequestBase<Master.IMasterCommand, Slave.ISlaveResponse> request)
         {
             if (CurrentActivity is null)
                 throw new InvalidOperationException("No current activity to action.");
@@ -152,7 +152,7 @@ namespace JTAGICEmkII.HostService
         }
 
 
-        internal bool OnRequestTimeout(CommandRequest<Master.IMasterCommand, Slave.ISlaveResponse> request)
+        internal bool OnRequestTimeout(CommandRequestBase<Master.IMasterCommand, Slave.ISlaveResponse> request)
         {
             if (CurrentActivity is null)
                 throw new InvalidOperationException("No current activity to action.");

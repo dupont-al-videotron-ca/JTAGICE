@@ -45,7 +45,7 @@ namespace JTAGICEmkII.HostService
             return base.ActivityExit(lastRequest);
         }
 
-        public override bool RequestCompleted(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        public override bool RequestCompleted(CommandRequestBase<IMasterCommand, ISlaveResponse> request)
         {
             var response = request.Response;
             var messageId = request.Command.MessageId;
@@ -116,7 +116,7 @@ namespace JTAGICEmkII.HostService
             return true;
         }
 
-        public override bool RequestTimeout(CommandRequest<IMasterCommand, ISlaveResponse> request)
+        public override bool RequestTimeout(CommandRequestBase<IMasterCommand, ISlaveResponse> request)
         {
             this.Logger.Debug("Host service request timed out.");
             return true;
