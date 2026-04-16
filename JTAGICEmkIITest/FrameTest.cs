@@ -203,7 +203,7 @@ namespace JTAGICEmkIITest
                 localTimerExpired = true;
             };
 
-            test.ResponceReceived += (s, e) =>
+            test.ResponseReceived += (s, e) =>
             {
                 Logger.Info($"Message received: responseId: {e.Response.ResponseId}.");
                 result = e.Response;

@@ -35,6 +35,7 @@ namespace JTAGICEmkII.HostService
             _cancellationSource = new CancellationTokenSource();
 
             _hostSession = new HostSession(this._activityStructure);
+            _backgroundService= new MyBackgroundService<IActivityElement, bool>(this._activityStructure.RunActivity, _hostSession);
         }
 
         #endregion
@@ -55,6 +56,7 @@ namespace JTAGICEmkII.HostService
 
         private Parameters _parameters;
         private HostSession _hostSession;
+        private MyBackgroundService<IActivityElement, bool> _backgroundService;
 
         #endregion
 
@@ -91,8 +93,7 @@ namespace JTAGICEmkII.HostService
             _rxFrame.StartReceiving();
             this.EventReceived += HostService_EventReceived;
 
-            if (this._activityStructure.CurrentActivity == null)
-                throw new InvalidOperationException("Activity structure is not properly initialized. No current activity.");
+            this._activityStructure.CurrentActivity = _hostSession;
 
             return _rxFrame.IsReceiving;
         }
@@ -105,37 +106,27 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public bool CloseDebugSession()
+        public void CloseDebugSession()
         {
             Logger.Debug($"Closing session by user.");
 
-            if(this.RestoreTarget())
+            if (this.RestoreTarget())
                 this._hostSession.WaitEndSession();
 
-            if (!this._cancellationSource.IsCancellationRequested)
-            {
-                this._cancellationSource.Cancel();
-                this._cancellationSource.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(60));
-            }
+            this._cancellationSource.Cancel();
+            var task = _backgroundService.StopAsync(_cancellationSource.Token);
+            task.Wait(TimeSpan.FromSeconds(60));
 
             Logger.Debug($"Session is closed.");
-            return true;
         }
-        public bool OpenDebugSession()
+
+        public void OpenDebugSession()
         {
             Logger.Debug($"Opening session by user.");
 
             if (this._activityStructure.CurrentActivity != null)
             {
-                try
-                {                    
-                    return RunActivityDiagram(this._hostSession!); ;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Failed to connect to target: {ex.Message}");
-                    return false;
-                }
+                _backgroundService.StartAsync(_cancellationSource.Token);
             }
             else
             {
@@ -254,7 +245,7 @@ namespace JTAGICEmkII.HostService
         public bool ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
         public bool Reconnect() => throw new NotImplementedException();
         public bool Reset()
-        {                                                                                                                            
+        {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_RESET))
             {
                 return ProcessCommand(request, out ISlaveResponse? rxResponse);
@@ -482,7 +473,7 @@ namespace JTAGICEmkII.HostService
                 }
             }
 
-            if ( _request.IsRequestTimeout)
+            if (_request.IsRequestTimeout)
             {
                 this.OnRequestTimeout(this, new RequestEventArgs(_request));
             }
@@ -512,7 +503,7 @@ namespace JTAGICEmkII.HostService
 
         }
 
-        private void OnReceivedEvent(object ? sender, EventReceivedEventArgs e)
+        private void OnReceivedEvent(object? sender, EventReceivedEventArgs e)
         {
             EventReceived?.Invoke(sender, e);
         }
@@ -536,38 +527,6 @@ namespace JTAGICEmkII.HostService
         {
             _activityStructure.OnRequestTimeout(e.Request);
             this.RequestTimeout?.Invoke(this, e);
-        }
-
-        private bool RunActivityDiagram(IActivityElement flowElement)
-        {
-            ArgumentNullException.ThrowIfNull(flowElement);
-            if (_cancellationSource.IsCancellationRequested)
-            {
-                _cancellationSource = new CancellationTokenSource();
-            }
-
-            Task.Run(() =>
-            {
-                try
-                {
-                    if (!this._activityStructure.RunActivity(flowElement))
-                        return;
-                }
-                catch (OperationCanceledException ex)
-                {
-                    // Handle cancellation if necessary
-                    Logger.Debug("RunActivityDiagram task OperationCanceledException.", ex);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Fatal("RunActivityDiagram Exception:", ex);
-                    return;
-                }
-
-            }, this._cancellationSource.Token);
-
-            return true;
         }
 
         private void HostService_EventReceived(object? sender, EventReceivedEventArgs e)
@@ -633,6 +592,25 @@ namespace JTAGICEmkII.HostService
         #endregion
 
         #region Private Classes / Enum 
+
+        private class MyBackgroundService<P, R> : Microsoft.Extensions.Hosting.BackgroundService
+            where P : class
+            where R : struct
+        {
+            public Func<P, R> _excecution;
+            public P? _param;
+            public MyBackgroundService(Func<P, R> action, P? param)
+            {
+                _excecution = action;
+                _param = param;
+            }
+
+            protected override Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                var result = _excecution(_param!);
+                return Task.FromResult(result);
+            }
+        }
 
         #endregion
     }

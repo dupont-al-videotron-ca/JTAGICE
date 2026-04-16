@@ -37,8 +37,6 @@ namespace JTAGICEmkIITest.Moq
 
         #region Properties 
 
-        public int NextIndex { get => _nextIndex; set => _nextIndex = value; }
-
         #endregion
 
 

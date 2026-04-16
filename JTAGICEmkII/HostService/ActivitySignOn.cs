@@ -51,7 +51,7 @@ namespace JTAGICEmkII.HostService
                 return false;
 
             this.ActivityStructure.HostService.SignOnResponse = response;
-            return base.ActivityAction();
+            return base.ActivityEntry();
         }
 
         #endregion

@@ -41,7 +41,6 @@ namespace JTAGICEmkIITest
 
             //--- Verification
             Assert.NotNull(test.Initial);
-            Assert.Null(test.Final);
         }
 
         [Fact]
@@ -86,7 +85,6 @@ namespace JTAGICEmkIITest
             var test = new ActivityCompositeMoq(activityStructure);
             var child = new ActivityBaseMoq(activityStructure);
             test.Initial.AddNext(child);
-            test._nextIndex = 0;
 
             //--- Expectations
 
@@ -170,10 +168,9 @@ namespace JTAGICEmkIITest
             var test = new ActivityCompositeMoq(activityStructure);
             var child = new ActivityBaseCompMoq(activityStructure);
             var other = new ActivityBaseMoq(activityStructure);
-            test.Final = new ActivityFinal(activityStructure, child);
             test.Initial.AddNext(child);
             test.AddNext(other);
-            child.AddNext(test.Final);
+            test.NextActivity = other;
 
             //--- Expectations
 
@@ -182,29 +179,8 @@ namespace JTAGICEmkIITest
 
             //--- Verification
             Assert.True(result);
-            Assert.Same(other, activityStructure.CurrentActivity);
+            Assert.Same(other, test.NextActivity);
 
-        }
-
-        [Fact]
-        public void ActivityComposite_call_ActivityExit_shall_throw_exception_without_Final()
-        {
-            //--- Setup
-            var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
-            var test = new ActivityCompositeMoq(activityStructure);
-            var child = new ActivityBaseMoq(activityStructure);
-            test.Initial.AddNext(child);
-
-            //--- Expectations
-
-            //--- Action
-            Assert.Throws<InvalidOperationException>(() => test.ActivityExit(true));
-
-            //--- Verification
-            this.VerifyLogForError = false;
-            var eventLog = this.LoggedEvents.FirstOrDefault(e => e.Level == log4net.Core.Level.Error);
-            Assert.NotNull(eventLog);
-            Assert.Equal("Activity JTAGICEmkIITest.Moq.ActivityCompositeMoq has no final activity to exit.", eventLog.RenderedMessage);
         }
 
         [Fact]
@@ -216,17 +192,16 @@ namespace JTAGICEmkIITest
             var child = new ActivityBaseMoq(activityStructure);
             var parent = new ActivityBaseMoq(activityStructure);
             test.Initial.AddNext(child);
-            test.Final = new ActivityFinal(activityStructure, parent, true);
-            activityStructure.PushActivity(test.Final);
 
             //--- Expectations
+            test.NextActivity = child;
 
             //--- Action
             bool result = test.ActivityExit(true);
 
             //--- Verification
             Assert.True(result);
-            Assert.Same(test.Final, activityStructure.CurrentActivity);
+            Assert.Same(child, test.NextActivity);
         }
 
         #endregion

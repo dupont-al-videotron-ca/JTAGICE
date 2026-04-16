@@ -12,7 +12,7 @@ using Xunit;
 
 namespace JTAGICEmkIITest
 {
-    public class ActivityGetAllParameterTest : ActivityBaseTest
+    public class ActivityGetParameterTest : ActivityBaseTest
     {
 
         #region Declarations --------------------------------------------------
@@ -21,7 +21,7 @@ namespace JTAGICEmkIITest
 
 
         #region Constructors --------------------------------------------------
-        public ActivityGetAllParameterTest() : base()
+        public ActivityGetParameterTest() : base()
         {
         }
         #endregion
@@ -37,9 +37,7 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var test = new ActivityGetAllParameter(
-                _activityStructure, 
-                null);
+            var test = new ActivityGetParameter(_activityStructure);
 
 
             //--- Verification
@@ -52,7 +50,7 @@ namespace JTAGICEmkIITest
         public void ActivityGetAllParameter_shall_Accept_visitorCommand()
         {
             //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure, null);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
             //--- Expectations
             _visitorCommandMoq.Setup(m => m.Visit(It.IsAny<ActivitySetDeviceDescriptor>())).Returns(true);
@@ -68,7 +66,7 @@ namespace JTAGICEmkIITest
         public void ActivityGetAllParameter_shall_Accept_visitorActivity()
         {
             //--- Setup
-            var test = new ActivityGetAllParameter(_activityStructure, null);
+            var test = new ActivitySetParameter(_activityStructure);
             //--- Expectations
 
             //--- Action
@@ -81,8 +79,7 @@ namespace JTAGICEmkIITest
         public void ActivityGetAllParameter_OnReceivedResponse_shall_be_success()
         {
             //--- Setup
-            var parent = new ActivityClearEvents(_activityStructure, null);
-            var test = new ActivityGetAllParameter(_activityStructure, parent);
+            var test = new ActivityGetParameter(_activityStructure);
 
             //--- Expectations
 
@@ -99,7 +96,7 @@ namespace JTAGICEmkIITest
         public void ActivityGetAllParameter_OnReceivedResponse_shall_throw_not_implemented_exception()
         {
             //--- Setup
-            var test = new ActivityGetAllParameter(_activityStructure, null);
+            var test = new ActivitySetParameter(_activityStructure);
 
             //--- Expectations
 
@@ -109,39 +106,6 @@ namespace JTAGICEmkIITest
             //--- Verification
         }
 
-        [Fact]
-        public void ActivityGetAllParameter_ActivityEntry_shall_return_true()
-        {
-            //--- Setup
-            var test = new ActivityGetAllParameter(_activityStructure, null);
-
-            //--- Expectations
-
-            //--- Action
-            var result =test.ActivityEntry();
-
-            //--- Verification
-            Assert.True(result);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
-        }
-
-        [Fact]
-        public void ActivityGetAllParameter_ActivityEntry_shall_return_false()
-        {
-            //--- Setup
-            var test = new ActivityGetAllParameter(_activityStructure, null);
-
-            //--- Expectations
-            this._hostService.ForceSuccess = false;
-
-            //--- Action
-            var result = test.ActivityEntry();
-
-            //--- Verification
-            Assert.False(result);
-            Assert.Null(_hostService.SignOnResponse);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
-        }
 
         #endregion
 

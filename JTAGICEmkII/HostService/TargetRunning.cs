@@ -26,8 +26,11 @@ namespace JTAGICEmkII.HostService
 
         public override bool ActivityAction()
         {
-            // TODO: This is a temporary implementation to allow the activity structure to be executed. The actual implementation will be added later.
-            return base.ActivityAction();
+            if(!base.ActivityAction())
+                return false;
+
+            this.WaitIdle();
+            return true;
         }
 
         public override bool ActivityEntry()
@@ -54,16 +57,17 @@ namespace JTAGICEmkII.HostService
                     {
                         case MasterCommandEnum.CMND_RESTORE_TARGET:
                             NextActivity = this.Find<TargetDisonnecting>();
+                            SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_GET_SYNC:
                         case MasterCommandEnum.CMND_RESET:
                         case MasterCommandEnum.CMND_FORCED_STOP:
                             NextActivity = this.Find<TargetStopped>();
+                            SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_SINGLE_STEP:
                         case MasterCommandEnum.CMND_RUN_TO_ADDR:
                         case MasterCommandEnum.CMND_GO:
-                            NextActivity = this.Find<TargetRunning>();
                             break;
                         case MasterCommandEnum.CMND_ENTER_PROGMODE:
                         case MasterCommandEnum.CMND_CHIP_ERASE:
@@ -115,7 +119,6 @@ namespace JTAGICEmkII.HostService
         public override bool RequestTimeout(CommandRequest<IMasterCommand, ISlaveResponse> request)
         {
             this.Logger.Debug("Host service request timed out.");
-            NextActivity = this.Find<TargetRunning>();
             return true;
         }
 
@@ -128,21 +131,19 @@ namespace JTAGICEmkII.HostService
                 case SlaveResponseEnum.EVT_PDSB_BREAK:
                 case SlaveResponseEnum.EVT_PDSMB_BREAK:
                     NextActivity = this.Find<TargetStopped>();
+                    SetWaitIdle();
                     break;
                 case SlaveResponseEnum.EVT_RUN:
-                    NextActivity = this.Find<TargetRunning>();
-                    break;
                 case SlaveResponseEnum.EVT_TARGET_POWER_ON:
-                    //_nextIndex = this.Nexts.FindIndex(n => n is );
                     break;
 
                 case SlaveResponseEnum.EVT_DEBUG:
                     NextActivity = this.Find<TargetStopped>();
+                    SetWaitIdle();
                     break;
                 case SlaveResponseEnum.EVT_EXTERNAL_RESET:
                 case SlaveResponseEnum.EVT_TARGET_SLEEP:
                 case SlaveResponseEnum.EVT_TARGET_WAKEUP:
-                    NextActivity = this.Find<TargetRunning>();
                     break;
                 case SlaveResponseEnum.EVT_ICE_POWER_ERROR_STATE:
                 case SlaveResponseEnum.EVT_ICE_POWER_OK:
@@ -160,7 +161,6 @@ namespace JTAGICEmkII.HostService
                 case SlaveResponseEnum.EVT_ERROR_PHY_OPT_RECEIVE_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_OPT_RECEIVED_BREAK:
                 case SlaveResponseEnum.EVT_ERROR_PHY_NO_ACTIVITY:
-
                     break;
                 default:
                     this.Logger.Debug($"Event handling not implemented for event: {response?.ResponseId}.");

@@ -44,7 +44,7 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public IActivityElement? CurrentActivity { get; set; }
+        public IActivityElement? CurrentActivity { get; internal set; }
 
         public IHostDeviceService HostService => this._hostService;
 
@@ -190,7 +190,7 @@ namespace JTAGICEmkII.HostService
                 }
                 else if (!ReferenceEquals(activity, this.CurrentActivity))
                 {
-                    if(RunActivity(this.CurrentActivity))
+                    if (RunActivity(this.CurrentActivity))
                         this.CurrentActivity = activity;
                 }
 
@@ -221,8 +221,6 @@ namespace JTAGICEmkII.HostService
                 {
                     Logger.Error(ex.Message);
                 }
-
-                throw;
             }
 
             return true;

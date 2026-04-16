@@ -292,10 +292,8 @@ namespace JTAGICEmkIITest
             //--- Verification
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void ActivityBaseComp_Shall_Test_ActivityExit_with_lastRequest_true(int index)
+        [Fact]
+        public void ActivityBaseComp_Shall_Test_ActivityExit_with_lastRequest_true()
         {
             //--- Setup
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
@@ -305,11 +303,11 @@ namespace JTAGICEmkIITest
             var test = new ActivityBaseCompMoq(activityStructure, initial);
             test.AddNext(initial);
             test.AddNext(initial2);
-            test.NextIndex = index;
 
             Assert.Equal(3, activityStructure.Count);
             initial.AddNext(test);
             initial2.AddNext(test);
+            test.NextActivity = initial2;
 
             //--- Expectations
 
@@ -317,9 +315,7 @@ namespace JTAGICEmkIITest
             var result = test.ActivityExit(true);
 
             //--- Verification
-            Assert.Equal(-1, test.NextIndex);           
             Assert.True(result);
-            Assert.Same(test, activityStructure.CurrentActivity);
 
         }
 
@@ -332,7 +328,6 @@ namespace JTAGICEmkIITest
             var initial2 = new ActivityInitial(activityStructure);
 
             var test = new ActivityBaseCompMoq(activityStructure, initial);
-            test.NextIndex = 0;
 
             Assert.Equal(3, activityStructure.Count);
             initial.AddNext(test);
@@ -344,7 +339,6 @@ namespace JTAGICEmkIITest
             var result = test.ActivityExit(true);
 
             //--- Verification
-            Assert.Equal(-1, test.NextIndex);
             Assert.False(result);
             Assert.Null(activityStructure.CurrentActivity);
 
@@ -363,21 +357,18 @@ namespace JTAGICEmkIITest
             var initial2 = new ActivityInitial(activityStructure);
 
             var test = new ActivityBaseCompMoq(activityStructure, initial);
-            test.NextIndex = 0;
 
             Assert.Equal(3, activityStructure.Count);
             initial.AddNext(test);
             initial2.AddNext(test);
-
             //--- Expectations
 
             //--- Action
             var result = test.ActivityExit(false);
 
             //--- Verification
-            Assert.Equal(0, test.NextIndex);
-            Assert.False(result);
-            Assert.Null(activityStructure.CurrentActivity);
+            Assert.True(result);
+            Assert.Null(test.NextActivity);
 
         }
 

@@ -26,7 +26,12 @@ namespace JTAGICEmkII.HostService
 
         public override bool ActivityAction()
         {
-            return base.ActivityAction();
+            if (!base.ActivityAction())
+                return false;
+
+
+            this.WaitIdle();
+            return true;
         }
         public override bool ActivityEntry()
         {
@@ -46,14 +51,17 @@ namespace JTAGICEmkII.HostService
                     {
                         case MasterCommandEnum.CMND_RESTORE_TARGET:
                             NextActivity = this.Find<TargetDisonnecting>();
+                            SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_SINGLE_STEP:
                         case MasterCommandEnum.CMND_RUN_TO_ADDR:
                         case MasterCommandEnum.CMND_GO:
                             NextActivity = this.Find<TargetRunning>();
+                            SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_ENTER_PROGMODE:
                             NextActivity = this.Find<TargetProgramming>();
+                            SetWaitIdle();
                             break;
 
                         case MasterCommandEnum.CMND_FORCED_STOP:
@@ -72,7 +80,6 @@ namespace JTAGICEmkII.HostService
                         case MasterCommandEnum.CMND_RESET:
                         case MasterCommandEnum.CMND_CLEAR_EVENTS:
                         case MasterCommandEnum.CMND_LEAVE_PROGMODE:
-                            NextActivity = this.Find<TargetStopped>();
                             break;
 
                         case MasterCommandEnum.CMND_SIGN_OFF:
@@ -111,7 +118,6 @@ namespace JTAGICEmkII.HostService
         public override bool RequestTimeout(CommandRequest<IMasterCommand, ISlaveResponse> request)
         {
             this.Logger.Debug("Host service request timed out.");
-            NextActivity = this.Find<TargetStopped>();
             return true;
         }   
 

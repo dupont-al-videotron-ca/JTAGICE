@@ -33,7 +33,7 @@ namespace JTAGICEmkIITest
             {
                 if (_rxFrame != null)
                 {
-                    _rxFrame.ResponceReceived -= RxFrame_ResponceReceived;
+                    _rxFrame.ResponseReceived -= RxFrame_ResponseReceived;
                     _rxFrame.RxTimerExpired -= RxFrame_RxTimerExpired;
                     _rxFrame.Dispose();
                 }
@@ -79,7 +79,7 @@ namespace JTAGICEmkIITest
             var txadapt = new Moq.TxFrameFifoMemory(buffer);
             _rxFrame = new RxFrame(rxadapt);
             rxadapt.Attach(_rxFrame);
-            _rxFrame.ResponceReceived += RxFrame_ResponceReceived;
+            _rxFrame.ResponseReceived += RxFrame_ResponseReceived;
             _rxFrame.CommandReceived += RxFrame_CommandReceived;
             _rxFrame.RxTimerExpired += RxFrame_RxTimerExpired;
             _txFrame = new TxFrame(txadapt);
@@ -212,7 +212,7 @@ namespace JTAGICEmkIITest
 
         private void RxFrame_RxTimerExpired(object? sender, EventArgs e) => _timeoutOccured = true;
 
-        private void RxFrame_ResponceReceived(object? sender, ResponseReceivedEventArgs e)
+        private void RxFrame_ResponseReceived(object? sender, ResponseReceivedEventArgs e)
         {
             if (_timeoutOccured)
             {

@@ -87,7 +87,6 @@ namespace JTAGICEmkIITest
             var test = new ActivityInitial(activityStructure);
             var child = new ActivityBaseMoq(activityStructure);
             test.AddNext(child);
-            test._nextIndex = 0;
 
             //--- Expectations
 
@@ -96,7 +95,7 @@ namespace JTAGICEmkIITest
 
             //--- Verification
             Assert.True(result);
-            Assert.Same(child, activityStructure.CurrentActivity);
+            Assert.Same(child, test.Child);
         }
 
         [Fact]
@@ -150,7 +149,6 @@ namespace JTAGICEmkIITest
             var test = new ActivityInitial(activityStructure);
             var child = new ActivityBaseMoq(activityStructure);
             test.AddNext(child);
-            test._nextIndex = 0;
 
             //--- Expectations
 
@@ -159,7 +157,7 @@ namespace JTAGICEmkIITest
 
             //--- Verification
             Assert.True(result);
-            Assert.Same(child, activityStructure.CurrentActivity);
+            Assert.Same(child, test.Child);
 
         }
         

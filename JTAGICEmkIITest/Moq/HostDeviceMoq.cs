@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS0067
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
@@ -23,6 +24,12 @@ namespace JTAGICEmkIITest.Moq
 
         private ResponseSignOn? _signOnResponse = null;
 
+        public event EventHandler<RequestEventArgs>? RequestCompleted;
+        public event EventHandler<EventReceivedEventArgs>? EventReceived;
+        public event EventHandler<RequestEventArgs>? RequestTimeout;
+        public event EventHandler<ResponseReceivedEventArgs>? ResponseReceived;
+        public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
+
         public ResponseSignOn SignOnResponse { get => _signOnResponse!; set => _signOnResponse = value; }
         public TargetState TargetMcuState { get; set; }
 
@@ -35,9 +42,14 @@ namespace JTAGICEmkIITest.Moq
         public bool EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
         public bool GetAllParameter() => ForceSuccess;
         public bool GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
-        public bool GetParameter(int paramId, out uint value) => throw new NotImplementedException();
+        public bool GetParameter(int paramId, out uint value)
+        {
+            value = 0;
+            return ForceSuccess;
+        }
+         
         public bool LeavePrograming() => throw new NotImplementedException();
-        public bool ModifyAllParameter() => throw new NotImplementedException();
+        public bool ModifyAllParameter() => ForceSuccess;
         public bool ReadMemory(int memType, ulong Address, ulong Length, out byte Values) => throw new NotImplementedException();
         public bool ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
         public bool Reconnect() => throw new NotImplementedException();
@@ -45,7 +57,7 @@ namespace JTAGICEmkIITest.Moq
         public bool SetAllParameter() => ForceSuccess;
         public bool SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
         public bool SetDeviceDescriptor() => ForceSuccess;
-        public bool SetParameter(int paramId, uint value) => throw new NotImplementedException();
+        public bool SetParameter(int paramId, uint value) => ForceSuccess;
         public bool SignOff() => throw new NotImplementedException();
         public bool SignOn(out ResponseSignOn? response)
         {
@@ -73,6 +85,8 @@ namespace JTAGICEmkIITest.Moq
         public bool WriteMemory(int MemType, ulong Address, byte Values) => throw new NotImplementedException();
         public bool WriteProgramCount(ulong ProgramCounter) => throw new NotImplementedException();
         public bool WritePrograming(ulong Address, byte Values) => throw new NotImplementedException();
-
+        public bool GetSync() => throw new NotImplementedException();
+        public bool WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
+        public bool ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
     }
 }

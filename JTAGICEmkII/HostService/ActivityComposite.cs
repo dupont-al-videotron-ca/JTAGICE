@@ -54,7 +54,6 @@ namespace JTAGICEmkII.HostService
                 }
                 else
                 {
-                    this.ActivityStructure.CurrentActivity = this.Initial;
                     return base.ActivityEntry();
                 }
             }

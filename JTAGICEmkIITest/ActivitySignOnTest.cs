@@ -37,9 +37,7 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var test = new ActivitySignOn(
-                _activityStructure, 
-                null);
+            var test = new ActivitySignOn(_activityStructure);
 
 
             //--- Verification
@@ -52,7 +50,7 @@ namespace JTAGICEmkIITest
         public void ActivitySignOn_shall_Accept_visitorCommand()
         {
             //--- Setup
-            var test = new ActivitySignOn(_activityStructure, null);
+            var test = new ActivitySignOn(_activityStructure);
 
             //--- Expectations
             _visitorCommandMoq.Setup(m => m.Visit(It.IsAny<ActivitySignOn>())).Returns(true);
@@ -68,7 +66,7 @@ namespace JTAGICEmkIITest
         public void ActivitySignOn_shall_Accept_visitorActivity()
         {
             //--- Setup
-            var test = new ActivitySignOn(_activityStructure, null);
+            var test = new ActivitySignOn(_activityStructure);
 
             //--- Expectations
 
@@ -83,7 +81,7 @@ namespace JTAGICEmkIITest
         {
             //--- Setup
             var parent = new ActivityInitial(_activityStructure);
-            var test = new ActivitySignOn(_activityStructure, parent);
+            var test = new ActivitySignOn(_activityStructure);
 
             //--- Expectations
 
@@ -100,7 +98,7 @@ namespace JTAGICEmkIITest
         public void ActivitySignOn_OnReceivedResponse_shall_throw_not_implemented_exception()
         {
             //--- Setup
-            var test = new ActivitySignOn(_activityStructure, null);
+            var test = new ActivitySignOn(_activityStructure);
 
             //--- Expectations
 
@@ -114,7 +112,7 @@ namespace JTAGICEmkIITest
         public void ActivitySignOn_ActivityEntry_shall_return_true()
         {
             //--- Setup
-            var test = new ActivitySignOn(_activityStructure, null);
+            var test = new ActivitySignOn(_activityStructure);
 
             //--- Expectations
 
@@ -131,7 +129,7 @@ namespace JTAGICEmkIITest
         public void ActivitySignOn_ActivityEntry_shall_return_false()
         {
             //--- Setup
-            var test = new ActivitySignOn(_activityStructure, null);
+            var test = new ActivitySignOn(_activityStructure);
 
             //--- Expectations
             this._hostService.ForceSuccess = false;

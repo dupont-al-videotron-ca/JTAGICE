@@ -66,7 +66,7 @@ namespace JTAGICEmkII.HostService
             var host = this.Find<HostSession>();
             if (host is HostSession hostSession)
             {
-                hostSession.SessionActive = retval;
+                hostSession.IsSessionActive = retval;
             }
 
             if (!retval)
@@ -74,6 +74,7 @@ namespace JTAGICEmkII.HostService
                 this.NextActivity = host;
             }
 
+            this.NextActivity = this.Find<TargetConnected>(); ;
             return retval;
         }
 

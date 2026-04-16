@@ -42,6 +42,8 @@ namespace JTAGICEmkII.HostService
 
         private readonly List<IActivityElement> _nexts;
         private readonly List<IActivityElement> _parents;
+        private readonly AutoResetEvent _waitHandle = new AutoResetEvent(false);
+
 
         public IActivityElement? Parent
         {
@@ -83,14 +85,24 @@ namespace JTAGICEmkII.HostService
 
         #region Properties 
 
-        protected List<IActivityElement> Nexts => _nexts;
+        internal protected List<IActivityElement> Nexts => _nexts;
 
-        protected List<IActivityElement> Parents => _parents;
+        internal protected List<IActivityElement> Parents => _parents;
 
         public IActivityElement? NextActivity { get; set; }
         #endregion
 
         #region Public Methods 
+
+        protected void WaitIdle()
+        {
+            this._waitHandle.WaitOne();
+        }
+
+        protected void SetWaitIdle()
+        {
+            this._waitHandle.Set();
+        }
 
         protected IActivityElement? Find<T>() where T : IActivityElement
         {
@@ -127,7 +139,6 @@ namespace JTAGICEmkII.HostService
                 }
                 else
                 {
-                    this.ActivityStructure.CurrentActivity = this.NextActivity;
                     return true;
                 }
             }

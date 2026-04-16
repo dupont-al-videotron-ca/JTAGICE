@@ -43,8 +43,8 @@ namespace JTAGICEmkII.HostService
         }
         public override bool ActivityEntry()
         {
-            if(this.ActivityStructure.CurrentActivity == this)
-                this.ActivityStructure.CurrentActivity = this._targetStopped;
+
+            this.NextActivity = this._targetStopped;
 
             return base.ActivityEntry();
         }

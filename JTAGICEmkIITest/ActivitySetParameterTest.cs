@@ -12,7 +12,7 @@ using Xunit;
 
 namespace JTAGICEmkIITest
 {
-    public class ActivitySetAllParameterTest : ActivityBaseTest
+    public class ActivitySetParameterTest : ActivityBaseTest
     {
 
         #region Declarations --------------------------------------------------
@@ -21,7 +21,7 @@ namespace JTAGICEmkIITest
 
 
         #region Constructors --------------------------------------------------
-        public ActivitySetAllParameterTest() : base()
+        public ActivitySetParameterTest() : base()
         {
         }
         #endregion
@@ -37,9 +37,7 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var test = new ActivitySetAllParameter(
-                _activityStructure, 
-                null);
+            var test = new ActivitySetParameter(_activityStructure);
 
 
             //--- Verification
@@ -52,7 +50,7 @@ namespace JTAGICEmkIITest
         public void ActivitySetAllParameter_shall_Accept_visitorCommand()
         {
             //--- Setup
-            var test = new ActivitySetAllParameter(_activityStructure, null);
+            var test = new ActivitySetParameter(_activityStructure);
 
             //--- Expectations
             _visitorCommandMoq.Setup(m => m.Visit(It.IsAny<ActivitySetParameter  >())).Returns(true);
@@ -68,7 +66,7 @@ namespace JTAGICEmkIITest
         public void ActivitySetAllParameter_shall_Accept_visitorActivity()
         {
             //--- Setup
-            var test = new ActivitySetAllParameter(_activityStructure, null);
+            var test = new ActivitySetParameter(_activityStructure);
             //--- Expectations
 
             //--- Action
@@ -82,9 +80,8 @@ namespace JTAGICEmkIITest
         {
             //--- Setup
             var parent = new ActivityAction(_activityStructure, null!, () => { return true; });
-            var test = new ActivitySetAllParameter(_activityStructure, parent);
+            var test = new ActivitySetParameter(_activityStructure);
             var next = new ActivityBaseMoq(_activityStructure);
-            test.AddNext(next);
 
             //--- Expectations
 
@@ -98,26 +95,10 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void ActivitySetAllParameter_OnReceivedResponse_shall_throw_exception_with_child()
-        {
-            //--- Setup
-            var parent = new ActivityAction(_activityStructure, null!, () => { return true; });
-            var test = new ActivitySetAllParameter(_activityStructure, parent);
-
-            //--- Expectations
-
-            //--- Action
-            Assert.Throws<InvalidOperationException>(() => test.OnReceivedResponse(new Response(SlaveResponseEnum.RSP_OK)));
-
-            //--- Verification
-            
-        }
-
-        [Fact]
         public void ActivitySetAllParameter_OnReceivedResponse_shall_throw_not_implemented_exception()
         {
             //--- Setup
-            var test = new ActivitySetAllParameter(_activityStructure, null);
+            var test = new ActivitySetParameter(_activityStructure);
 
             //--- Expectations
 
@@ -125,40 +106,6 @@ namespace JTAGICEmkIITest
             Assert.Throws<NotImplementedException>(() => test.OnReceivedResponse(new Response(SlaveResponseEnum.RSP_PC)));
 
             //--- Verification
-        }
-
-        [Fact]
-        public void ActivitySetAllParameter_ActivityEntry_shall_return_true()
-        {
-            //--- Setup
-            var test = new ActivitySetAllParameter(_activityStructure, null);
-
-            //--- Expectations
-
-            //--- Action
-            var result =test.ActivityEntry();
-
-            //--- Verification
-            Assert.True(result);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
-        }
-
-        [Fact]
-        public void ActivitySetAllParameter_ActivityEntry_shall_return_false()
-        {
-            //--- Setup
-            var test = new ActivitySetAllParameter(_activityStructure, null);
-
-            //--- Expectations
-            this._hostService.ForceSuccess = false;
-
-            //--- Action
-            var result = test.ActivityEntry();
-
-            //--- Verification
-            Assert.False(result);
-            Assert.Null(_hostService.SignOnResponse);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
         }
 
         #endregion

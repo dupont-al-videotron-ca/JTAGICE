@@ -14,7 +14,7 @@ namespace JTAGICEmkIITest.Moq
     internal class ActivityProcessCommandMoq : ActivityProcessCommand
     {
         internal ActivityProcessCommandMoq(StructureActivity activityStructure) : 
-            base(activityStructure, null!, MasterCommandEnum.CMND_RESET, SlaveResponseEnum.RSP_OK)
+            base(activityStructure, MasterCommandEnum.CMND_RESET, SlaveResponseEnum.RSP_OK)
         {
             IsCanSendCommand = true;
         }
@@ -56,10 +56,10 @@ namespace JTAGICEmkIITest.Moq
                 case SlaveResponseEnum.EVT_PDSB_BREAK:
                 case SlaveResponseEnum.EVT_PDSMB_BREAK:
                 case SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT:
-                case SlaveResponseEnum.EVT_ERROR_PHY_RELEASE_BREAK_TIMeOOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_RELEASE_BREAK_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_MAX_BIT_LENGHT_DIFF:
                 case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT:
-                case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMeOUT_BAUD:
+                case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT_BAUD:
                 case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_OUT_OF_RANGE:
                 case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_WAIT_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_RECEIVE_TIMEOUT:

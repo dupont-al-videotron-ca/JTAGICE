@@ -39,7 +39,7 @@ namespace JTAGICEmkII.HostService
             this.NextActivity = this.Find<HostSession>();
             if (this.NextActivity is HostSession hostSession)
             {
-                hostSession.SessionActive = false;
+                hostSession.IsSessionActive = false;
             }
 
             return true;

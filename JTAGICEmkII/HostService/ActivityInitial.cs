@@ -26,7 +26,7 @@ namespace JTAGICEmkII.HostService
             {
                 if (this.Parents.Count == 1)
                 {
-                    this.ActivityStructure.CurrentActivity = this.Parents[0];
+                    this.NextActivity = this.Parents[0];
                 }
                 else
                 {
@@ -57,7 +57,7 @@ namespace JTAGICEmkII.HostService
 
         public override bool ActivityExit(bool lastRequest)
         {
-            this.ActivityStructure.CurrentActivity = this.Nexts[0];
+            this.NextActivity = this.Nexts[0];
             return base.ActivityExit(lastRequest);
         }
 

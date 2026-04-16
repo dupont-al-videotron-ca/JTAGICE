@@ -36,7 +36,7 @@ namespace JTAGICEmkII.HostService
 
 
         #region Properties 
-        public bool SessionActive { get; set; }
+        public bool IsSessionActive { get; internal set; }
 
         #endregion
 
@@ -51,16 +51,16 @@ namespace JTAGICEmkII.HostService
         public override bool ActivityEntry()
         {
             _waitHandle.Reset();
-            SessionActive = true;
-            this.ActivityStructure.CurrentActivity = this._targetConnecting;
+            IsSessionActive = true;
+            this.NextActivity = this._targetConnecting;
             return base.ActivityEntry();
         }
 
         public override bool ActivityExit(bool lastRequest)
         {
             _waitHandle.Set();
-            SessionActive = false;
-            this.ActivityStructure.CurrentActivity = null;
+            IsSessionActive = false;
+            this.NextActivity = null;
             return true;
         }
 

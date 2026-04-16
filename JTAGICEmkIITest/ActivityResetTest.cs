@@ -37,9 +37,7 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var test = new ActivityReset(
-                _activityStructure, 
-                null);
+            var test = new ActivityReset(_activityStructure);
 
 
             //--- Verification
@@ -52,7 +50,7 @@ namespace JTAGICEmkIITest
         public void ActivityReset_shall_Accept_visitorCommand()
         {
             //--- Setup
-            var test = new ActivityReset(_activityStructure, null);
+            var test = new ActivityReset(_activityStructure);
 
             //--- Expectations
             _visitorCommandMoq.Setup(m => m.Visit(It.IsAny<ActivityReset>())).Returns(true);
@@ -68,7 +66,7 @@ namespace JTAGICEmkIITest
         public void ActivityReset_shall_Accept_visitorActivity()
         {
             //--- Setup
-            var test = new ActivityReset(_activityStructure, null);
+            var test = new ActivityReset(_activityStructure);
 
             //--- Expectations
 
@@ -82,8 +80,7 @@ namespace JTAGICEmkIITest
         public void ActivityReset_OnReceivedResponse_shall_be_success()
         {
             //--- Setup
-            var signOn = new ActivitySignOn(_activityStructure, new ActivityBaseMoq(_activityStructure));
-            var test = new ActivityReset(_activityStructure, signOn);
+            var test = new ActivityReset(_activityStructure);
 
             //--- Expectations
 
@@ -100,7 +97,7 @@ namespace JTAGICEmkIITest
         public void ActivityReset_OnReceivedResponse_shall_throw_not_implemented_exception()
         {
             //--- Setup
-            var test = new ActivityReset(_activityStructure, null);
+            var test = new ActivityReset(_activityStructure);
 
             //--- Expectations
 
@@ -108,40 +105,6 @@ namespace JTAGICEmkIITest
             Assert.Throws<NotImplementedException>(() => test.OnReceivedResponse(new Response(SlaveResponseEnum.RSP_PC)));
 
             //--- Verification
-        }
-
-        [Fact]
-        public void ActivityReset_ActivityEntry_shall_return_true()
-        {
-            //--- Setup
-            var test = new ActivityReset(_activityStructure, null);
-
-            //--- Expectations
-
-            //--- Action
-            var result =test.ActivityEntry();
-
-            //--- Verification
-            Assert.True(result);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
-        }
-
-        [Fact]
-        public void ActivityReset_ActivityEntry_shall_return_false()
-        {
-            //--- Setup
-            var test = new ActivityReset(_activityStructure, null);
-
-            //--- Expectations
-            this._hostService.ForceSuccess = false;
-
-            //--- Action
-            var result = test.ActivityEntry();
-
-            //--- Verification
-            Assert.False(result);
-            Assert.Null(_hostService.SignOnResponse);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
         }
 
         #endregion

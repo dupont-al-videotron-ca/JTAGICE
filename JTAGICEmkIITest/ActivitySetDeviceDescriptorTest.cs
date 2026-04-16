@@ -37,9 +37,7 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var test = new ActivitySetDeviceDescriptor(
-                _activityStructure, 
-                null);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
 
             //--- Verification
@@ -52,7 +50,7 @@ namespace JTAGICEmkIITest
         public void SetDescriptor_shall_Accept_visitorCommand()
         {
             //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure, null);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
             //--- Expectations
             _visitorCommandMoq.Setup(m => m.Visit(It.IsAny<ActivitySetDeviceDescriptor>())).Returns(true);
@@ -68,7 +66,7 @@ namespace JTAGICEmkIITest
         public void SetDescriptor_shall_Accept_visitorActivity()
         {
             //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure, null);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
             //--- Expectations
 
@@ -82,8 +80,7 @@ namespace JTAGICEmkIITest
         public void SetDescriptor_OnReceivedResponse_shall_be_success()
         {
             //--- Setup
-            var parent = new ActivityReset(_activityStructure, null);
-            var test = new ActivitySetDeviceDescriptor(_activityStructure, parent);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
             //--- Expectations
 
@@ -100,7 +97,7 @@ namespace JTAGICEmkIITest
         public void SetDescriptor_OnReceivedResponse_shall_throw_not_implemented_exception()
         {
             //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure, null);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
             //--- Expectations
 
@@ -114,7 +111,7 @@ namespace JTAGICEmkIITest
         public void SetDescriptor_ActivityEntry_shall_return_true()
         {
             //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure, null);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
             //--- Expectations
 
@@ -130,7 +127,7 @@ namespace JTAGICEmkIITest
         public void SetDescriptor_ActivityEntry_shall_return_false()
         {
             //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure, null);
+            var test = new ActivitySetDeviceDescriptor(_activityStructure);
 
             //--- Expectations
             this._hostService.ForceSuccess = false;
