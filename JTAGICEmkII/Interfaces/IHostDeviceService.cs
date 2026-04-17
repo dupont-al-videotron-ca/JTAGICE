@@ -17,9 +17,9 @@ namespace JTAGICEmkII
 {
 	public interface IHostDeviceService  
     {
-        ResponseSignOn SignOnResponse { get; set; }
+        ResponseSignOn SignOnResponse { get; }
 
-        TargetState TargetMcuState { get; set; }
+        TargetState TargetMcuState { get; }
 
         ICommandResult SignOff();
 
@@ -28,17 +28,17 @@ namespace JTAGICEmkII
         ICommandResult GetSync();
 
         /// 
-        /// <param name="MemType"></param>
-        /// <param name="Address"></param>
-        /// <param name="Values"></param>
-        ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values);
+        /// <param name="memType"></param>
+        /// <param name="address"></param>
+        /// <param name="values"></param>
+        ICommandResult WriteMemory(int memType, ulong address, byte[] values);
 
 		/// 
 		/// <param name="memType"></param>
-		/// <param name="Address"></param>
-		/// <param name="Length"></param>
-		/// <param name="Values"></param>
-		ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values);
+		/// <param name="address"></param>
+		/// <param name="length"></param>
+		/// <param name="values"></param>
+		ICommandResult ReadMemory(int memType, ulong address, ulong length, out byte[] values);
 
         /// 
         /// <param name="Info"></param>
@@ -51,48 +51,47 @@ namespace JTAGICEmkII
         ICommandResult SetParameter(int paramId, uint value);
 
 		/// 
-		/// <param name="ProgramCounter"></param>
-		ICommandResult WriteProgramCount(ulong ProgramCounter);
+		/// <param name="programCounter"></param>
+		ICommandResult WriteProgramCount(ulong programCounter);
 
 		/// 
-		/// <param name="ProgramCounter"></param>
-		ICommandResult ReadProgramCount(out ulong ProgramCounter);
+		/// <param name="programCounter"></param>
+		ICommandResult ReadProgramCount(out ulong programCounter);
 
 		ICommandResult StartRunning();
 
 		ICommandResult StopRunning();
 
 		/// 
-		/// <param name="Breakpoint"></param>
-		ICommandResult StartRunningUntil(ulong Breakpoint);
+		/// <param name="breakpoint"></param>
+		ICommandResult StartRunningUntil(ulong breakpoint);
 
 		/// 
-		/// <param name="ProgramCounter"></param>
-		ICommandResult StepIn(ulong ProgramCounter);
+		/// <param name="programCounter"></param>
+		ICommandResult StepIn(ulong programCounter);
 
 		ICommandResult Reset();
 
 		/// 
-		/// <param name="MemType"></param>
-		/// <param name="Address"></param>
-		/// <param name="Length"></param>
-		ICommandResult EraseMemory(int MemType, ulong Address, ulong Length);
+		/// <param name="memType"></param>
+		/// <param name="address"></param>
+		/// <param name="length"></param>
+		ICommandResult EraseMemory(int memType, ulong address, ulong length);
 
 		ICommandResult Reconnect();
 
 		/// 
 		/// <param name="index"></param>
-		/// <param name="Breakpoint"></param>
-		/// <param name="BreakpointType"></param>
-		/// <param name="BrakpointMode"></param>
-		ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode);
+		/// <param name="breakpoint"></param>
+		/// <param name="breakpointType"></param>
+		/// <param name="brakpointMode"></param>
+		ICommandResult SetBreakpoint(int index, ulong breakpoint, int breakpointType, int brakpointMode);
 
 		/// 
-		/// <param name="Index"></param>
-		/// <param name="Breakpoint"></param>
-		/// <param name="BreakpointType"></param>
-		/// <param name="BrakpointMode"></param>
-		ICommandResult GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode);
+		/// <param name="index"></param>
+		/// <param name="breakpointType"></param>
+		/// <param name="brakpointMode"></param>
+		ICommandResult GetBreakpoint(int index, int breakpointType, int brakpointMode, out ulong breakpoint);
 
 		ICommandResult EraseDevice();
 
@@ -103,14 +102,14 @@ namespace JTAGICEmkII
 		ICommandResult VerifiyPrograming();
 
 		/// 
-		/// <param name="Address"></param>
-		/// <param name="Values"></param>
-		ICommandResult WritePrograming(ulong Address, byte Values);
+		/// <param name="address"></param>
+		/// <param name="values"></param>
+		ICommandResult WritePrograming(ulong address, byte values);
 
 		/// 
-		/// <param name="Index"></param>
-		/// <param name="Breakpoint"></param>
-		ICommandResult ClearBreakpoint(int Index, ulong Breakpoint);
+		/// <param name="index"></param>
+		/// <param name="breakpoint"></param>
+		ICommandResult ClearBreakpoint(int index, ulong breakpoint);
 
         ICommandResult SetDeviceDescriptor();
 
@@ -118,7 +117,11 @@ namespace JTAGICEmkII
 
         ICommandResult SetAllParameter();
 
+        ICommandResult SelfTest();
+
         ICommandResult GetAllParameter();
+
+        ICommandResult SpiCommand(byte[] send, out byte read);
 
         bool ModifyAllParameter();
 

@@ -16,13 +16,15 @@ namespace JTAGICEmkIITest.Moq
 {
     public class HostDeviceMoq : IHostDeviceService
     {
+
         public HostDeviceMoq()
         {
             TargetMcuState = new TargetState();
-            Assert.Equal(McuStateEnum.Unknown,TargetMcuState.State);
         }
 
+        private uint _breakpoint;
         private ResponseSignOn? _signOnResponse = null;
+        private uint _programCounter;
 
         public event EventHandler<RequestEventArgs>? RequestCompleted;
         public event EventHandler<EventReceivedEventArgs>? EventReceived;
@@ -35,30 +37,50 @@ namespace JTAGICEmkIITest.Moq
 
         public bool ForceSuccess { get; set; } = true;
 
-        public ICommandResult ClearBreakpoint(int Index, ulong Breakpoint) => throw new NotImplementedException();
+        public ICommandResult ClearBreakpoint(int Index, ulong Breakpoint)
+        {
+            _breakpoint = 0;
+            return (CommandResult)ForceSuccess;
+        }
         public ICommandResult ClearEvents() => (CommandResult)ForceSuccess;
-        public ICommandResult EnterPrograming() => throw new NotImplementedException();
-        public ICommandResult EraseDevice() => throw new NotImplementedException();
-        public ICommandResult EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
+        public ICommandResult EnterPrograming() => (CommandResult)ForceSuccess;
+        public ICommandResult EraseDevice() => (CommandResult)ForceSuccess;
+        public ICommandResult EraseMemory(int MemType, ulong Address, ulong Length) => (CommandResult)ForceSuccess;
         public ICommandResult GetAllParameter() => (CommandResult)ForceSuccess;
-        public ICommandResult GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+        public ICommandResult GetBreakpoint(int Index, int BreakpointType, int BrakpointMode, out ulong breakpoint)
+        {
+            breakpoint = _breakpoint;
+            return (CommandResult)ForceSuccess;
+        }
         public ICommandResult GetParameter(int paramId, out uint value)
         {
             value = 0;
             return (CommandResult)ForceSuccess;
         }
-         
-        public ICommandResult LeavePrograming() => throw new NotImplementedException();
+
+        public ICommandResult LeavePrograming() => (CommandResult) ForceSuccess;
         public bool ModifyAllParameter() => ForceSuccess;
-        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte Values) => throw new NotImplementedException();
-        public ICommandResult ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
-        public ICommandResult Reconnect() => throw new NotImplementedException();
+        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte Value)
+        {
+            Value = 0xAA;
+            return (CommandResult)ForceSuccess;
+        }
+        public ICommandResult ReadProgramCount(out ulong ProgramCounter)
+        {
+            ProgramCounter = _programCounter;
+            return (CommandResult)ForceSuccess;
+        }
+        public ICommandResult Reconnect() => (CommandResult) ForceSuccess;
         public ICommandResult Reset() => (CommandResult)ForceSuccess;
         public ICommandResult SetAllParameter() => (CommandResult)ForceSuccess;
-        public ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+        public ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode)
+        {
+            _programCounter = (uint)Breakpoint;
+            return (CommandResult)ForceSuccess;
+        }
         public ICommandResult SetDeviceDescriptor() => (CommandResult)ForceSuccess;
         public ICommandResult SetParameter(int paramId, uint value) => (CommandResult)ForceSuccess;
-        public ICommandResult SignOff() => throw new NotImplementedException();
+        public ICommandResult SignOff() => (CommandResult) ForceSuccess;
         public ICommandResult SignOn(out ResponseSignOn? response)
         {
             response = new ResponseSignOn(SlaveResponseEnum.RSP_SIGN_ON)
@@ -77,16 +99,31 @@ namespace JTAGICEmkIITest.Moq
             };
             return (CommandResult)ForceSuccess;
         }
-        public ICommandResult StartRunning() => throw new NotImplementedException();
-        public ICommandResult StartRunningUntil(ulong Breakpoint) => throw new NotImplementedException();
-        public ICommandResult StepIn(ulong ProgramCounter) => throw new NotImplementedException();
-        public ICommandResult StopRunning() => throw new NotImplementedException();
-        public ICommandResult VerifiyPrograming() => throw new NotImplementedException();
-        public ICommandResult WriteMemory(int MemType, ulong Address, byte Values) => throw new NotImplementedException();
-        public ICommandResult WriteProgramCount(ulong ProgramCounter) => throw new NotImplementedException();
-        public ICommandResult WritePrograming(ulong Address, byte Values) => throw new NotImplementedException();
-        public ICommandResult GetSync() => throw new NotImplementedException();
-        public ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
-        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
+        public ICommandResult StartRunning() => (CommandResult) ForceSuccess;
+        public ICommandResult StartRunningUntil(ulong Breakpoint) => (CommandResult) ForceSuccess;
+        public ICommandResult StepIn(ulong ProgramCounter) => (CommandResult) ForceSuccess;
+        public ICommandResult StopRunning() => (CommandResult) ForceSuccess;
+        public ICommandResult VerifiyPrograming() => (CommandResult) ForceSuccess;
+        public ICommandResult WriteMemory(int MemType, ulong Address, byte Values) => (CommandResult) ForceSuccess;
+        public ICommandResult WriteProgramCount(ulong ProgramCounter) => (CommandResult) ForceSuccess;
+        public ICommandResult WritePrograming(ulong Address, byte Values) => (CommandResult) ForceSuccess;
+        public ICommandResult GetSync() => (CommandResult) ForceSuccess;
+        public ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values) => (CommandResult) ForceSuccess;
+        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values)
+        {
+            Values = new byte[Length];
+            for (ulong i = 0; i < Length; i++)
+            {
+                Values[i] = (byte)i;
+            }
+
+            return (CommandResult)ForceSuccess;
+        }
+        public ICommandResult SelfTest() => (CommandResult) ForceSuccess;
+        public ICommandResult SpiCommand(byte[] send, out byte read)
+        {
+            read = 0x55;
+            return (CommandResult)ForceSuccess;
+        }
     }
 }

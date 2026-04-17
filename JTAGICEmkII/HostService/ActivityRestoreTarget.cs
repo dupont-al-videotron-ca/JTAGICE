@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,16 +9,17 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class ActivitySetParameter : ActivityProcessCommandBase
+    public sealed class ActivityRestoreTarget : ActivityProcessCommandBase
     {
 
 
         #region Constructors 
-        public ActivitySetParameter(StructureActivity activityStructure) : 
-            base(activityStructure, MasterCommandEnum.CMND_SET_PARAMETER, SlaveResponseEnum.RSP_OK)
+        public ActivityRestoreTarget(StructureActivity activityStructure) : 
+            base(activityStructure, MasterCommandEnum.CMND_RESTORE_TARGET, SlaveResponseEnum.RSP_OK)
         {
         }
         #endregion
+
 
         #region Public Methods 
         public override bool Accept(IVisitorCommand visitor)
@@ -26,11 +28,7 @@ namespace JTAGICEmkII.HostService
             return visitor.Visit(this);
         }
 
-        public override bool CanSendCommand(IMasterCommand command)
-        {
-            return this.ActivityStructure.TargetMcuState.IsStopped && base.CanSendCommand(command);
-        }
-
         #endregion
+
     }
 }

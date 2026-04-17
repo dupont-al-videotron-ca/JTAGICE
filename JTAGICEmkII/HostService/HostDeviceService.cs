@@ -13,11 +13,23 @@ using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using log4net;
 using log4net.Repository.Hierarchy;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace JTAGICEmkII.HostService
 {
     public class HostDeviceService : IHostDeviceService, IDisposable
     {
         public readonly static string HostDeviceName = "JTAGICE mkII";
+
+        // FLAGS identifying which tests to be performed.
+        //bit 7: internal tests(SRAM, FIFO…)
+        //bit 6: <not used>
+        //bit 5: <not used>
+        //bit 4: <not used>
+        //bit 3: STK500 RESET JUMPER detector
+        //bit 2: JTAG PUSH PULL
+        //bit 1: DebugWire Capacitance
+        //bit 0: DebugWire PUSH PULL
+        public readonly static byte SelfTestFlag = 0x8E;
 
         #region Constructors 
 
@@ -152,7 +164,7 @@ namespace JTAGICEmkII.HostService
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR))
             {
 
-                // TODO: fill structure with real data
+                // TODO: fill structure with real data from device business model
                 DeviceDescriptorFields deviceDescriptorFields = new DeviceDescriptorFields();
 
                 byte[] deviceDescriptorBytes = new byte[Marshal.SizeOf<DeviceDescriptorFields>()];
@@ -166,15 +178,126 @@ namespace JTAGICEmkII.HostService
         }
 
 
-        public ICommandResult ClearBreakpoint(int Index, ulong Breakpoint) => throw new NotImplementedException();
-        public ICommandResult EnterPrograming() => throw new NotImplementedException();
-        public ICommandResult EraseDevice() => throw new NotImplementedException();
-        public ICommandResult EraseMemory(int MemType, ulong Address, ulong Length) => throw new NotImplementedException();
-        public ICommandResult GetBreakpoint(int Index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+        public ICommandResult ClearBreakpoint(int index, ulong breakpoint)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_CLR_BREAK))
+            {
+                CommandBreakAddress commandBreakAddress = (CommandBreakAddress)request.Command;
+                commandBreakAddress.BreakNumber = (byte)index;
+                commandBreakAddress.Address = (uint)breakpoint;
 
-        public ICommandResult GetSync() => throw new NotImplementedException();
-        public ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values) => throw new NotImplementedException();
-        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte[] Values) => throw new NotImplementedException();
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult EnterPrograming()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_ENTER_PROGMODE))
+            {
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult EraseDevice()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_CHIP_ERASE))
+            {
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+        public ICommandResult EraseMemory(int memType, ulong address, ulong length)
+        {
+            MemoryTypeEnum memoryTypeEnum = (MemoryTypeEnum)memType;
+            switch (memoryTypeEnum)
+            {
+                case MemoryTypeEnum.MT_FLASH_PAGE:
+                    using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_ERASEPAGE_SPM))
+                    {
+                        CommandAddress command = (CommandAddress)request.Command;
+                        command.Address = (uint)address;
+                        return ProcessCommand(request, out ISlaveResponse? rxResponse);
+                    }
+                case MemoryTypeEnum.MT_EEPROM_PAGE:
+                case MemoryTypeEnum.MT_EEPROM:
+                case MemoryTypeEnum.MT_CAN:
+                case MemoryTypeEnum.MT_EVENT:
+                case MemoryTypeEnum.MT_LOCK_BITS:
+                case MemoryTypeEnum.MT_IO_SHADOW:
+                case MemoryTypeEnum.MT_OSCAL_BYTE:
+                case MemoryTypeEnum.MT_SIGN_JTAG:
+                case MemoryTypeEnum.MT_SRAM:
+                case MemoryTypeEnum.MT_SPM:
+                default:
+                    Logger.Warn($"Unsupported memory type {memoryTypeEnum} for erase memory command.");
+                    throw new InvalidOperationException($"Unsupported memory type {memoryTypeEnum} for erase memory command.");
+            }
+        }
+
+        public ICommandResult GetBreakpoint(int index, int breakpointType, int brakpointMode, out ulong breakpoint)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GET_BREAK))
+            {
+                CommandBreakpoint command = (CommandBreakpoint)request.Command;
+                command.BreakNumber = (byte)index;
+                command.Type = (BreakpointTypeEnum)breakpointType;
+                command.Mode = (Master.BreakpointModeEnum)brakpointMode;
+                var result = ProcessCommand(request, out ISlaveResponse? rxResponse);
+                if (result.IsSuccess)
+                {
+                    ResponseBreakpoint response = (ResponseBreakpoint)rxResponse!;
+                    breakpoint = response.Address;
+                    return result;
+                }
+                else
+                {
+                    breakpoint = 0;
+                    return result;
+                }
+            }
+        }
+
+
+        public ICommandResult GetSync()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GET_SYNC))
+            {
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult WriteMemory(int memType, ulong address, byte[] values)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_WRITE_MEMORY))
+            {
+                CommandMemory command = (CommandMemory)request.Command;
+                command.Address = (uint)address;
+                command.Data.AddRange(values);
+                command.MemoryType = (MemoryTypeEnum)memType;
+                command.ByteCount = (uint)values.Length;
+
+                return ProcessCommand(request, out ISlaveResponse? response);
+            }
+        }
+
+        public ICommandResult ReadMemory(int memType, ulong address, ulong length, out byte[] values)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_READ_MEMORY))
+            {
+                CommandResult result = ProcessCommand(request, out ISlaveResponse? response);
+                if (result.IsSuccess)
+                {
+                    ResponseMultipleByte memory = (ResponseMultipleByte)response!;
+                    values = memory.Data.ToArray();
+                    return result;
+                }
+                else
+                {
+                    values = Array.Empty<byte>();
+                    return result;
+                }
+            }
+        }
+
 
         public ICommandResult GetParameter(int paramId, out uint value)
         {
@@ -210,6 +333,25 @@ namespace JTAGICEmkII.HostService
             return (CommandResult)true;
         }
 
+        public ICommandResult SelfTest()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_SELFTEST))
+            {
+                CommandMultipleByte commandMultipleByte = (CommandMultipleByte)request.Command;
+                commandMultipleByte.Data.Add(SelfTestFlag);
+                var result = ProcessCommand(request, out ISlaveResponse? rxResponse);
+
+                if (result.IsSuccess)
+                {
+                    ResponseSelfTest responseSelfTest = (ResponseSelfTest)rxResponse!;
+
+                    // todo: process self test results and update device status accordingly.
+                    responseSelfTest.SelfTestResults.ToList().ForEach(r => Logger.Info($"Self test result: {r}, {SelfTestReponseHelper.ToString(r)}"));
+                }
+
+                return result;
+            }
+        }
 
         public ICommandResult SetParameter(int paramId, uint value)
         {
@@ -244,19 +386,60 @@ namespace JTAGICEmkII.HostService
 
 
         //public ICommandResult GetTargetInfo(out DeviceInfo Info) => throw new NotImplementedException();
-        public ICommandResult LeavePrograming() => throw new NotImplementedException();
-        public ICommandResult ReadMemory(int memType, ulong Address, ulong Length, out byte Values) => throw new NotImplementedException();
-        public ICommandResult ReadProgramCount(out ulong ProgramCounter) => throw new NotImplementedException();
-        public ICommandResult Reconnect() => throw new NotImplementedException();
-        public ICommandResult Reset()
+        public ICommandResult LeavePrograming()
         {
-            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_RESET))
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_LEAVE_PROGMODE))
             {
                 return ProcessCommand(request, out ISlaveResponse? rxResponse);
             }
         }
 
-        public ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode) => throw new NotImplementedException();
+
+        public ICommandResult ReadMemory(int memType, ulong address, ulong Length, out byte Value) => throw new NotImplementedException();
+
+        public ICommandResult ReadProgramCount(out ulong ProgramCounter)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_READ_PC))
+            {
+                CommandResult result = ProcessCommand(request, out ISlaveResponse? response);
+                if (result.IsSuccess)
+                {
+                    ResponseProgramCounter pcResponse = (ResponseProgramCounter)response!;
+                    ProgramCounter = pcResponse.ProgramCounter;
+                    return result;
+                }
+                else
+                {
+                    ProgramCounter = 0;
+                    return result;
+                }
+            }
+        }
+        public ICommandResult Reconnect() => throw new NotImplementedException();
+        public ICommandResult Reset()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_RESET))
+            {
+                CommandPCMode commandPCMode = (CommandPCMode)request.Command;
+
+                commandPCMode.ExecutionMode = ExceutionModeEnum.EXMODE_RESET;
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_SET_BREAK))
+            {
+                CommandBreakpoint command = (CommandBreakpoint)request.Command;
+                command.BreakNumber = (byte)index;
+                command.Address = (uint)Breakpoint;
+                command.Type = (BreakpointTypeEnum)BreakpointType;
+                command.Mode = (Master.BreakpointModeEnum)BrakpointMode;
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
         public ICommandResult SignOff() => throw new NotImplementedException();
 
         public async Task<ICommandResult> SignOnAsync()
@@ -298,29 +481,129 @@ namespace JTAGICEmkII.HostService
         }
 
 
-        public ICommandResult StartRunning() => throw new NotImplementedException();
-        public ICommandResult StartRunningUntil(ulong Breakpoint) => throw new NotImplementedException();
-        public ICommandResult StepIn(ulong ProgramCounter) => throw new NotImplementedException();
-        public ICommandResult StopRunning() => throw new NotImplementedException();
-        public ICommandResult VerifiyPrograming() => throw new NotImplementedException();
-        public ICommandResult WriteMemory(int MemType, ulong Address, byte Values)
+        public ICommandResult StartRunning()
         {
-            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_WRITE_MEMORY))
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GO))
             {
-                if (ProcessCommand(request, out ISlaveResponse? response))
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult SingleStepIntoAsm()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_SINGLE_STEP))
+            {
+                CommandSingleStep? singleStep = request.Command as CommandSingleStep;
+
+                if (singleStep == null)
                 {
-                    return new CommandResult(response!);
+                    Logger.Error($"Unexpected command type created for single step command: {request.Command.GetType().FullName}");
+                    throw new InvalidOperationException($"Unexpected command type created for single step command: {request.Command.GetType().FullName}");
+                }
+
+                singleStep.StepMode = StepModeEnum.Into;
+                singleStep.ExecutionMode = ExceutionModeEnum.EXMODE_LOW_LEVEL;
+
+
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult SingleStepOverAsm()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_SINGLE_STEP))
+            {
+                CommandSingleStep? singleStep = request.Command as CommandSingleStep;
+
+                if (singleStep == null)
+                {
+                    Logger.Error($"Unexpected command type created for single step command: {request.Command.GetType().FullName}");
+                    throw new InvalidOperationException($"Unexpected command type created for single step command: {request.Command.GetType().FullName}");
+                }
+
+                singleStep.StepMode = StepModeEnum.Over;
+                singleStep.ExecutionMode = ExceutionModeEnum.EXMODE_LOW_LEVEL;
+
+
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult SingleStepOutAsm()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_SINGLE_STEP))
+            {
+                CommandSingleStep? singleStep = request.Command as CommandSingleStep;
+
+                if (singleStep == null)
+                {
+                    Logger.Error($"Unexpected command type created for single step command: {request.Command.GetType().FullName}");
+                    throw new InvalidOperationException($"Unexpected command type created for single step command: {request.Command.GetType().FullName}");
+                }
+
+                singleStep.StepMode = StepModeEnum.Out;
+                singleStep.ExecutionMode = ExceutionModeEnum.EXMODE_LOW_LEVEL;
+
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult StartRunningUntil(ulong Breakpoint)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_RUN_TO_ADDR))
+            {
+                CommandProgramCounter commandPC = (CommandProgramCounter)request.Command;
+                commandPC.ProgramCounter = (uint)Breakpoint;
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult SpiCommand(byte[] send, out byte read)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_SPI_CMD))
+            {
+                CommandMultipleByte commandSPI = (CommandMultipleByte)request.Command;
+                commandSPI.Data.AddRange(send);
+                var result = ProcessCommand(request, out ISlaveResponse? rxResponse);
+                if (result.IsSuccess)
+                {
+                    ResponseMultipleByte responseSPI = (ResponseMultipleByte)rxResponse!;
+                    if (responseSPI.Data.Any())
+                        read = responseSPI.Data[0];
+                    else
+                        read = 0;
+
+                    return result;
                 }
                 else
                 {
-                    return CommandResult.Failed;
+                    read = 0;
+                    return result;
                 }
             }
-
-
         }
 
-        public ICommandResult WriteProgramCount(ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult StepIn(ulong ProgramCounter) => throw new NotImplementedException();
+        public ICommandResult StopRunning()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_FORCED_STOP))
+            {
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
+
+        public ICommandResult VerifiyPrograming() => throw new NotImplementedException();
+        public ICommandResult WriteMemory(int MemType, ulong Address, byte Values) => throw new NotImplementedException();
+
+        public ICommandResult WriteProgramCount(ulong programCounter)
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_WRITE_PC))
+            {
+                CommandProgramCounter command = (CommandProgramCounter)request.Command;
+                command.ProgramCounter = (uint)programCounter;
+                return ProcessCommand(request, out ISlaveResponse? response);
+            }
+        }
         public ICommandResult WritePrograming(ulong Address, byte Values) => throw new NotImplementedException();
 
         protected virtual void Dispose(bool disposing)

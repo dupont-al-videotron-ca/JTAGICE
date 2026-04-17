@@ -19,23 +19,8 @@ namespace JTAGICEmkII.HostService
         }
         #endregion
 
-
-        #region Fields 
-
-        #endregion
-
-
-        #region Properties 
-
-        #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
-
         #region Public Methods 
+
         public override bool Accept(IVisitorCommand visitor)
         {
             return visitor.Visit(this);
@@ -43,25 +28,13 @@ namespace JTAGICEmkII.HostService
 
         public override bool CanSendCommand(IMasterCommand command)
         {
-            switch(command.MessageId)
+            if(this.ActivityStructure.TargetMcuState.IsStopped && base.CanSendCommand(command))
             {
-                case MasterCommandEnum.CMND_GET_PARAMETER:
-                    // TODO: We should check the parameter ID here, but for now we just check if the target is stopped, which is a requirement for all parameters.
-                    return this.ActivityStructure.TargetMcuState.IsStopped; 
-                default:
-                    return false;
+                // TODO: We should check the parameter ID here, but for now we just check if the target is stopped, which is a requirement for all parameters.
+                return true;
             }
-        }
 
-        public override bool OnReceivedResponse(ISlaveResponse response)
-        {
-            switch (response.ResponseId)
-            {
-                case SlaveResponseEnum.RSP_PARAMETER:
-                    return true;
-                default:
-                    return base.OnReceivedResponse(response);
-            }
+            return false;
         }
 
         #endregion

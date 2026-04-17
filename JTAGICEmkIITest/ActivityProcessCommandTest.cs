@@ -115,7 +115,21 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var result = test.OnReceivedResponse(new Response(expectedError));
+            ISlaveResponse? response = null;
+            if (expectedError == SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE)
+            {
+                response = new ResponseEmulatorMode(expectedError);
+            }
+            else if (expectedError == SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE)
+            {
+                response = new ResponseMcuState(expectedError);
+            }
+            else
+            {
+                response = new Response(expectedError);
+            }
+
+            var result = test.OnReceivedResponse(response);
 
             //--- Verification
             Assert.True(result);

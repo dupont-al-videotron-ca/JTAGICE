@@ -15,9 +15,7 @@ namespace JTAGICEmkII.HostService
         #region Constructors 
 
         public ActivitySignOn(StructureActivity activityStructure) : 
-            base(activityStructure, 
-                MasterCommandEnum.CMND_GET_SIGN_ON, 
-                SlaveResponseEnum.RSP_SIGN_ON)
+            base(activityStructure, MasterCommandEnum.CMND_GET_SIGN_ON, SlaveResponseEnum.RSP_SIGN_ON)
         {
         }
 
@@ -30,17 +28,6 @@ namespace JTAGICEmkII.HostService
         {
             ArgumentNullException.ThrowIfNull(visitor);
             return visitor.Visit(this);
-        }
-
-        public override bool OnReceivedResponse(ISlaveResponse response)
-        {
-            switch (response.ResponseId)
-            {
-                case SlaveResponseEnum.RSP_SIGN_ON:
-                        return true;
-                default:
-                    return base.OnReceivedResponse(response);
-            }
         }
 
         #endregion

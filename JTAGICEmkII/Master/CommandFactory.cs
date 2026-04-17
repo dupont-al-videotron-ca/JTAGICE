@@ -41,7 +41,7 @@ namespace JTAGICEmkII.Master
 
                 case MasterCommandEnum.CMND_WRITE_PC:
                 case MasterCommandEnum.CMND_RUN_TO_ADDR:
-                    return new CommandProgranCounter(messageId);
+                    return new CommandProgramCounter(messageId);
 
                 case MasterCommandEnum.CMND_SINGLE_STEP:
                     return new CommandSingleStep(messageId);

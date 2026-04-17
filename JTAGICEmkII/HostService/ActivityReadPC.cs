@@ -8,16 +8,17 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.HostService
 {
-    public sealed class ActivitySetParameter : ActivityProcessCommandBase
+    public sealed class ActivityReadPC : ActivityProcessCommandBase
     {
 
 
         #region Constructors 
-        public ActivitySetParameter(StructureActivity activityStructure) : 
-            base(activityStructure, MasterCommandEnum.CMND_SET_PARAMETER, SlaveResponseEnum.RSP_OK)
+        public ActivityReadPC(StructureActivity activityStructure) : 
+            base(activityStructure, MasterCommandEnum.CMND_READ_PC, SlaveResponseEnum.RSP_PC)
         {
         }
         #endregion
+
 
         #region Public Methods 
         public override bool Accept(IVisitorCommand visitor)
@@ -32,5 +33,6 @@ namespace JTAGICEmkII.HostService
         }
 
         #endregion
+
     }
 }

@@ -69,7 +69,81 @@ namespace JTAGICEmkII.HostService
             return element.OnReceivedResponse(this.Response);
         }
 
+        public override bool Visit(ActivityReadMemory element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
 
+        public override bool Visit(ActivityWritePC element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+
+        public override bool Visit(ActivityReadPC element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+
+        public override bool Visit(ActivityGo element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivitySingleStep element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityForceStop element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityErasePageSpm element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityGetSync element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivitySelfTest element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivitySetBreak element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityGetBreak element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityChipErase element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityEnterProgMode element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityLeaveProgMode element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityClearBreak element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityRunToAddr element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivitySPICmd element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
+        public override bool Visit(ActivityRestoreTarget element)
+        {
+            return element.OnReceivedResponse(this.Response);
+        }
         #endregion
 
 

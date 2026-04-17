@@ -16,6 +16,18 @@ namespace JTAGICEmkII.Slave
             MessageLength = 0;
         }
 
+        internal Response(Response src)
+        {
+            ResponseId = src.ResponseId;
+            MessageLength = src.MessageLength;
+        }
+
+        internal Response(ISlaveResponse src)
+        {
+            ResponseId = src.ResponseId;
+            MessageLength = src.MessageLength;
+        }
+
         #endregion
 
 

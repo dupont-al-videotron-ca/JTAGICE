@@ -29,7 +29,7 @@ namespace JTAGICEmkII.HostService
 
         public abstract bool Accept(IVisitorCommand visitor);
 
-        public override bool Accept(IVisitorActivity visitor) 
+        public override bool Accept(IVisitorActivity visitor)
             => throw new NotImplementedException();
         public override bool ActivityAction() => throw new NotImplementedException();
         public override bool ActivityEntry() => throw new NotImplementedException();
@@ -95,50 +95,58 @@ namespace JTAGICEmkII.HostService
 
         public virtual bool OnReceivedResponse(ISlaveResponse response)
         {
-            switch (response.ResponseId)
+            if (response.ResponseId == this.ResponseEnum)
             {
-                case SlaveResponseEnum.RSP_OK:
-                    this.HasError = false;
-                    this.LastError = SlaveResponseEnum.RSP_OK;
-                    this.Logger.Debug($"Received response: {SlaveResponseEnum.RSP_OK}.");
-                    return true;
-
-                case SlaveResponseEnum.RSP_FAILED:
-                    OnFailed(response);
-                    return true;
-                case SlaveResponseEnum.RSP_ILLEGAL_MEMORY_TYPE:
-                    OnIllegalMemoryType(response);
-                    return true;
-                case SlaveResponseEnum.RSP_ILLEGAL_PARAMETER:
-                case SlaveResponseEnum.RSP_ILLEGAL_MEMORY_RANGE:
-                case SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE:
-                case SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE:
-                case SlaveResponseEnum.RSP_ILLEGAL_COMMAND:
-                case SlaveResponseEnum.RSP_ILLEGAL_VALUE:
-                case SlaveResponseEnum.RSP_ILLEGAL_BREAKPOINT:
-                case SlaveResponseEnum.RSP_ILLEGAL_JTAG_ID:
-                case SlaveResponseEnum.RSP_NO_TARGET_POWER:
-                case SlaveResponseEnum.RSP_DEBUGWIRE_SYNC_FAILED:
-                case SlaveResponseEnum.RSP_ILLEGAL_POWER_STATE:
-                    this.HasError = true;
-                    this.LastError = response.ResponseId;
-                    this.Logger.Debug($"Received error response: {response.ResponseId}.");
-                    return true;
-                default:
-                    this.Logger.Debug($"Response handling not implemented for response: {response.ResponseId}.");
-                    throw new NotImplementedException($"Response handling not implemented for response: {response.ResponseId}.");
+                this.HasError = false;
+                this.LastError = SlaveResponseEnum.RSP_OK;
+                this.Logger.Debug($"Received response: {SlaveResponseEnum.RSP_OK}.");
+                return true;
+            }
+            else
+            {
+                switch (response.ResponseId)
+                {
+                    case SlaveResponseEnum.RSP_FAILED:
+                    case SlaveResponseEnum.RSP_ILLEGAL_MEMORY_TYPE:
+                    case SlaveResponseEnum.RSP_ILLEGAL_MEMORY_RANGE:
+                    case SlaveResponseEnum.RSP_ILLEGAL_PARAMETER:
+                    case SlaveResponseEnum.RSP_ILLEGAL_COMMAND:
+                    case SlaveResponseEnum.RSP_ILLEGAL_VALUE:
+                    case SlaveResponseEnum.RSP_ILLEGAL_BREAKPOINT:
+                    case SlaveResponseEnum.RSP_ILLEGAL_JTAG_ID:
+                    case SlaveResponseEnum.RSP_NO_TARGET_POWER:
+                    case SlaveResponseEnum.RSP_DEBUGWIRE_SYNC_FAILED:
+                    case SlaveResponseEnum.RSP_ILLEGAL_POWER_STATE:
+                    case SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE:
+                    case SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE:
+                        this.HasError = true;
+                        this.LastError = response.ResponseId;
+                        this.Logger.Debug($"Received error response: {response.ResponseId}.");
+                        OnFailed(response);
+                        return true;
+                    default:
+                        this.Logger.Debug($"Response handling not implemented for response: {response.ResponseId}.");
+                        throw new NotImplementedException($"Response handling not implemented for response: {response.ResponseId}.");
+                }
             }
         }
 
         protected virtual void OnFailed(ISlaveResponse response)
         {
-        }
-
-        protected virtual void OnIllegalMemoryType(ISlaveResponse response)
-        {
-        }
-        protected virtual void OnIllegalMemoryRange(ISlaveResponse response)
-        {
+            if (response.ResponseId == SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE)
+            {
+                ResponseEmulatorMode r = (ResponseEmulatorMode)response;
+                Logger.Warn($"Received illegal emulator mode response. Emulator mode: {r.EmulatorMode}.");
+            }
+            else if (response.ResponseId == SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE)
+            {
+                ResponseMcuState r = (ResponseMcuState)response;
+                Logger.Warn($"Received illegal MCU state response. McuState: {r.State}.");
+            }
+            else
+            {
+                Logger.Warn($"Received error response: {response.ResponseId}.");
+            }
         }
     }
 }

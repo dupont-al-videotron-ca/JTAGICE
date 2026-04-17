@@ -67,7 +67,87 @@ namespace JTAGICEmkII.HostService
             return element.CanSendCommand(Command);
         }
 
-    #endregion
+        public override bool Visit(ActivityReadMemory element)
+        {
+            return element.CanSendCommand(Command);
+        }
 
-}
+        public override bool Visit(ActivityWritePC element)
+        {
+            return element.CanSendCommand(Command);
+        }
+
+        public override bool Visit(ActivityReadPC element)
+        {
+            return element.CanSendCommand(Command);
+        }
+
+        public override bool Visit(ActivityGo element)
+        {
+            return element.CanSendCommand(Command);
+        }
+
+        public override bool Visit(ActivitySingleStep element)
+        {
+            return element.CanSendCommand(Command);
+        }
+
+        public override bool Visit(ActivityForceStop element)
+        {
+            return element.CanSendCommand(Command);
+        }
+
+        public override bool Visit(ActivityErasePageSpm element)
+        {
+            return element.CanSendCommand(Command);
+        }
+
+        public override bool Visit(ActivityGetSync element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivitySelfTest element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivitySetBreak element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivityGetBreak element)
+        {
+            return element.CanSendCommand(Command);
+        }
+
+        public override bool Visit(ActivityChipErase element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivityEnterProgMode element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivityLeaveProgMode element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivityClearBreak element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivityRunToAddr element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivitySPICmd element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        public override bool Visit(ActivityRestoreTarget element)
+        {
+            return element.CanSendCommand(Command);
+        }
+        #endregion
+
+    }
 }

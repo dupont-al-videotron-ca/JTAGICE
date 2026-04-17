@@ -9,10 +9,10 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.Master
 {
-    internal class CommandProgranCounter : Command
+    internal class CommandProgramCounter : Command
     {
         #region Constructors 
-        internal CommandProgranCounter(MasterCommandEnum messageId) : base(messageId)
+        internal CommandProgramCounter(MasterCommandEnum messageId) : base(messageId)
         {
         }
 
@@ -21,17 +21,17 @@ namespace JTAGICEmkII.Master
 
 
         #region Properties 
-        override public int Size => base.Size + 4; // Base size + 4 bytes for ProgrammeCounter
+        override public int Size => base.Size + 4; // Base size + 4 bytes for ProgramCounter
 
-        public UInt32 ProgrammeCounter { get; set; }
+        public UInt32 ProgramCounter { get; set; }
 
         public override byte[] WriteToBytes()
         {
             var buffer = base.WriteToBytes();
 
-            // Add ProgrammeCounter bytes to the buffer
-            buffer = buffer.Concat(BitConverter.GetBytes(ProgrammeCounter)).ToArray();
-            MessageLength += 4; // Increment message length by 4 bytes for the ProgrammeCounter
+            // Add ProgramCounter bytes to the buffer
+            buffer = buffer.Concat(BitConverter.GetBytes(ProgramCounter)).ToArray();
+            MessageLength += 4; // Increment message length by 4 bytes for the ProgramCounter
             return buffer;
         }
 
@@ -41,7 +41,7 @@ namespace JTAGICEmkII.Master
             if (data.Length < Size)
                 throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-            ProgrammeCounter = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(base.Size, 4));
+            ProgramCounter = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(base.Size, 4));
         }
         #endregion
 

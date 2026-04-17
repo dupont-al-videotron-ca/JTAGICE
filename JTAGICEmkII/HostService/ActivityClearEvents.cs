@@ -29,13 +29,7 @@ namespace JTAGICEmkII.HostService
 
         public override bool CanSendCommand(IMasterCommand command)
         {
-            switch(command.MessageId)
-            {
-                case MasterCommandEnum.CMND_CLEAR_EVENTS:
-                    return this.ActivityStructure.TargetMcuState.IsStopped;
-                default:
-                    return false;
-            }
+            return this.ActivityStructure.TargetMcuState.IsStopped && base.CanSendCommand(command);
         }
 
         #endregion

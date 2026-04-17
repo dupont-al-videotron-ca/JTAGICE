@@ -122,7 +122,7 @@ namespace JTAGICEmkIITest
                     signOn.CommunicationProtocolVersion = 1;
                     return signOn;
                 case MasterCommandEnum.CMND_READ_PC:
-                    var readPc = (ResponseProgranCounter)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PC)!;
+                    var readPc = (ResponseProgramCounter)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PC)!;
                     readPc.ProgramCounter = 0x12345678;
                     return readPc;
                 case MasterCommandEnum.CMND_GO:
@@ -145,14 +145,14 @@ namespace JTAGICEmkIITest
                     return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
                 case MasterCommandEnum.CMND_SELFTEST:
                     var selfTest = (ResponseSelfTest)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_SELFTEST)!;
-                    selfTest.SetSelfTestResult(0, SelfTestReponseEnum.OK);
-                    selfTest.SetSelfTestResult(1, SelfTestReponseEnum.Failed);
-                    selfTest.SetSelfTestResult(2, SelfTestReponseEnum.OK);
-                    selfTest.SetSelfTestResult(3, SelfTestReponseEnum.OK);
-                    selfTest.SetSelfTestResult(4, SelfTestReponseEnum.OK);
-                    selfTest.SetSelfTestResult(5, SelfTestReponseEnum.OK);
-                    selfTest.SetSelfTestResult(6, SelfTestReponseEnum.OK);
-                    selfTest.SetSelfTestResult(7, SelfTestReponseEnum.SKIPPED);
+                    selfTest.SetSelfTestResult(0, SelfTestReponseEnum.SELFTEST_OK);
+                    selfTest.SetSelfTestResult(1, SelfTestReponseEnum.SELFTEST_FAILED);
+                    selfTest.SetSelfTestResult(2, SelfTestReponseEnum.SELFTEST_OK);
+                    selfTest.SetSelfTestResult(3, SelfTestReponseEnum.SELFTEST_OK);
+                    selfTest.SetSelfTestResult(4, SelfTestReponseEnum.SELFTEST_OK);
+                    selfTest.SetSelfTestResult(5, SelfTestReponseEnum.SELFTEST_OK);
+                    selfTest.SetSelfTestResult(6, SelfTestReponseEnum.SELFTEST_OK);
+                    selfTest.SetSelfTestResult(7, SelfTestReponseEnum.SELFTEST_SKIPPED);
                     return selfTest;
                 case MasterCommandEnum.CMND_SPI_CMD:
                     var spi = (ResponseMultipleByte)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_SPI_DATA)!;

@@ -12,7 +12,7 @@ namespace JTAGICEmkII.HostService
         {
             ArgumentNullException.ThrowIfNull(response);
             this.ErrorCode = (int)response.ResponseId!;
-            this.response = response;
+            this.response = new Response(response);
         }
 
         private CommandResult(SlaveResponseEnum response)

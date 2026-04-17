@@ -73,7 +73,7 @@ namespace JTAGICEmkII.Slave
                     return new ResponseMcuState(responseId);
 
                 case SlaveResponseEnum.RSP_PC:
-                    return new ResponseProgranCounter(responseId);
+                    return new ResponseProgramCounter(responseId);
 
                 case SlaveResponseEnum.RSP_SIGN_ON:
                     return new ResponseSignOn(responseId);

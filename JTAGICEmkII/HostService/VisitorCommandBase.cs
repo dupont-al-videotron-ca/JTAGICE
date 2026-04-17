@@ -9,7 +9,6 @@ namespace JTAGICEmkII.HostService
     internal abstract class VisitorCommandBase : IVisitorCommand
     {
 
-
         #region Constructors 
 
         internal VisitorCommandBase()
@@ -38,31 +37,28 @@ namespace JTAGICEmkII.HostService
         public abstract bool Visit(ActivityGetParameter element);
         public abstract bool Visit(ActivitySetParameter element);
         public abstract bool Visit(ActivityWriteMemory element);
+        public abstract bool Visit(ActivityReadMemory element);
+        public abstract bool Visit(ActivityWritePC element);
+        public abstract bool Visit(ActivityReadPC element);
+        public abstract bool Visit(ActivityGo element);
+        public abstract bool Visit(ActivitySingleStep element);
+        public abstract bool Visit(ActivityForceStop element);
+        public abstract bool Visit(ActivityErasePageSpm element);
+        public abstract bool Visit(ActivityGetSync element);
+        public abstract bool Visit(ActivitySelfTest element);
+        public abstract bool Visit(ActivitySetBreak element);
+        public abstract bool Visit(ActivityGetBreak element);
+        public abstract bool Visit(ActivityChipErase element);
+        public abstract bool Visit(ActivityEnterProgMode element);
+        public abstract bool Visit(ActivityLeaveProgMode element);
+        public abstract bool Visit(ActivityClearBreak element);
+        public abstract bool Visit(ActivityRunToAddr element);
+        public abstract bool Visit(ActivitySPICmd element);
+        public abstract bool Visit(ActivityRestoreTarget element);
+
 
         #endregion
 
-
-        #region Delegates / Events 
-
-        #endregion
-
-
-        #region Public Methods 
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Private Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
-
-        #endregion
 
     }
 }

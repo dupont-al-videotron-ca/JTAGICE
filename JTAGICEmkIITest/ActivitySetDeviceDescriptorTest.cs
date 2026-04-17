@@ -107,40 +107,6 @@ namespace JTAGICEmkIITest
             //--- Verification
         }
 
-        [Fact]
-        public void SetDescriptor_ActivityEntry_shall_return_true()
-        {
-            //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure);
-
-            //--- Expectations
-
-            //--- Action
-            var result =test.ActivityEntry();
-
-            //--- Verification
-            Assert.True(result);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
-        }
-
-        [Fact]
-        public void SetDescriptor_ActivityEntry_shall_return_false()
-        {
-            //--- Setup
-            var test = new ActivitySetDeviceDescriptor(_activityStructure);
-
-            //--- Expectations
-            this._hostService.ForceSuccess = false;
-
-            //--- Action
-            var result = test.ActivityEntry();
-
-            //--- Verification
-            Assert.False(result);
-            Assert.Null(_hostService.SignOnResponse);
-            Assert.Equal(SlaveResponseEnum.RSP_OK, test.LastError);
-        }
-
         #endregion
 
 

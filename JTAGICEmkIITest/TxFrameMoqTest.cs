@@ -302,9 +302,9 @@ namespace JTAGICEmkIITest
 
             // Arrange
             var test = CreateFrameForTest();
-            var response = (ResponseProgranCounter)JTAGICEmkII.Slave.ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PC)!;
+            var response = (ResponseProgramCounter)JTAGICEmkII.Slave.ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PC)!;
 
-            var expectedResponse = (ResponseProgranCounter)JTAGICEmkII.Slave.ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PC)!;
+            var expectedResponse = (ResponseProgramCounter)JTAGICEmkII.Slave.ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PC)!;
             expectedResponse.MessageLength = (uint)expectedResponse.Size;
 
             // Act & Assert
@@ -522,8 +522,8 @@ namespace JTAGICEmkIITest
         [InlineData(MasterCommandEnum.CMND_WRITE_MEMORY, typeof(CommandMemory))]
         [InlineData(MasterCommandEnum.CMND_READ_MEMORY, typeof(CommandMemory))]
 
-        [InlineData(MasterCommandEnum.CMND_WRITE_PC, typeof(CommandProgranCounter))]
-        [InlineData(MasterCommandEnum.CMND_RUN_TO_ADDR, typeof(CommandProgranCounter))]
+        [InlineData(MasterCommandEnum.CMND_WRITE_PC, typeof(CommandProgramCounter))]
+        [InlineData(MasterCommandEnum.CMND_RUN_TO_ADDR, typeof(CommandProgramCounter))]
 
         [InlineData(MasterCommandEnum.CMND_SINGLE_STEP, typeof(CommandSingleStep))]
         [InlineData(MasterCommandEnum.CMND_FORCED_STOP, typeof(CommandPCMode))]
@@ -688,8 +688,8 @@ namespace JTAGICEmkIITest
             // Arrange
 
             var test = CreateFrameForTest();
-            CommandProgranCounter command = new CommandProgranCounter(msgId);
-            command.ProgrammeCounter = 0x12345678;
+            CommandProgramCounter command = new CommandProgramCounter(msgId);
+            command.ProgramCounter = 0x12345678;
 
             // Act & Assert
             var result = test.BuildAndSendFrameCommand(command);

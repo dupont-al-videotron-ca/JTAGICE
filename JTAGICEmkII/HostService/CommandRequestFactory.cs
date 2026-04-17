@@ -12,7 +12,7 @@ using MyFramework.Threading;
 
 namespace JTAGICEmkII.HostService
 {
-    internal static class CommandRequestFactory 
+    internal static class CommandRequestFactory
     {
         public static CommandRequest CreateRequest(StructureActivity structureElement, MasterCommandEnum messageId)
         {
@@ -39,26 +39,44 @@ namespace JTAGICEmkII.HostService
                     return new CommandRequest(command, new ActivitySetParameter(structureElement), timeout);
                 case MasterCommandEnum.CMND_GET_PARAMETER:
                     return new CommandRequest(command, new ActivityGetParameter(structureElement), timeout);
-
-                case MasterCommandEnum.CMND_READ_PC:
                 case MasterCommandEnum.CMND_GO:
+                    return new CommandRequest(command, new ActivityGo(structureElement), timeout);
                 case MasterCommandEnum.CMND_GET_SYNC:
+                    return new CommandRequest(command, new ActivityGetSync(structureElement), timeout);
                 case MasterCommandEnum.CMND_CHIP_ERASE:
+                    return new CommandRequest(command, new ActivityChipErase(structureElement), timeout);
                 case MasterCommandEnum.CMND_ENTER_PROGMODE:
+                    return new CommandRequest(command, new ActivityEnterProgMode(structureElement), timeout);
                 case MasterCommandEnum.CMND_LEAVE_PROGMODE:
+                    return new CommandRequest(command, new ActivityLeaveProgMode(structureElement), timeout);
                 case MasterCommandEnum.CMND_RESTORE_TARGET:
+                    return new CommandRequest(command, new ActivityRestoreTarget(structureElement), timeout);
                 case MasterCommandEnum.CMND_SELFTEST:
+                    return new CommandRequest(command, new ActivitySelfTest(structureElement), timeout);
                 case MasterCommandEnum.CMND_SPI_CMD:
+                    return new CommandRequest(command, new ActivitySPICmd(structureElement), timeout);
                 case MasterCommandEnum.CMND_WRITE_MEMORY:
+                    return new CommandRequest(command, new ActivityWriteMemory(structureElement), timeout);
                 case MasterCommandEnum.CMND_READ_MEMORY:
+                    return new CommandRequest(command, new ActivityReadMemory(structureElement), timeout);
                 case MasterCommandEnum.CMND_WRITE_PC:
-                case MasterCommandEnum.CMND_RUN_TO_ADDR:
+                    return new CommandRequest(command, new ActivityWritePC(structureElement), timeout);
+                case MasterCommandEnum.CMND_READ_PC:
+                    return new CommandRequest(command, new ActivityReadPC(structureElement), timeout);
                 case MasterCommandEnum.CMND_SINGLE_STEP:
+                    return new CommandRequest(command, new ActivitySingleStep(structureElement), timeout);
                 case MasterCommandEnum.CMND_FORCED_STOP:
+                    return new CommandRequest(command, new ActivityForceStop(structureElement), timeout);
                 case MasterCommandEnum.CMND_ERASEPAGE_SPM:
+                    return new CommandRequest(command, new ActivityErasePageSpm(structureElement), timeout);
                 case MasterCommandEnum.CMND_GET_BREAK:
+                    return new CommandRequest(command, new ActivityGetBreak(structureElement), timeout);
                 case MasterCommandEnum.CMND_SET_BREAK:
+                    return new CommandRequest(command, new ActivitySetBreak(structureElement), timeout);
                 case MasterCommandEnum.CMND_CLR_BREAK:
+                    return new CommandRequest(command, new ActivityClearBreak(structureElement), timeout);
+                case MasterCommandEnum.CMND_RUN_TO_ADDR:
+                    return new CommandRequest(command, new ActivityRunToAddr(structureElement), timeout);
                 case MasterCommandEnum.CMND_SET_N_PARAMETERS:
                 default:
                     throw new NotImplementedException($"Command {messageId} is not implemented in the CommandRequestFactory.");

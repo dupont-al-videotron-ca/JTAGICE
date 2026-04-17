@@ -29,13 +29,8 @@ namespace JTAGICEmkII.HostService
 
         public override bool CanSendCommand(IMasterCommand command)
         {
-            switch(command.MessageId)
-            {
-                case MasterCommandEnum.CMND_WRITE_MEMORY:
-                    return this.ActivityStructure.TargetMcuState.IsStopped;
-                default:
-                    return false;
-            }
+            return (this.ActivityStructure.TargetMcuState.IsStopped || this.ActivityStructure.TargetMcuState.IsProgramming)
+                && base.CanSendCommand(command);
         }
 
         #endregion

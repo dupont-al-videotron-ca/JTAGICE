@@ -25,16 +25,7 @@ namespace JTAGICEmkII.HostService
 
         public override bool CanSendCommand(IMasterCommand command)
         {
-            switch (command.MessageId)
-            {
-                case MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR:
-                    if (this.ActivityStructure.TargetMcuState.IsStopped)
-                        return true;
-                    else
-                        return false;
-                default:
-                    return false;
-            }
+            return this.ActivityStructure.TargetMcuState.IsStopped && base.CanSendCommand(command);
         }
     }
 }

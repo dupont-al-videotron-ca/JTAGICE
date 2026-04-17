@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Slave
 {
-    internal class ResponseProgranCounter : Response
+    internal class ResponseProgramCounter : Response
     {
 
 
         #region Constructors 
 
-        internal ResponseProgranCounter(SlaveResponseEnum messageId) : base(messageId)
+        internal ResponseProgramCounter(SlaveResponseEnum messageId) : base(messageId)
         {
         }
 

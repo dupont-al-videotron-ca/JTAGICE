@@ -220,11 +220,11 @@ namespace JTAGICEmkIITest
 
             IMasterCommand? result = this.TestReceiverMaster(test, out bool timerExpired);
 
-            Assert.IsAssignableFrom<CommandProgranCounter>(result);
+            Assert.IsAssignableFrom<CommandProgramCounter>(result);
             Assert.False(timerExpired);
             Assert.NotNull(result);
             Assert.Equal(MasterCommandEnum.CMND_RUN_TO_ADDR, result.MessageId);
-            Assert.Equal(payload.AsSpan<byte>().Slice(0, 4).ToArray(), BitConverter.GetBytes(((CommandProgranCounter)result).ProgrammeCounter));
+            Assert.Equal(payload.AsSpan<byte>().Slice(0, 4).ToArray(), BitConverter.GetBytes(((CommandProgramCounter)result).ProgramCounter));
         }
 
         [Fact]
@@ -449,8 +449,8 @@ namespace JTAGICEmkIITest
             Assert.NotNull(result);
             Assert.Equal(SlaveResponseEnum.RSP_PC, result.ResponseId);
 
-            Assert.IsAssignableFrom<ResponseProgranCounter>(result);
-            ResponseProgranCounter responseProgranCounter = (ResponseProgranCounter)result;
+            Assert.IsAssignableFrom<ResponseProgramCounter>(result);
+            ResponseProgramCounter responseProgranCounter = (ResponseProgramCounter)result;
             Assert.Equal(expectedProgramCounter, responseProgranCounter.ProgramCounter);
         }
 
@@ -458,14 +458,14 @@ namespace JTAGICEmkIITest
         public void StartReceiving_shall_receive_ResponseSelfTest()
         {
             var payload = new byte[] {
-                (byte)SelfTestReponseEnum.OK,
-                (byte)SelfTestReponseEnum.SKIPPED,
-                (byte)SelfTestReponseEnum.Failed,
-                (byte)SelfTestReponseEnum.OK,
-                (byte)SelfTestReponseEnum.SKIPPED,
-                (byte)SelfTestReponseEnum.Failed,
-                (byte)SelfTestReponseEnum.SKIPPED,
-                (byte)SelfTestReponseEnum.Failed,
+                (byte)SelfTestReponseEnum.SELFTEST_OK,
+                (byte)SelfTestReponseEnum.SELFTEST_SKIPPED,
+                (byte)SelfTestReponseEnum.SELFTEST_FAILED,
+                (byte)SelfTestReponseEnum.SELFTEST_OK,
+                (byte)SelfTestReponseEnum.SELFTEST_SKIPPED,
+                (byte)SelfTestReponseEnum.SELFTEST_FAILED,
+                (byte)SelfTestReponseEnum.SELFTEST_SKIPPED,
+                (byte)SelfTestReponseEnum.SELFTEST_FAILED,
             };
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_SELFTEST, payload);
@@ -482,14 +482,14 @@ namespace JTAGICEmkIITest
 
 
             var expectedResult = new SelfTestReponseEnum[] {
-                SelfTestReponseEnum.OK,
-                SelfTestReponseEnum.SKIPPED,
-                SelfTestReponseEnum.Failed,
-                SelfTestReponseEnum.OK,
-                SelfTestReponseEnum.SKIPPED,
-                SelfTestReponseEnum.Failed,
-                SelfTestReponseEnum.SKIPPED,
-                SelfTestReponseEnum.Failed
+                SelfTestReponseEnum.SELFTEST_OK,
+                SelfTestReponseEnum.SELFTEST_SKIPPED,
+                SelfTestReponseEnum.SELFTEST_FAILED,
+                SelfTestReponseEnum.SELFTEST_OK,
+                SelfTestReponseEnum.SELFTEST_SKIPPED,
+                SelfTestReponseEnum.SELFTEST_FAILED,
+                SelfTestReponseEnum.SELFTEST_SKIPPED,
+                SelfTestReponseEnum.SELFTEST_FAILED
             };
 
             Assert.Equal(expectedResult, responseSelfTest.SelfTestResults);
@@ -752,7 +752,7 @@ namespace JTAGICEmkIITest
         [InlineData(SlaveResponseEnum.RSP_GET_BREAK, typeof(ResponseBreakpoint))]
         [InlineData(SlaveResponseEnum.RSP_ILLEGAL_EMULATOR_MODE, typeof(ResponseEmulatorMode))]
         [InlineData(SlaveResponseEnum.RSP_ILLEGAL_MCU_STATE, typeof(ResponseMcuState))]
-        [InlineData(SlaveResponseEnum.RSP_PC, typeof(ResponseProgranCounter))]
+        [InlineData(SlaveResponseEnum.RSP_PC, typeof(ResponseProgramCounter))]
         [InlineData(SlaveResponseEnum.RSP_SIGN_ON, typeof(ResponseSignOn))]
         [InlineData(SlaveResponseEnum.EVT_BREAK, typeof(ResponseEventBreak))]
         [InlineData(SlaveResponseEnum.EVT_RUN, typeof(ResponseEventRun))]
