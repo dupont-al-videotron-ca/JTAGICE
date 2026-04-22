@@ -11,7 +11,7 @@ using Xunit;
 
 namespace JTAGICEmkIITest
 {
-    public class TargetConnectingTest : HostServiceBaseTest
+    public class TargetConnectedTest : HostServiceBaseTest
     {
         private Mock<IVisitorActivity> _visitorActivityMoq;
 
@@ -21,7 +21,7 @@ namespace JTAGICEmkIITest
 
 
         #region Constructors --------------------------------------------------
-        public TargetConnectingTest() : base()
+        public TargetConnectedTest() : base()
         {
             _visitorActivityMoq = this.MockRepository.Create<IVisitorActivity>();
         }
@@ -32,7 +32,7 @@ namespace JTAGICEmkIITest
         #region Tests ---------------------------------------------------------
 
         [Fact]
-        public void TargetConnecting_Constructor_Test()
+        public void TargetConnected_Constructor_Test()
         {
             //--- Setup
             this.CreateHostServiceMoq();
@@ -42,21 +42,21 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var test = new TargetConnecting(_activityStructure, parent);
+            var test = new TargetConnected(_activityStructure, parent);
             test.AddNext(next);
 
             //--- Verification
-            Assert.Equal(0x03, _activityStructure.Count());
+            Assert.Equal(0x06, _activityStructure.Count());
         }
 
         [Fact]
-        public void TargetConnecting_shall_Accept_visitorActivity()
+        public void TargetConnected_shall_Accept_visitorActivity()
         {
             //--- Setup
             this.CreateHostServiceMoq();
-            var test = new TargetConnecting(_activityStructure, null);
+            var test = new TargetConnected(_activityStructure, null);
             //--- Expectations
-            _visitorActivityMoq.Setup(m => m.Visit(It.IsAny<TargetConnecting>())).Returns(true);
+            _visitorActivityMoq.Setup(m => m.Visit(It.IsAny<TargetConnected>())).Returns(true);
 
             //--- Action
             var result = test.Accept(_visitorActivityMoq.Object);
@@ -66,12 +66,12 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void TargetConnecting_RunActivity_shall_return_true()
+        public void TargetConnected_RunActivity_shall_change_next_activity_to_TargetStopped()
         {
             //--- Setup
             var host = this.CreateHostService();
             var hostSession = host.HostSession;
-            var test = hostSession.TargetConnecting;
+            var test = hostSession.TargetConnected;
 
             _activityStructure.CurrentActivity = test;
 
@@ -79,14 +79,39 @@ namespace JTAGICEmkIITest
             Assert.False(_activityStructure.TargetMcuState.IsStopped);
 
             //--- Action
-            var result = _activityStructure.RunActivity(test);
+            var t = RunTaskActivity(test, typeof(TargetStopped), null!);
 
             //--- Verification
-            Assert.True(result);
-            Assert.True(hostSession.IsSessionActive);
+            Assert.True(t);
             Assert.NotNull(test.NextActivity);
-            Assert.True(test.NextActivity is TargetConnected);
+            Assert.True(test.NextActivity is TargetStopped);
             Assert.True(_activityStructure.TargetMcuState.IsStopped);
+
+        }
+
+        [Fact]
+        public void TargetConnected_RunActivity_shall_change_activity_to_TargetRuning()
+        {
+            //--- Setup
+            var host = this.CreateHostService();
+            var hostSession = host.HostSession;
+            var test = hostSession.TargetConnected.TargetStopped;
+            _activityStructure.TargetMcuState.GoStopped();
+            _activityStructure.CurrentActivity = test;
+
+            //--- Expectations
+            Assert.True(_activityStructure.TargetMcuState.IsStopped);
+
+            //--- Action
+            var t = RunTaskActivity(test, typeof(TargetRunning), () => { return host.StartRunning();});
+
+
+            //--- Verification
+            Assert.True(t);
+            Assert.NotNull(_activityStructure.CurrentActivity);
+            Assert.True(_activityStructure.CurrentActivity is TargetRunning);
+            Assert.True(_activityStructure.TargetMcuState.IsRunning);
+
         }
 
         #endregion

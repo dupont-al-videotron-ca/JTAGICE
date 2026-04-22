@@ -56,18 +56,21 @@ namespace JTAGICEmkII.HostService
                     switch (messageId)
                     {
                         case MasterCommandEnum.CMND_RESTORE_TARGET:
+                            Logger.Debug("Target disconnected by restore target command.");
                             NextActivity = this.Find<TargetDisonnecting>();
                             SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_GET_SYNC:
                         case MasterCommandEnum.CMND_RESET:
                         case MasterCommandEnum.CMND_FORCED_STOP:
+                            Logger.Debug("Target stopped.");
                             NextActivity = this.Find<TargetStopped>();
                             SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_SINGLE_STEP:
                         case MasterCommandEnum.CMND_RUN_TO_ADDR:
                         case MasterCommandEnum.CMND_GO:
+                            Logger.Debug("Target already running.");
                             break;
                         case MasterCommandEnum.CMND_ENTER_PROGMODE:
                         case MasterCommandEnum.CMND_CHIP_ERASE:
@@ -124,32 +127,41 @@ namespace JTAGICEmkII.HostService
 
         public override bool EventReceived(ISlaveResponse response)
         {
+            base.EventReceived(response!);
+
             switch (response?.ResponseId)
             {
                 case SlaveResponseEnum.EVT_PROGRAM_BREAK:
                 case SlaveResponseEnum.EVT_BREAK:
                 case SlaveResponseEnum.EVT_PDSB_BREAK:
                 case SlaveResponseEnum.EVT_PDSMB_BREAK:
+                    Logger.Debug($"Target stopped by {response?.ResponseId} event.");
                     NextActivity = this.Find<TargetStopped>();
                     SetWaitIdle();
-                    break;
+                    return true;
                 case SlaveResponseEnum.EVT_RUN:
                 case SlaveResponseEnum.EVT_TARGET_POWER_ON:
-                    break;
+                    Logger.Debug($"Target running event received {response?.ResponseId}.");
+                    return true;
 
                 case SlaveResponseEnum.EVT_DEBUG:
                     NextActivity = this.Find<TargetStopped>();
                     SetWaitIdle();
-                    break;
+                    return true;
                 case SlaveResponseEnum.EVT_EXTERNAL_RESET:
+                    Logger.Debug($"Target is reset.");
+                    return true;
                 case SlaveResponseEnum.EVT_TARGET_SLEEP:
+                    Logger.Debug($"Target goes in sleep.");
+                    return true;
                 case SlaveResponseEnum.EVT_TARGET_WAKEUP:
-                    break;
+                    Logger.Debug($"Target wakes up.");
+                    return true;
                 case SlaveResponseEnum.EVT_ICE_POWER_ERROR_STATE:
                 case SlaveResponseEnum.EVT_ICE_POWER_OK:
                 case SlaveResponseEnum.EVT_IDR_DIRTY:
                 case SlaveResponseEnum.EVT_NONE:
-                case SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_FORCE_BREAK_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_RELEASE_BREAK_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_MAX_BIT_LENGHT_DIFF:
                 case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT:
@@ -161,13 +173,12 @@ namespace JTAGICEmkII.HostService
                 case SlaveResponseEnum.EVT_ERROR_PHY_OPT_RECEIVE_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_OPT_RECEIVED_BREAK:
                 case SlaveResponseEnum.EVT_ERROR_PHY_NO_ACTIVITY:
-                    break;
+                    return false;
                 default:
                     this.Logger.Debug($"Event handling not implemented for event: {response?.ResponseId}.");
                     throw new NotImplementedException($"Event handling not implemented for event: {response?.ResponseId}.");
             }
 
-            return true;
         }
     }
 }

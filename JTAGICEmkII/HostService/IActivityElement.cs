@@ -25,5 +25,6 @@ namespace JTAGICEmkII.HostService
 
         bool RequestCompleted(HostService.CommandRequestBase<Master.IMasterCommand, Slave.ISlaveResponse> request);
 
+        IActivityElement? NextActivity { get; }
     }
 }

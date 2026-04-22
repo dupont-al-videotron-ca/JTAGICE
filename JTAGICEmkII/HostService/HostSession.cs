@@ -37,6 +37,9 @@ namespace JTAGICEmkII.HostService
 
         #region Properties 
         public bool IsSessionActive { get; internal set; }
+        public TargetConnecting TargetConnecting { get => this._targetConnecting;  }
+        public TargetConnected TargetConnected { get => this._targetConnected;  }
+        public TargetDisonnecting TargetDisconnecting { get => this._targetDisconnecting;  }
 
         #endregion
 
@@ -52,7 +55,7 @@ namespace JTAGICEmkII.HostService
         {
             _waitHandle.Reset();
             IsSessionActive = true;
-            this.NextActivity = this._targetConnecting;
+            this.NextActivity = this.TargetConnecting;
             return base.ActivityEntry();
         }
 

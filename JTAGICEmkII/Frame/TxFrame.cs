@@ -10,13 +10,14 @@ using JTAGICEmkII.Master;
 
 namespace JTAGICEmkII
 {
-    public class TxFrame : ITxFrame  , IDisposable
+    public class TxFrame : ITxFrame, IDisposable
     {
 
         #region Constructors 
         public TxFrame(ITxFrameAdaptor txComAdaptor)
         {
-            sequenceNumber = 0;
+            commandSequenceNumber = 0;
+            responseSequenceNumber = 0;
             Logger = LogManager.GetLogger(this.GetType());
             this.txFrameAdaptor = txComAdaptor ?? throw new ArgumentNullException(nameof(txComAdaptor));
         }
@@ -29,7 +30,8 @@ namespace JTAGICEmkII
 
         private const byte ESC = 27;
         private const byte TOKEN = 14;
-        private UInt16 sequenceNumber;
+        private UInt16 commandSequenceNumber;
+        private UInt16 responseSequenceNumber;
         private const UInt16 SequenceNumberWrap = 0xFFFF;
         private const UInt16 SequenceNumberEvent = 0xFFFF;
 
@@ -61,10 +63,10 @@ namespace JTAGICEmkII
             return this.SendBytes(frame.ToArray());
         }
 
-        public int BuildAndSendFrameResponse(Slave.Response response)
+        public int BuildAndSendFrameResponse(Slave.Response response, bool isEvent = false)
         {
             ArgumentNullException.ThrowIfNull(response);
-            var frame = BuildRxFrame(response);
+            var frame = BuildRxFrame(response, isEvent);
             return this.SendBytes(frame.ToArray());
         }
 
@@ -76,10 +78,10 @@ namespace JTAGICEmkII
             var bytesSent = await this.SendBytesAsync(frame.ToArray(), cancellationToken);
             return bytesSent;
         }
-        public async Task<int> BuildAndSendFrameResponseAsync(Slave.Response response, CancellationToken cancellationToken)
+        public async Task<int> BuildAndSendFrameResponseAsync(Slave.Response response, CancellationToken cancellationToken, bool isEvent = false)
         {
             ArgumentNullException.ThrowIfNull(response);
-            List<byte> frame = BuildRxFrame(response);
+            List<byte> frame = BuildRxFrame(response, isEvent);
 
             var bytesSent = await this.SendBytesAsync(frame.ToArray(), cancellationToken);
             return bytesSent;
@@ -91,10 +93,10 @@ namespace JTAGICEmkII
 
         #region Protected Methods 
 
-        protected internal int SendBytes(byte[] values) 
+        protected internal int SendBytes(byte[] values)
             => txFrameAdaptor.SendBytes(values);
 
-        protected internal Task<int> SendBytesAsync(byte[] values, CancellationToken cancellationToken) 
+        protected internal Task<int> SendBytesAsync(byte[] values, CancellationToken cancellationToken)
             => txFrameAdaptor.SendBytesAsync(values, cancellationToken);
 
         #endregion
@@ -103,7 +105,7 @@ namespace JTAGICEmkII
 
         private void IncrementNextSequenceNumber()
         {
-            sequenceNumber = (UInt16)((sequenceNumber + 1) % SequenceNumberWrap);
+            commandSequenceNumber = (UInt16)((commandSequenceNumber + 1) % SequenceNumberWrap);
         }
 
         private List<Byte> BuildTxFrame(Command command)
@@ -113,15 +115,15 @@ namespace JTAGICEmkII
             // Start of frame
             message.Add(ESC);
             // Sequence number
-            message.Add((byte)(sequenceNumber & 0xFF));
-            message.Add((byte)((sequenceNumber >> 8) & 0xFF));
+            message.Add((byte)(commandSequenceNumber & 0xFF));
+            message.Add((byte)((commandSequenceNumber >> 8) & 0xFF));
             // frame size
             var messageSize = (uint)command.MessageLength;
             message.Add((byte)(messageSize & 0xFF));
             message.Add((byte)((messageSize >> 8) & 0xFF));
             message.Add((byte)((messageSize >> 16) & 0xFF));
             message.Add((byte)((messageSize >> 24) & 0xFF));
-            // token
+            // _token
             message.Add(TOKEN);
             message.AddRange(payload);
 
@@ -131,28 +133,38 @@ namespace JTAGICEmkII
             message.Add((byte)(crc & 0xFF)); // payload length LSB
             message.Add((byte)((crc >> 8) & 0xFF)); // payload length Msb
 
-            Logger.Debug($"Tx Frame: commandId: {command.MessageId}, sequenceNumber:{sequenceNumber}, crc: 0x{crc:x4}, messageSize: {command.MessageLength}.");
+            Logger.Debug($"Tx Frame: commandId: {command.MessageId}, sequenceNumber:{commandSequenceNumber}, crc: 0x{crc:X4}, messageSize: {command.MessageLength}.");
             IncrementNextSequenceNumber();
 
             return message;
         }
 
-        private List<Byte> BuildRxFrame(Slave.Response response)
+        private List<Byte> BuildRxFrame(Slave.Response response, bool isEvent)
         {
             var payload = response.WriteToBytes();
             List<byte> message = new List<byte>();
             // Start of frame
             message.Add(ESC);
             // Sequence number
-            message.Add((byte)(sequenceNumber & 0xFF));
-            message.Add((byte)((sequenceNumber >> 8) & 0xFF));
+            if (!isEvent)
+            {
+                message.Add((byte)(commandSequenceNumber & 0xFF));
+                message.Add((byte)((commandSequenceNumber >> 8) & 0xFF));
+            }
+            else
+            {
+                // For events, use the special event sequence number
+                message.Add((byte)(SequenceNumberEvent & 0xFF));
+                message.Add((byte)((SequenceNumberEvent >> 8) & 0xFF));
+            }
+
             // frame size
             var messageSize = (uint)response.MessageLength;
             message.Add((byte)(messageSize & 0xFF));
             message.Add((byte)((messageSize >> 8) & 0xFF));
             message.Add((byte)((messageSize >> 16) & 0xFF));
             message.Add((byte)((messageSize >> 24) & 0xFF));
-            // token
+            // _token
             message.Add(TOKEN);
             message.AddRange(payload);
 
@@ -162,7 +174,7 @@ namespace JTAGICEmkII
             message.Add((byte)(crc & 0xFF)); // payload length LSB
             message.Add((byte)((crc >> 8) & 0xFF)); // payload length Msb
 
-            Logger.Debug($"Rx Frame: responseId: {response.ResponseId}, sequenceNumber:{sequenceNumber}, crc: 0x{crc:x4}, messageSize: {response.MessageLength}.");
+            Logger.Debug($"Rx Frame: responseId: {response.ResponseId}, sequenceNumber:{commandSequenceNumber}, crc: 0x{crc:x4}, messageSize: {response.MessageLength}.");
             IncrementNextSequenceNumber();
 
             return message;
@@ -174,7 +186,7 @@ namespace JTAGICEmkII
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
+                    // TODO: dispose managed _state (managed objects)
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer

@@ -27,7 +27,7 @@ namespace JTAGICEmkII.Master
 
         public ParameterEnum ParameterId { get; set; }
 
-        public override int Size => base.Size+1;
+        public override int Size => base.Size + 1;
 
         #endregion
 
@@ -47,6 +47,8 @@ namespace JTAGICEmkII.Master
             buffer = buffer.Concat(new byte[] { (byte)ParameterId }).ToArray();
             MessageLength += 1;
             buffer = buffer.Concat(WriteDataToBytes()).ToArray();
+
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
 

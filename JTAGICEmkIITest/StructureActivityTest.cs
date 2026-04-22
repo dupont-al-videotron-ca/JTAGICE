@@ -15,12 +15,12 @@ namespace JTAGICEmkIITest
 {
     public class StructureActivityTest : XUnitTestBase
     {
-        private HostDeviceMoq _hostService;
+        private HostDeviceServiceMoq _hostService;
         private Mock<IVisitorActivity> _visitorActivityMoq;
 
         public StructureActivityTest()
         {
-            _hostService = new HostDeviceMoq();
+            _hostService = new HostDeviceServiceMoq();
 
             _visitorActivityMoq = this.MockRepository.Create<IVisitorActivity>();
         }

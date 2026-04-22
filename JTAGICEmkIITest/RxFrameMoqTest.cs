@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
+using JTAGICEmkII.Frame;
 using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using JTAGICEmkIITest.Moq;
@@ -619,7 +620,7 @@ namespace JTAGICEmkIITest
         }
 
         [Theory]
-        [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT, typeof(ResponseEvent))]
+        [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_FORCE_BREAK_TIMEOUT, typeof(ResponseEvent))]
         [InlineData(SlaveResponseEnum.EVT_TARGET_POWER_ON, typeof(ResponseEvent))]
         [InlineData(SlaveResponseEnum.EVT_TARGET_POWER_OFF, typeof(ResponseEvent))]
         [InlineData(SlaveResponseEnum.EVT_EXTERNAL_RESET, typeof(ResponseEvent))]
@@ -708,7 +709,7 @@ namespace JTAGICEmkIITest
 
 
         [Theory]
-        [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT, typeof(ResponseEvent))]
+        [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_FORCE_BREAK_TIMEOUT, typeof(ResponseEvent))]
         [InlineData(SlaveResponseEnum.EVT_TARGET_POWER_ON, typeof(ResponseEvent))]
         [InlineData(SlaveResponseEnum.EVT_TARGET_POWER_OFF, typeof(ResponseEvent))]
         [InlineData(SlaveResponseEnum.EVT_EXTERNAL_RESET, typeof(ResponseEvent))]
@@ -764,13 +765,13 @@ namespace JTAGICEmkIITest
         }
 
         [Theory]
-        [InlineData(-1, 0x0000, 0x0000, false)]
-        [InlineData(0x0000, 0x0001, 0x0001, false)]
-        [InlineData(0xFFFE, 0x0000, 0x0000, false)]
-        [InlineData(0xFFFD, 0xFFFE, 0xFFFE, false)]
-        [InlineData(0x0000, 0x0002, 0x0002, false)]
-        [InlineData(0x0005, 0x0004, 0x0005, true)]
-        [InlineData(0x0005, 0x0005, 0x0005, true)]
+        //[InlineData(-1, 0x0000, 0x0000, false)]
+        //[InlineData(0x0000, 0x0001, 0x0001, false)]
+        //[InlineData(0xFFFE, 0x0000, 0x0000, false)]
+        //[InlineData(0xFFFD, 0xFFFE, 0xFFFE, false)]
+        //[InlineData(0x0000, 0x0002, 0x0002, false)]
+        //[InlineData(0x0005, 0x0004, 0x0005, true)]
+        //[InlineData(0x0005, 0x0005, 0x0005, true)]
         [InlineData(0x0005, 0xFFFE, 0x0005, true)]
         public void StartReceiving_shall_manage_sequence_number(int previousSequence, UInt16 frameSequence, UInt16 expectedSequence, bool expectedTimerExpired)
         {
@@ -785,7 +786,10 @@ namespace JTAGICEmkIITest
             var test = CreateFrameForTest(frame, localTimeout);
 
             Assert.Equal(-1, test.PreviousSequenceNumber);
+//            Assert.Equal(-1, test.PreviousSequenceNumber2.NumberValue);
             test.PreviousSequenceNumber = previousSequence;
+            test.PreviousSequenceNumber2 = new SequenceNumber(previousSequence);
+
             ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired, expectedTimerExpired);
 
             Assert.Equal(expectedTimerExpired, timerExpired);
@@ -799,6 +803,49 @@ namespace JTAGICEmkIITest
                 Assert.Equal(SlaveResponseEnum.RSP_OK, result.ResponseId);
                 Assert.IsAssignableFrom<Response>(result);
                 Assert.Equal(expectedSequence, test.PreviousSequenceNumber);
+                //Assert.Equal(expectedSequence, test.PreviousSequenceNumber2.NumberValue);
+            }
+        }
+
+        [Theory]
+        [InlineData(-1, 0x0000, 0x0000, false)]
+        [InlineData(0x0000, 0x0001, 0x0001, false)]
+        [InlineData(0xFFFE, 0x0000, 0x0000, false)]
+        [InlineData(0xFFFD, 0xFFFE, 0xFFFE, false)]
+        [InlineData(0x0000, 0x0002, 0x0002, false)]
+        [InlineData(0x0005, 0x0004, 0x0005, true)]
+        [InlineData(0x0005, 0x0005, 0x0005, true)]
+        [InlineData(0x0005, 0xFFFE, 0x0005, true)]
+        public void StartReceiving_shall_manage_sequence_number2(int previousSequence, UInt16 frameSequence, UInt16 expectedSequence, bool expectedTimerExpired)
+        {
+            Logger.Debug($"Test StartReceiving_shall_manage_sequence_number2 with previousSequence: {previousSequence}, frameSequence: {frameSequence}, expectedSequence: {expectedSequence}, expectedTimerExpired: {expectedTimerExpired}");
+            var frame = Create1ByteResponse(SlaveResponseEnum.RSP_OK, frameSequence);
+            int localTimeout;
+
+            if (expectedTimerExpired)
+                localTimeout = 1000;
+            else
+                localTimeout = -1;
+
+            var test = CreateFrameForTest(frame, localTimeout);
+
+            Assert.True(test.PreviousSequenceNumber2.IsInitial);
+            test.PreviousSequenceNumber2 = new SequenceNumber(previousSequence);
+            test.PreviousSequenceNumber = previousSequence;
+
+            ISlaveResponse? result = this.TestReceiverSlave(test, out bool timerExpired, expectedTimerExpired);
+
+            Assert.Equal(expectedSequence, (UInt16)test.PreviousSequenceNumber2);
+            Assert.Equal(expectedTimerExpired, timerExpired);
+            if (expectedTimerExpired)
+            {
+                Assert.Null(result);
+            }
+            else
+            {
+                Assert.NotNull(result);
+                Assert.Equal(SlaveResponseEnum.RSP_OK, result.ResponseId);
+                Assert.IsAssignableFrom<Response>(result);
             }
         }
 

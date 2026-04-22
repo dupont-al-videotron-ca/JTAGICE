@@ -74,7 +74,7 @@ namespace JTAGICEmkII.HostService
                 this.NextActivity = host;
             }
 
-            this.NextActivity = this.Find<TargetConnected>(); ;
+            this.NextActivity = this.Find<TargetConnected>();
             return retval;
         }
 

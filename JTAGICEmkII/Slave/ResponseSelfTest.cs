@@ -44,10 +44,10 @@ namespace JTAGICEmkII.Slave
 
         public void SetSelfTestResult(int index, SelfTestReponseEnum result)
         {
-            if (index < 0 || index >= Data.Count)
+            if (index < 0 || index > Data.Count)
                 throw new ArgumentOutOfRangeException(nameof(index), "Index must be within the bounds of the data array.");
 
-            Data[index] = (byte)result;
+            Data.Add((byte)result);
         }
 
         public override void ReadFromBytes(byte[] data)

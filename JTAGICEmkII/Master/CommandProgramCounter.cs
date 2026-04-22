@@ -31,7 +31,8 @@ namespace JTAGICEmkII.Master
 
             // Add ProgramCounter bytes to the buffer
             buffer = buffer.Concat(BitConverter.GetBytes(ProgramCounter)).ToArray();
-            MessageLength += 4; // Increment message length by 4 bytes for the ProgramCounter
+
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
 

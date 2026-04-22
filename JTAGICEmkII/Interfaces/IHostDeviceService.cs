@@ -52,11 +52,11 @@ namespace JTAGICEmkII
 
 		/// 
 		/// <param name="programCounter"></param>
-		ICommandResult WriteProgramCount(ulong programCounter);
+		ICommandResult WriteProgramCounter(ulong programCounter);
 
 		/// 
 		/// <param name="programCounter"></param>
-		ICommandResult ReadProgramCount(out ulong programCounter);
+		ICommandResult ReadProgramCounter(out ulong programCounter);
 
 		ICommandResult StartRunning();
 

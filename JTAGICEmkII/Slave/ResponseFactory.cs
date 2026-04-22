@@ -39,7 +39,7 @@ namespace JTAGICEmkII.Slave
                 case SlaveResponseEnum.EVT_PROGRAM_BREAK:
                 case SlaveResponseEnum.EVT_PDSB_BREAK:
                 case SlaveResponseEnum.EVT_PDSMB_BREAK:
-                case SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_FORCE_BREAK_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_RELEASE_BREAK_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_MAX_BIT_LENGHT_DIFF:
                 case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT:

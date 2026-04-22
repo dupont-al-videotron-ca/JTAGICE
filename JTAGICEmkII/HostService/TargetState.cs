@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using log4net;
 
 namespace JTAGICEmkII.HostService
 {
+    [DebuggerDisplay("State={State}")]
     public class TargetState
     {
 
@@ -31,6 +33,7 @@ namespace JTAGICEmkII.HostService
         public bool IsRunning => State == McuStateEnum.RUNNING;
         public bool IsStopped => State == McuStateEnum.STOPPED;
         public bool IsProgramming => State == McuStateEnum.PROGRAMMING;
+        public bool IsReset => State == McuStateEnum.Unknown;
 
         #endregion
 

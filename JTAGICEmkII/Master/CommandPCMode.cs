@@ -46,7 +46,8 @@ namespace JTAGICEmkII.Master
 
             // Add ExecutionMode bytes to the buffer
             buffer = buffer.Concat(new byte[] { (byte)ExecutionMode }).ToArray();
-            MessageLength += 1; // Increment message length by 1 byte for the ExecutionMode
+
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
         public override void ReadFromBytes(byte[] data)

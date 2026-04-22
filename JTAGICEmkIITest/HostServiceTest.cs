@@ -4,25 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Common.Test.Xunit;
-using JTAGICEmkII;
 using JTAGICEmkII.HostService;
-using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using log4net;
-using MyFramework;
 using Xunit;
 
 namespace JTAGICEmkIITest
 {
-    public class HostServiceTest : FrameTest
+
+    public class HostServiceTest : HostServiceBaseTest
     {
-        private RxFrame? _rxFrame;
-        private TxFrame? _txFrame;
-        private bool _timeoutOccured;
-        private ISlaveResponse? _responseReceived;
-        private IMasterCommand? _commandReceived;
-        private int _nbResponsesReceived = 0;
-        private int _nbCommandReceived = 0;
         public HostServiceTest() : base()
         {
             _timeoutOccured = false;
@@ -31,14 +22,6 @@ namespace JTAGICEmkIITest
         {
             if (disposing)
             {
-                if (_rxFrame != null)
-                {
-                    _rxFrame.ResponseReceived -= RxFrame_ResponseReceived;
-                    _rxFrame.RxTimerExpired -= RxFrame_RxTimerExpired;
-                    _rxFrame.Dispose();
-                }
-
-                _txFrame?.Dispose();
             }
 
             base.Dispose(disposing);
@@ -72,156 +55,584 @@ namespace JTAGICEmkIITest
         }
 
 
-        private HostDeviceService CreateHostService(int timeout = -1)
+        [Fact]
+        public void HostService_Calling_SignOff_shall_return_success()
         {
-            FifoBuffer<byte> buffer = new FifoBuffer<byte>();
-            var rxadapt = new Moq.RxFrameFifoMemory(buffer, timeout);
-            var txadapt = new Moq.TxFrameFifoMemory(buffer);
-            _rxFrame = new RxFrame(rxadapt);
-            rxadapt.Attach(_rxFrame);
-            _rxFrame.ResponseReceived += RxFrame_ResponseReceived;
-            _rxFrame.CommandReceived += RxFrame_CommandReceived;
-            _rxFrame.RxTimerExpired += RxFrame_RxTimerExpired;
-            _txFrame = new TxFrame(txadapt);
 
-            var hostService = new HostDeviceService(_rxFrame, _txFrame);
-            return hostService;
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SignOff();
+
+            //-- Verification
+            CheckResult(result);
         }
 
-        private void RxFrame_CommandReceived(object? sender, CommandReceivedEventArgs e)
+        [Fact]
+        public void HostService_Calling_SingOn_shall_return_success()
         {
-            if (_timeoutOccured)
+
+            //-- Setup
+            var test = CreateHostService();
+
+
+            //-- Expectation
+            var expectedResponse = new ResponseSignOn(SlaveResponseEnum.RSP_SIGN_ON)
             {
-                _commandReceived = null;
-                return;
-            }
+                CommunicationProtocolVersion = 1,
+                MasterMcuBootLoaderVersion = 1,
+                MasterMcuHwVersion = 1,
+                MasterMcuFirmwareVersionMajor = 1,
+                MasterMcuFirmwareVersionMinor = 0,
+                SlaveMcuBootLoaderVersion = 1,
+                SlaveMcuFirmwareVersionMajor = 1,
+                SlaveMcuFirmwareVersionMinor = 0,
+                SlaveMcuHwVersion = 1,
+                SerialNumber = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 },
+                DeviceId = new byte[] { 0x10, 0x20, 0x30, 0x40 }
+            };
 
-            _nbCommandReceived++;
-            _commandReceived = e.Command;
+            //-- Action
+            var result = test.SignOn(out ResponseSignOn? response);
 
-            ISlaveResponse? response = CreateResponse(_commandReceived);
-            if (response == null)
-            {
-                // No response for this command, do not send anything
-                Logger.Debug($"No response for command {e.Command.MessageId}, not sending anything");
-                return;
-            }
-
-            _txFrame?.BuildAndSendFrameResponse((Response)response);
+            //-- Verification
+            CheckResult(result);
+            Assert.NotNull(response);
+            Assert.Equal(expectedResponse.CommunicationProtocolVersion, response.CommunicationProtocolVersion);
+            Assert.Equal(expectedResponse.MasterMcuBootLoaderVersion, response.MasterMcuBootLoaderVersion);
+            Assert.Equal(expectedResponse.MasterMcuHwVersion, response.MasterMcuHwVersion);
+            Assert.Equal(expectedResponse.MasterMcuFirmwareVersionMajor, response.MasterMcuFirmwareVersionMajor);
+            Assert.Equal(expectedResponse.MasterMcuFirmwareVersionMinor, response.MasterMcuFirmwareVersionMinor);
+            Assert.Equal(expectedResponse.SlaveMcuBootLoaderVersion, response.SlaveMcuBootLoaderVersion);
+            Assert.Equal(expectedResponse.SlaveMcuFirmwareVersionMajor, response.SlaveMcuFirmwareVersionMajor);
+            Assert.Equal(expectedResponse.SlaveMcuFirmwareVersionMinor, response.SlaveMcuFirmwareVersionMinor);
+            Assert.Equal(expectedResponse.SlaveMcuHwVersion, response.SlaveMcuHwVersion);
+            Assert.Equal(expectedResponse.SerialNumber, response.SerialNumber);
+            Assert.Equal(expectedResponse.DeviceId, response.DeviceId);
         }
 
-        private ISlaveResponse? CreateResponse(IMasterCommand commandReceived)
+        [Fact]
+        public void HostService_Calling_SetParameter_shall_return_success()
         {
-            switch (commandReceived.MessageId)
-            {
-                // Single byte commands
-                case MasterCommandEnum.CMND_SIGN_OFF:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_GET_SIGN_ON:
-                    var signOn = (ResponseSignOn)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_SIGN_ON)!;
-                    signOn.CommunicationProtocolVersion = 1;
-                    return signOn;
-                case MasterCommandEnum.CMND_READ_PC:
-                    var readPc = (ResponseProgramCounter)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PC)!;
-                    readPc.ProgramCounter = 0x12345678;
-                    return readPc;
-                case MasterCommandEnum.CMND_GO:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_GET_SYNC:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_CHIP_ERASE:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_ENTER_PROGMODE:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_LEAVE_PROGMODE:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_CLEAR_EVENTS:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_RESTORE_TARGET:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
 
-                // multiple byte commands
-                case MasterCommandEnum.CMND_SET_DEVICE_DESCRIPTOR:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_SELFTEST:
-                    var selfTest = (ResponseSelfTest)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_SELFTEST)!;
-                    selfTest.SetSelfTestResult(0, SelfTestReponseEnum.SELFTEST_OK);
-                    selfTest.SetSelfTestResult(1, SelfTestReponseEnum.SELFTEST_FAILED);
-                    selfTest.SetSelfTestResult(2, SelfTestReponseEnum.SELFTEST_OK);
-                    selfTest.SetSelfTestResult(3, SelfTestReponseEnum.SELFTEST_OK);
-                    selfTest.SetSelfTestResult(4, SelfTestReponseEnum.SELFTEST_OK);
-                    selfTest.SetSelfTestResult(5, SelfTestReponseEnum.SELFTEST_OK);
-                    selfTest.SetSelfTestResult(6, SelfTestReponseEnum.SELFTEST_OK);
-                    selfTest.SetSelfTestResult(7, SelfTestReponseEnum.SELFTEST_SKIPPED);
-                    return selfTest;
-                case MasterCommandEnum.CMND_SPI_CMD:
-                    var spi = (ResponseMultipleByte)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_SPI_DATA)!;
-                    spi.Data.AddRange(new byte[] { 0x01, 0x02, 0x03 });
-                    return spi;
-                case MasterCommandEnum.CMND_SET_PARAMETER:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_GET_PARAMETER:
-                    var param = (ResponseMultipleByte)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_PARAMETER)!;
-                    param.Data.AddRange(new byte[] { 0x01 });
-                    return param;
-                case MasterCommandEnum.CMND_WRITE_MEMORY:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_READ_MEMORY:
-                    var memory = (ResponseMultipleByte)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_MEMORY)!;
-                    var request = (CommandMemory)commandReceived;
-                    for (int i = 0; i < request.ByteCount; i++)
-                    {
-                        memory.Data.Add((byte)(i));
-                    }
-                    return memory;
-                case MasterCommandEnum.CMND_WRITE_PC:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_RUN_TO_ADDR:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
 
-                case MasterCommandEnum.CMND_SINGLE_STEP:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
+            //-- Expectation
 
-                case MasterCommandEnum.CMND_FORCED_STOP:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-                case MasterCommandEnum.CMND_RESET:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
+            //-- Action
+            var result = test.SetParameter(0, 55);
 
-                case MasterCommandEnum.CMND_ERASEPAGE_SPM:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
+            //-- Verification
+            CheckResult(result);
 
-                case MasterCommandEnum.CMND_GET_BREAK:
-                    var _break = (ResponseBreakpoint)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_GET_BREAK)!;
-                    _break.BreakpontType = BreakpontTypeEnum.BKPT_PRG_MEMORY;
-                    _break.Address = 0x12345678;
-                    _break.BreakpointMode = JTAGICEmkII.Slave.BreakpointModeEnum.BKPT_MODE_PROGRAM;
-                    return _break;
-                case MasterCommandEnum.CMND_SET_BREAK:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-
-                case MasterCommandEnum.CMND_CLR_BREAK:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-
-                case MasterCommandEnum.CMND_SET_N_PARAMETERS:
-                    return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
-
-                default:
-                    return null!;
-            }
         }
 
-        private void RxFrame_RxTimerExpired(object? sender, EventArgs e) => _timeoutOccured = true;
-
-        private void RxFrame_ResponseReceived(object? sender, ResponseReceivedEventArgs e)
+        [Fact]
+        public void HostService_Calling_SetParameter_ForAllParameters_shall_return_success()
         {
-            if (_timeoutOccured)
+            //-- Setup
+            var test = CreateHostService();
+            Parameters expectedParameters = BuildParametersForTest();
+            test.TargetMcuState.GoStopped();
+            //-- Expectation
+
+            foreach (var param in expectedParameters.GetAllWrite())
             {
-                _responseReceived = null;
-                return;
+                //-- Action
+                Logger.Debug($"Testing GetParameter for {param.Key} which has expected value {param.Value.Value} Size {param.Value.Size}. ");
+                var result = test.SetParameter(param.Key, param.Value.Value);
+
+                //-- Verification
+                CheckResult(result);
             }
 
-            _nbResponsesReceived++;
-            _responseReceived = e.Response;
         }
+
+        [Fact]
+        public void HostService_Calling_GetParameter_shall_return_success()
+        {
+            //-- Setup
+            var test = CreateHostService();
+            var expectedParameters = new Parameters().GetAllRead();
+            var expectedParameter = expectedParameters.First();
+            test.TargetMcuState.GoStopped();
+            //-- Expectation
+
+            //-- Action
+            var result = test.GetParameter(expectedParameter.Key, out uint param);
+
+            //-- Verification
+            CheckResult(result);
+            Assert.Equal((uint)0xFE, param);
+        }
+
+        [Fact]
+        public void HostService_Calling_WriteMemory_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.WriteMemory(0, 0x12345, new byte[] { 0x01, 0x02, 0x03, 0x04 });
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_ReadMemory_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+            byte[] expectedData = new byte[] { 0x00, 0x01, 0x02, 0x03 };
+
+            //-- Action
+            var result = test.ReadMemory(0, 0x12345, 4, out byte[] data);
+
+            //-- Verification
+            CheckResult(result);
+            Assert.Equal(expectedData, data);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_WritePc_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.WriteProgramCounter(0x12345);
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_ReadPc_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+            ulong expectedPcValue = 0x12345678;
+
+            //-- Action
+            var result = test.ReadProgramCounter(out ulong pc);
+
+            //-- Verification
+            CheckResult(result);
+            Assert.Equal(expectedPcValue, pc);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_StartRunning_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.StartRunning();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_SingleStepIntoAsm_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SingleStepIntoAsm();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_SingleStepOverAsm_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SingleStepOverAsm();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_SingleStepOutAsm_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SingleStepOutAsm();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+
+        [Fact]
+        public void HostService_Calling_StopRunning_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoRunning();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.StopRunning();
+
+            //-- Verification
+            CheckResult(result);
+        }
+
+        [Fact]
+        public void HostService_Calling_Reset_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoRunning();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.Reset();
+
+            //-- Verification
+            CheckResult(result);
+            Assert.True(test.TargetMcuState.IsStopped);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_SetDeviceDescriptor_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SetDeviceDescriptor();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_EraseMemory_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.EraseMemory(0xB0, 0x0, 0x10000);
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_GetSync_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.GetSync();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_SelfTest_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SelfTest();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+        [Fact]
+        public void HostService_Calling_SetBreakpoint_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SetBreakpoint(0, 0x0045, 0, 0x03);
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_GetBreakpoint_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.GetBreakpoint(0, 0, 0x03, out ulong bp);
+
+            //-- Verification
+            CheckResult(result);
+            Assert.Equal((ulong)0x12345678, bp);
+        }
+
+        [Fact]
+        public void HostService_Calling_EraseDevice_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.EraseDevice();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+
+        [Fact]
+        public void HostService_Calling_EnterPrograming_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.EnterPrograming();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+
+        [Fact]
+        public void HostService_Calling_LeavePrograming_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoProgramming();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.LeavePrograming();
+
+            //-- Verification
+            CheckResult(result);
+            Assert.True(test.TargetMcuState.IsProgramming);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_ClearBreakpont_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.ClearBreakpoint(0, 0x03);
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_StartRunningUntil_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.StartRunningUntil(0x0123456);
+
+            //-- Verification
+            CheckResult(result);
+        }
+
+        [Fact]
+        public void HostService_Calling_SpiCommand_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+            byte[] spi = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.SpiCommand(spi, out byte data);
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_ClearEvents_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+            test.TargetMcuState.GoStopped();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.ClearEvents();
+
+            //-- Verification
+            CheckResult(result);
+
+        }
+
+        [Fact]
+        public void HostService_Calling_RestoreTarget_shall_return_success()
+        {
+
+            //-- Setup
+            var test = CreateHostService();
+
+
+            //-- Expectation
+
+            //-- Action
+            var result = test.RestoreTarget();
+
+            //-- Verification
+            CheckResult(result);
+            Assert.False(test.TargetMcuState.IsRunning);
+            Assert.False(test.TargetMcuState.IsStopped);
+            Assert.False(test.TargetMcuState.IsProgramming);
+
+        }
+
     }
 }

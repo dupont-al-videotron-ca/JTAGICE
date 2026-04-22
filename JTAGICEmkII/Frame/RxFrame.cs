@@ -1,4 +1,6 @@
 ﻿#pragma warning disable CS1591,CS1573,CS0465,CS0649,CS8019,CS1570,CS1584,CS1658,CS0436,CS8981,SYSLIB1092, CS8625, CS8618, CS8603, CS8604, CA1416
+#define LOGGER
+
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -11,6 +13,7 @@ using JTAGICEmkII.Slave;
 using MyFramework;
 using MyFramework.Threading;
 using log4net;
+using JTAGICEmkII.Frame;
 
 namespace JTAGICEmkII
 {
@@ -21,14 +24,14 @@ namespace JTAGICEmkII
         internal RxFrame(IRxFrameAdaptor rxComAdaptor)
         {
             Logger = LogManager.GetLogger(this.GetType());
-            state = RxStateEnum.WaitStart;
+            _state = RxStateEnum.WaitStart;
 
-            source = new CancellationTokenSource();
-            token = source.Token;
+            _source = new CancellationTokenSource();
 
             PreviousSequenceNumber = -1;
             Timeout = 1000; // Default _timeout of 1000 milliseconds
-            this.rxFrameAdaptor = rxComAdaptor ?? throw new ArgumentNullException(nameof(rxComAdaptor));
+            this._rxFrameAdaptor = rxComAdaptor ?? throw new ArgumentNullException(nameof(rxComAdaptor));
+            PreviousSequenceNumber2 = new SequenceNumber();
         }
 
 
@@ -40,17 +43,16 @@ namespace JTAGICEmkII
         private const byte TOKEN_BYTE = 14;
         private const UInt16 SequenceNumberWrap = 0xFFFF;
         private const UInt16 SequenceNumberEvent = 0xFFFF;
-        private readonly IRxFrameAdaptor rxFrameAdaptor;
-        private RxStateEnum state;
-        private bool disposedValue;
-        private Task receiveTask;
+        private readonly IRxFrameAdaptor _rxFrameAdaptor;
+        private RxStateEnum _state;
+        private bool _disposedValue;
+        private Task _receiveTask;
         private UInt32 messageLength;
 
-        private CancellationTokenSource source;
-        private CancellationToken token;
-        private List<byte> frameBuffer = new List<byte>();
-        private List<byte> messageBuffer = new List<byte>();
-        private UInt16 rxSequenceNumber;
+        private CancellationTokenSource _source;
+        private List<byte> _frameBuffer = new List<byte>();
+        private List<byte> _messageBuffer = new List<byte>();
+        private UInt16 _rxSequenceNumber;
 
         #endregion
 
@@ -58,21 +60,22 @@ namespace JTAGICEmkII
         #region Properties 
 
         internal int PreviousSequenceNumber { get; set; }
+        internal SequenceNumber PreviousSequenceNumber2 { get; set; }
 
         internal bool TimeoutOccured { get; set; }
 
         internal ILog Logger { get; private set; }
 
-        public bool IsReceiving => receiveTask != null && !receiveTask.IsCompleted;
+        public bool IsReceiving => _receiveTask != null && !_receiveTask.IsCompleted;
 
-        public IRxFrameAdaptor Adaptor => rxFrameAdaptor;
+        public IRxFrameAdaptor Adaptor => _rxFrameAdaptor;
 
         /// <summary>
-        /// Timeout in milliseconds for receiving each part of the frame (e.g., waiting for start byte, sequence number, token, message bytes, CRC).
+        /// Timeout in milliseconds for receiving each part of the frame (e.g., waiting for start byte, sequence number, _token, message bytes, CRC).
         /// </summary>
         internal int Timeout { get; set; }
 
-        internal CancellationToken CancellationToken { get => this.token; }
+        internal CancellationToken CancellationToken { get => this._source.Token; }
 
         #endregion
 
@@ -91,7 +94,7 @@ namespace JTAGICEmkII
         public void StartReceiving()
         {
             Logger.Debug("receiving start.");
-            this.receiveTask = Task.Run(() =>
+            this._receiveTask = Task.Run(() =>
             {
                 Logger.Debug("receiving Task running.");
                 while (true)
@@ -121,12 +124,14 @@ namespace JTAGICEmkII
 
                 Logger.Debug("Receiving task exit.");
                 return;
-            }, this.source.Token);
+            }, this._source.Token);
         }
 
         private void ResetReceiver()
         {
+#if LOGGER
             Logger.Debug($"ResetReceiver.");
+#endif
             PreviousSequenceNumber = -1;
             GoWaitStart();
         }
@@ -135,16 +140,24 @@ namespace JTAGICEmkII
         {
             try
             {
+#if !LOGGER
                 Logger.Debug("Receiving Task stop request.");
+#endif
                 GoStop();
-                source.Cancel(true);
-                receiveTask?.Wait(100);
-                receiveTask = null;
+                _source.Cancel(true);
+                _receiveTask?.Wait(100);
+                _receiveTask = null;
+#if !LOGGER
                 Logger.Debug("Stop terminated.");
+#endif
             }
             catch (OperationCanceledException ex)
             {
                 Logger.Debug($"Stop OperationCanceledException: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Stop Exception: {ex.Message}");
             }
         }
         #endregion
@@ -153,16 +166,16 @@ namespace JTAGICEmkII
         #region Protected Methods 
 
         internal bool ReadByte(out byte value, int timeout = -1)
-            => rxFrameAdaptor.ReadByte(out value, timeout);
+            => _rxFrameAdaptor.ReadByte(out value, timeout);
 
         internal bool ReadBytes(out byte[]? values, uint length, int timeout = -1)
-            => rxFrameAdaptor.ReadBytes(out values, length, timeout);
+            => _rxFrameAdaptor.ReadBytes(out values, length, timeout);
 
         internal Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1)
-            => rxFrameAdaptor.ReadBytesAsync(out values, length, cancellationToken, timeout);
+            => _rxFrameAdaptor.ReadBytesAsync(out values, length, cancellationToken, timeout);
 
         internal Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1) =>
-            rxFrameAdaptor.ReadByteAsync(out value, cancellationToken, timeout);
+            _rxFrameAdaptor.ReadByteAsync(out value, cancellationToken, timeout);
 
         internal void OnRxTimeoutOccured()
         {
@@ -185,25 +198,25 @@ namespace JTAGICEmkII
 
         internal void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
-                    source.Cancel();
-                    source.Dispose();
                     try
                     {
-                        receiveTask?.Wait();
-                        receiveTask?.Dispose();
+                        StopReceiving();
+                        _receiveTask?.Dispose();
+                        _source.Dispose();
                     }
                     catch (AggregateException ex)
                     {
-                        Logger.Debug($"Dispose AggregateException: {ex.Message}");
+                        Logger.Debug($"Dispose AggregateException: {ex.GetBaseException().Message}");
                     }
+
 
                     // free unmanaged resources (unmanaged objects) and override finalizer
                     // set large fields to null
-                    disposedValue = true;
+                    _disposedValue = true;
                 }
             }
         }
@@ -228,67 +241,81 @@ namespace JTAGICEmkII
 
         private void GoWaitStart()
         {
-            if (state != RxStateEnum.WaitStart)
+            if (_state != RxStateEnum.WaitStart)
             {
+#if LOGGER
                 Logger.Debug($"GoWaitStart.");
-                frameBuffer.Clear();
-                messageBuffer.Clear();
-                state = RxStateEnum.WaitStart;
+#endif
+                _frameBuffer.Clear();
+                _messageBuffer.Clear();
+                _state = RxStateEnum.WaitStart;
             }
         }
 
         private void GoWaitSequenceNumber()
         {
 
-            if (state != RxStateEnum.WaitSequenceNumber)
+            if (_state != RxStateEnum.WaitSequenceNumber)
             {
+#if LOGGER
                 Logger.Debug($"GoWaitSequenceNumber.");
-                state = RxStateEnum.WaitSequenceNumber;
+#endif
+                _state = RxStateEnum.WaitSequenceNumber;
             }
         }
 
         private void GoWaitToken()
         {
-            if (state != RxStateEnum.WaitToken)
+            if (_state != RxStateEnum.WaitToken)
             {
+#if LOGGER
                 Logger.Debug($"GoWaitToken.");
-                state = RxStateEnum.WaitToken;
+#endif
+                _state = RxStateEnum.WaitToken;
             }
         }
 
         private void GoWaitMessageSize()
         {
-            if (state != RxStateEnum.WaitMessageSize)
+            if (_state != RxStateEnum.WaitMessageSize)
             {
+#if LOGGER
                 Logger.Debug($"GoWaitMessageSize.");
-                state = RxStateEnum.WaitMessageSize;
+#endif
+                _state = RxStateEnum.WaitMessageSize;
             }
         }
 
         private void GoWaitMessage()
         {
-            if (state != RxStateEnum.WaitMessage)
+            if (_state != RxStateEnum.WaitMessage)
             {
+#if LOGGER
                 Logger.Debug($"GoWaitMessage.");
-                state = RxStateEnum.WaitMessage;
+#endif
+                _state = RxStateEnum.WaitMessage;
             }
         }
 
         private void GoWaitCRC()
         {
-            if (state != RxStateEnum.WaitCRC)
+            if (_state != RxStateEnum.WaitCRC)
             {
+#if LOGGER
                 Logger.Debug($"GoWaitCRC.");
-                state = RxStateEnum.WaitCRC;
+#endif
+                _state = RxStateEnum.WaitCRC;
             }
         }
 
         private void GoStop()
         {
-            if (state != RxStateEnum.Stop)
+            if (_state != RxStateEnum.Stop)
             {
+#if LOGGER
                 Logger.Debug($"GoStop.");
-                state = RxStateEnum.Stop;
+#endif
+                _state = RxStateEnum.Stop;
             }
         }
 
@@ -327,14 +354,14 @@ namespace JTAGICEmkII
 
         private void ReceiveRxFrame()
         {
-            // read bytes according to the current state, and update the state machine accordingly.
-            // The read bytes will be stored in frameBuffer, and the message body bytes will be stored in messageBuffer.
+            // read bytes according to the current _state, and update the _state machine accordingly.
+            // The read bytes will be stored in _frameBuffer, and the message body bytes will be stored in _messageBuffer.
             byte rxbyte;
             byte[]? rxBytes = null;
-            switch (state)
+            switch (_state)
             {
                 case RxStateEnum.Stop:
-                    // Do nothing, just wait for stop state to be reset
+                    // Do nothing, just wait for stop _state to be reset
                     break;
 
                 case RxStateEnum.WaitStart:
@@ -347,8 +374,10 @@ namespace JTAGICEmkII
 
                     if (rxbyte == ESCAPE_BYTE)
                     {
+#if LOGGER
                         Logger.Debug("Start byte received.");
-                        frameBuffer.Add(rxbyte); // Add the escape byte to the frame buffer
+#endif
+                        _frameBuffer.Add(rxbyte); // Add the escape byte to the frame buffer
                         GoWaitSequenceNumber();
                     }
                     else
@@ -366,11 +395,13 @@ namespace JTAGICEmkII
 
                     if (rxBytes?.Length == 2)
                     {
-                        frameBuffer.AddRange(rxBytes);
+                        _frameBuffer.AddRange(rxBytes);
 
                         // LSB is first byte, MSB is second byte
-                        rxSequenceNumber = BinaryPrimitives.ReadUInt16LittleEndian(rxBytes);
-                        Logger.Debug($"Sequence number bytes {rxSequenceNumber}.");
+                        _rxSequenceNumber = BinaryPrimitives.ReadUInt16LittleEndian(rxBytes);
+#if LOGGER
+                        Logger.Debug($"Sequence number : {_rxSequenceNumber}.");
+#endif
                         GoWaitMessageSize();
                     }
                     else
@@ -390,12 +421,14 @@ namespace JTAGICEmkII
 
                     if (rxBytes?.Length == 4) // message size 
                     {
-                        frameBuffer.AddRange(rxBytes); // Add the message size bytes to the frame buffer
+                        _frameBuffer.AddRange(rxBytes); // Add the message size bytes to the frame buffer
 
                         // LSB is first byte, MSB is last byte
                         messageLength = BinaryPrimitives.ReadUInt32LittleEndian(rxBytes);
 
+#if LOGGER
                         Logger.Debug($"message Length:{messageLength:x4}.");
+#endif
                         GoWaitToken();
                     }
                     else
@@ -415,8 +448,10 @@ namespace JTAGICEmkII
 
                     if (rxbyte == TOKEN_BYTE)
                     {
+#if LOGGER
                         Logger.Debug($"Received TOKEN.");
-                        frameBuffer.Add(rxbyte); // Add the token byte to the frame buffer
+#endif
+                        _frameBuffer.Add(rxbyte); // Add the _token byte to the frame buffer
                         GoWaitMessage();
                     }
                     else
@@ -435,9 +470,12 @@ namespace JTAGICEmkII
 
                     if (messageBytes?.Length == messageLength)
                     {
+#if LOGGER
                         Logger.Debug($"Received message bytes, length: {messageBytes.Length}.");
-                        frameBuffer.AddRange(messageBytes); // Add the message bytes to the frame buffer
-                        messageBuffer.AddRange(messageBytes); // Store the message bytes separately   
+#endif
+
+                        _frameBuffer.AddRange(messageBytes); // Add the message bytes to the frame buffer
+                        _messageBuffer.AddRange(messageBytes); // Store the message bytes separately   
                         GoWaitCRC();
                     }
                     else
@@ -455,16 +493,16 @@ namespace JTAGICEmkII
                     }
                     if (crcBytes?.Length == 2)
                     {
-                        frameBuffer.AddRange(crcBytes); // Add the CRC bytes to the frame buffer
-                        if (Crc16.ValidateCrc(frameBuffer.ToArray()))
+                        _frameBuffer.AddRange(crcBytes); // Add the CRC bytes to the frame buffer
+                        if (Crc16.ValidateCrc(_frameBuffer.ToArray()))
                         {
-                            Logger.Debug($"CRC valid: 0x{crcBytes[1]:x2}{crcBytes[0]:x2}.");
+                            Logger.Info($"CRC valid: 0x{crcBytes[1]:x2}{crcBytes[0]:x2}.");
 
                             if (ManageSequenceNumber())
                             {
                                 // Accept the message and dispatch it for processing
-                                Logger.Debug($"Message length: {messageLength} & messageBuffer.count: {messageBuffer.Count}.");
-                                DispathMessageBody(messageBuffer, messageLength);
+                                Logger.Info($"Message length: {messageLength} & messageBuffer.count: {_messageBuffer.Count}.");
+                                DispathMessageBody(_messageBuffer, messageLength);
                             }
                             // else, allredy received, just ignore this message and wait for next message with correct sequence number.
 
@@ -472,50 +510,118 @@ namespace JTAGICEmkII
                         }
                         else
                         {
-                            Logger.Error($"Handle CRC validation failure: 0x{crcBytes[1]:x2}{crcBytes[0]:x2}.");
+                            Logger.Error($"Handle CRC validation failure: 0x{crcBytes[1]:X2}{crcBytes[0]:X2}.");
                             GoWaitStart();
                         }
                     }
                     break;
                 default:
-                    // Handle unexpected state
-                    Logger.Error($"Invalid State: {state}.");
+                    // Handle unexpected _state
+                    Logger.Error($"Invalid State: {_state}.");
                     GoWaitStart();
                     break;
             }
         }
 
+        public bool ManageSequenceNumber2()
+        {
+#if LOGGER
+            Logger.Debug($"ManageSequenceNumber2, received sequence number: {_rxSequenceNumber}.");
+#endif
+
+            // Is Event ?
+            if (_rxSequenceNumber != SequenceNumberEvent)
+            {
+                // no
+                bool retval = false;
+
+                // Is first message received?
+#if LOGGER
+                Logger.Debug($"Initial {PreviousSequenceNumber2.IsInitial}, Last sequence number: {PreviousSequenceNumber2.NumberValue}.");
+#endif
+                if (PreviousSequenceNumber2.IsInitial)
+                {
+                    PreviousSequenceNumber2 = new SequenceNumber(_rxSequenceNumber);
+                    retval = true;
+                }
+                else
+                {
+                    UInt16 expectedSequenceNumber1 = (UInt16)((PreviousSequenceNumber + 1) % SequenceNumberWrap);
+                    Int16 diffSequenceNumber1 = (Int16)(expectedSequenceNumber1 - _rxSequenceNumber);
+
+                    SequenceNumber expectedSequenceNumber = new SequenceNumber(PreviousSequenceNumber2);
+                    expectedSequenceNumber++;
+                    var diffSequenceNumber = expectedSequenceNumber.Difference(_rxSequenceNumber);
+#if LOGGER
+                    Logger.Debug($"Diff: {diffSequenceNumber}, expected sequence number: {expectedSequenceNumber}, received: {_rxSequenceNumber}.");
+#endif
+                    if (diffSequenceNumber == 0)
+                    {
+                        PreviousSequenceNumber2++;
+                        retval = true;
+                    }
+                    else if (diffSequenceNumber < 0)
+                    {
+                        // We mist a frame, log a warning but still accept this message and update the sequence number to avoid blocking the receiving of next messages.
+                        Logger.Warn($"Missed frame(s), expected sequence number {expectedSequenceNumber}, received {_rxSequenceNumber}.");
+                        PreviousSequenceNumber2 = new SequenceNumber(_rxSequenceNumber);
+                        retval = true;
+                    }
+                    else// if (diffSequenceNumber > 0)
+                    {
+                        // This is a retransmission of the previous message, log a warning. 
+                        Logger.Warn($"Received a retransmission of the previous message, expected sequence number {expectedSequenceNumber}, received {_rxSequenceNumber}.");
+                        retval = false; // Do not update the sequence number, just ignore this message and wait for next message with correct sequence number.
+                    }
+                }
+
+#if LOGGER
+                Logger.Debug($"Return {retval} with sequence number: {PreviousSequenceNumber2.NumberValue}.");
+#endif
+                return retval;
+            }
+            else
+            {
+                // Yes
+                return true;
+            }
+        }
+
         private bool ManageSequenceNumber()
         {
+
+            return ManageSequenceNumber2();
+
             // Is Event ?
-            if (rxSequenceNumber != SequenceNumberEvent)
+            if (_rxSequenceNumber != SequenceNumberEvent)
             {
                 bool retval = false;
+
                 UInt16 expectedSequenceNumber = (UInt16)((PreviousSequenceNumber + 1) % SequenceNumberWrap);
-                Int16 diffSequenceNumber = (Int16)(expectedSequenceNumber - rxSequenceNumber);
+                Int16 diffSequenceNumber = (Int16)(expectedSequenceNumber - _rxSequenceNumber);
 
                 // Is first message received?
                 if (PreviousSequenceNumber == -1)
                 {
-                    PreviousSequenceNumber = rxSequenceNumber;
+                    PreviousSequenceNumber = _rxSequenceNumber;
                     retval = true;
                 }
                 else if (diffSequenceNumber == 0)
                 {
-                    PreviousSequenceNumber = rxSequenceNumber;
+                    PreviousSequenceNumber = _rxSequenceNumber;
                     retval = true;
                 }
                 else if (diffSequenceNumber < 0)
                 {
                     // We mist a frame, log a warning but still accept this message and update the sequence number to avoid blocking the receiving of next messages.
-                    Logger.Warn($"Missed frame(s), expected sequence number {expectedSequenceNumber}, received {rxSequenceNumber}.");
-                    PreviousSequenceNumber = rxSequenceNumber;
+                    Logger.Warn($"Missed frame(s), expected sequence number {expectedSequenceNumber}, received {_rxSequenceNumber}.");
+                    PreviousSequenceNumber = _rxSequenceNumber;
                     retval = true;
                 }
                 else// if (diffSequenceNumber > 0)
                 {
                     // This is a retransmission of the previous message, log a warning. 
-                    Logger.Warn($"Received a retransmission of the previous message, expected sequence number {expectedSequenceNumber}, received {rxSequenceNumber}.");
+                    Logger.Warn($"Received a retransmission of the previous message, expected sequence number {expectedSequenceNumber}, received {_rxSequenceNumber}.");
                     retval = false; // Do not update the sequence number, just ignore this message and wait for next message with correct sequence number.
                 }
 

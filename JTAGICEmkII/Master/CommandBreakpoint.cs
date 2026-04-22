@@ -25,7 +25,7 @@ namespace JTAGICEmkII.Master
         public BreakpointTypeEnum Type { get; set; }
         public BreakpointModeEnum Mode { get; set; }
 
-        override public int Size => base.Size + 2; 
+        override public int Size => base.Size + 2;
 
         public override byte[] WriteToBytes()
         {
@@ -38,6 +38,8 @@ namespace JTAGICEmkII.Master
             buffer = buffer.Concat(BitConverter.GetBytes(Address)).ToArray();
 
             buffer = buffer.Concat(new byte[] { (byte)Mode }).ToArray();
+
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
 

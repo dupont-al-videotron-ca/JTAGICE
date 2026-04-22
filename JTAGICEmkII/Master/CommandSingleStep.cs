@@ -43,7 +43,8 @@ namespace JTAGICEmkII.Master
 
             // Add StepMode bytes to the buffer
             buffer = buffer.Concat(new byte[] { (byte)StepMode }).ToArray();
-            MessageLength += 1; // Increment message length by 1 byte for the StepMode
+
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
 

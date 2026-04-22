@@ -24,9 +24,13 @@ namespace JTAGICEmkII.HostService
             return visitor.Visit(this);
         }
 
-        public override bool ActivityAction()
+        public override bool ActivityEntry()
         {
             this.ActivityStructure.TargetMcuState.ResetState();
+            return base.ActivityEntry();
+        }
+        public override bool ActivityAction()
+        {
             if (!this.ActivityStructure.HostService.SignOff().IsSuccess)
             {
                 this.ActivityStructure.Logger.Error("Failed to sign off from the target device.");
@@ -45,8 +49,6 @@ namespace JTAGICEmkII.HostService
             return true;
         }
 
-        public override bool ActivityEntry() => base.ActivityEntry();
-        
         public override bool ActivityExit(bool lastRequest) => base.ActivityExit(lastRequest);
     }
 }

@@ -31,6 +31,10 @@ namespace JTAGICEmkII.HostService
 
         }
 
+        public TargetStopped TargetStopped { get => this._targetStopped; }
+        public TargetRunning TargetRunning { get => this._targetRunning;  }
+        public TargetProgramming TargetProgramming { get => this._targetProgramming; }
+
         public override bool Accept(IVisitorActivity visitor)
         {
             ArgumentNullException.ThrowIfNull(visitor);
@@ -43,9 +47,7 @@ namespace JTAGICEmkII.HostService
         }
         public override bool ActivityEntry()
         {
-
             this.NextActivity = this._targetStopped;
-
             return base.ActivityEntry();
         }
 
@@ -66,17 +68,21 @@ namespace JTAGICEmkII.HostService
                     switch (messageId)
                     {
                         case MasterCommandEnum.CMND_RESTORE_TARGET:
+                            Logger.Debug("Target disconnected by restore target command.");
                             NextActivity = this.Find<TargetDisonnecting>();
                             break;
                         case MasterCommandEnum.CMND_LEAVE_PROGMODE:
+                            Logger.Debug("Target leaving programming mode.");
                             NextActivity = this.Find<TargetStopped>();
                             break;
                         case MasterCommandEnum.CMND_ENTER_PROGMODE:
+                            Logger.Debug("Target entering programming mode.");
                             NextActivity = this.Find<TargetProgramming>();
                             break;
                         case MasterCommandEnum.CMND_SINGLE_STEP:
                         case MasterCommandEnum.CMND_RUN_TO_ADDR:
                         case MasterCommandEnum.CMND_GO:
+                            Logger.Debug("Target is running.");
                             NextActivity = this.Find<TargetRunning>();
                             break;
 

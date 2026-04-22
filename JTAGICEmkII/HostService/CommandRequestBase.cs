@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JTAGICEmkII;
 using JTAGICEmkII.Slave;
+using log4net;
 using MyFramework;
 using MyFramework.Threading;
 
@@ -29,6 +30,7 @@ namespace JTAGICEmkII.HostService
             Response = null!;
             _waitHandle = new ManualResetEvent(false);
             CommandElement = activityElement;
+            Logger = LogManager.GetLogger(this.GetType());
         }
 
 
@@ -37,6 +39,7 @@ namespace JTAGICEmkII.HostService
 
         #region Fields 
 
+        private ILog Logger;
         private ManualResetEvent _waitHandle;
 
         private bool disposedValue;
@@ -69,16 +72,24 @@ namespace JTAGICEmkII.HostService
 
         public bool WaitForResponse()
         {
-            RetryCount--;
-            _timeoutOccured = _waitHandle.WaitOne(_timeout);
-            return _timeoutOccured;
+            if (_waitHandle.WaitOne(_timeout))
+            {
+                return true;
+            }
+            else
+            {
+                RetryCount--;
+                _timeoutOccured = true;
+                return false;
+            }
         }
 
         internal void ReceivedResponse(R response)
         {
             ArgumentNullException.ThrowIfNull(response);
-            _waitHandle.Set();
             Response = response;
+            _timeoutOccured = false;
+            _waitHandle.Set();
         }
 
         #endregion

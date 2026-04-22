@@ -50,16 +50,19 @@ namespace JTAGICEmkII.HostService
                     switch (messageId)
                     {
                         case MasterCommandEnum.CMND_RESTORE_TARGET:
+                            Logger.Debug("Target disconnected by restore target command.");
                             NextActivity = this.Find<TargetDisonnecting>();
                             SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_SINGLE_STEP:
                         case MasterCommandEnum.CMND_RUN_TO_ADDR:
                         case MasterCommandEnum.CMND_GO:
+                            Logger.Debug("Target running.");
                             NextActivity = this.Find<TargetRunning>();
                             SetWaitIdle();
                             break;
                         case MasterCommandEnum.CMND_ENTER_PROGMODE:
+                            Logger.Debug("Target entering programming mode.");
                             NextActivity = this.Find<TargetProgramming>();
                             SetWaitIdle();
                             break;
@@ -80,6 +83,7 @@ namespace JTAGICEmkII.HostService
                         case MasterCommandEnum.CMND_RESET:
                         case MasterCommandEnum.CMND_CLEAR_EVENTS:
                         case MasterCommandEnum.CMND_LEAVE_PROGMODE:
+                            Logger.Debug("Target is already stopped.");
                             break;
 
                         case MasterCommandEnum.CMND_SIGN_OFF:

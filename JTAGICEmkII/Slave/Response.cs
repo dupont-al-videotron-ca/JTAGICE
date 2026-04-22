@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace JTAGICEmkII.Slave
 {
+
+    [DebuggerDisplay("{ResponseId}")]
     public class Response : ISlaveResponse
     {
 
@@ -48,7 +51,7 @@ namespace JTAGICEmkII.Slave
         {
             get
             {
-                return ResponseId >= SlaveResponseEnum.EventRangeMin && ResponseId <= SlaveResponseEnum.EventRangeMax;
+                return ResponseId > SlaveResponseEnum.EventRangeMin && ResponseId <= SlaveResponseEnum.EventRangeMax;
             }
         }
 

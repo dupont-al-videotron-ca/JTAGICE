@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -10,6 +11,8 @@ using JTAGICEmkII.Slave;
 
 namespace JTAGICEmkII.Master
 {
+    [DebuggerDisplay("{MessageId}")]
+
     public class Command : IMasterCommand
     {
 

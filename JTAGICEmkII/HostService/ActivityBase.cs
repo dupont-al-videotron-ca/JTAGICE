@@ -23,6 +23,7 @@ namespace JTAGICEmkII.HostService
             Logger = LogManager.GetLogger(this.GetType());
             this.ActivityStructure = activityStructure ?? throw new ArgumentNullException(nameof(activityStructure));
             this.ActivityStructure.AddActivity(this);
+            NextActivity = this;
         }
 
         #endregion
@@ -38,6 +39,8 @@ namespace JTAGICEmkII.HostService
         protected ILog Logger { get; }
         protected StructureActivity ActivityStructure { get; }
 
+        public IActivityElement? NextActivity { get; internal set; }
+
         #endregion
 
 
@@ -51,37 +54,37 @@ namespace JTAGICEmkII.HostService
 
         public virtual bool ActivityExit(bool lastRequest)
         {
-            Logger.Debug($"{this.GetType()} Executing activity exit called.");
+            Logger.Debug($"ActivityExit called.");
             return true;
         }
 
         public virtual bool ActivityAction()
         {
-            Logger.Debug($"{this.GetType()} Executing activity action called.");
+            Logger.Debug($"ActivityAction called.");
             return true;
         }
 
         public virtual bool ActivityEntry()
         {
-            Logger.Debug($"{this.GetType()} Executing activity entry called.");
+            Logger.Debug($"ActivityEntry called.");
             return true;
         }
 
         public virtual bool EventReceived(ISlaveResponse responceEvent)
         {
-            Logger.Debug($"{this.GetType()} Event received {responceEvent.ResponseId}.");
-            return true;
+            Logger.Debug($"EventReceived {responceEvent.ResponseId} called.");
+            return false;
         }
 
         public virtual bool RequestTimeout(CommandRequestBase<IMasterCommand, ISlaveResponse> request)
         {
-            Logger.Debug($"{this.GetType()} timout.");
+            Logger.Debug($"RequestTimeout called.");
             return true;
         }
 
         public virtual bool RequestCompleted(CommandRequestBase<IMasterCommand, ISlaveResponse> request)
         {
-            Logger.Debug($"{this.GetType()} Request completed.");
+            Logger.Debug($"RequestCompleted called.");
             return true;
         }
 

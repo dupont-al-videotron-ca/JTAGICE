@@ -4,7 +4,7 @@ namespace JTAGICEmkII
 {
     public interface IRxFrameAdaptor
     {
-        bool IsEndOfFrame { get; }
+        bool IsByteToRead { get; }
         int RxTimeout { get; }
         bool WaitForTimeout { get; set; }
 

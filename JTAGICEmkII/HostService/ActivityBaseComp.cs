@@ -89,7 +89,6 @@ namespace JTAGICEmkII.HostService
 
         internal protected List<IActivityElement> Parents => _parents;
 
-        public IActivityElement? NextActivity { get; set; }
         #endregion
 
         #region Public Methods 

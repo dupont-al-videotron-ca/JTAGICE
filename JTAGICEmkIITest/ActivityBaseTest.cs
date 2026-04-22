@@ -16,7 +16,7 @@ namespace JTAGICEmkIITest
 
         #region Declarations --------------------------------------------------
 
-        protected HostDeviceMoq _hostService;
+        protected HostDeviceServiceMoq _hostService;
         protected Mock<IVisitorActivity> _visitorActivityMoq;
         protected Mock<IVisitorCommand> _visitorCommandMoq;
         protected StructureActivity _activityStructure;
@@ -27,7 +27,7 @@ namespace JTAGICEmkIITest
         #region Constructors --------------------------------------------------
         public ActivityBaseTest() : base()
         {
-            _hostService = new HostDeviceMoq();
+            _hostService = new HostDeviceServiceMoq();
 
             _visitorActivityMoq = this.MockRepository.Create<IVisitorActivity>();
             _visitorCommandMoq = this.MockRepository.Create<IVisitorCommand>();

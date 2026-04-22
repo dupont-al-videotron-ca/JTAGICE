@@ -76,6 +76,9 @@ namespace JTAGICEmkII.HostService
         #region Properties 
 
         public TargetState TargetMcuState { get; set; } = new TargetState();
+        internal StructureActivity ActivityStructure { get => _activityStructure; }
+
+        public HostSession HostSession => this._hostSession;
 
         #endregion
 
@@ -105,7 +108,7 @@ namespace JTAGICEmkII.HostService
             _rxFrame.StartReceiving();
             this.EventReceived += HostService_EventReceived;
 
-            this._activityStructure.CurrentActivity = _hostSession;
+            this._activityStructure.CurrentActivity = HostSession;
 
             return _rxFrame.IsReceiving;
         }
@@ -123,7 +126,7 @@ namespace JTAGICEmkII.HostService
             Logger.Debug($"Closing session by user.");
             ICommandResult retval = this.RestoreTarget();
             if (retval.IsSuccess)
-                this._hostSession.WaitEndSession();
+                this.HostSession.WaitEndSession();
 
             this._cancellationSource.Cancel();
             var task = _backgroundService.StopAsync(_cancellationSource.Token);
@@ -148,7 +151,7 @@ namespace JTAGICEmkII.HostService
                 throw new InvalidOperationException("Activity structure is not properly initialized. No current activity.");
             }
 
-            return CommandResult.Successs;
+            return CommandResult.Success;
         }
 
         public ICommandResult ClearEvents()
@@ -233,14 +236,13 @@ namespace JTAGICEmkII.HostService
             }
         }
 
+        // TODO: return type and mode.
         public ICommandResult GetBreakpoint(int index, int breakpointType, int brakpointMode, out ulong breakpoint)
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GET_BREAK))
             {
-                CommandBreakpoint command = (CommandBreakpoint)request.Command;
+                CommandBreakNumber command = (CommandBreakNumber)request.Command;
                 command.BreakNumber = (byte)index;
-                command.Type = (BreakpointTypeEnum)breakpointType;
-                command.Mode = (Master.BreakpointModeEnum)brakpointMode;
                 var result = ProcessCommand(request, out ISlaveResponse? rxResponse);
                 if (result.IsSuccess)
                 {
@@ -283,6 +285,11 @@ namespace JTAGICEmkII.HostService
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_READ_MEMORY))
             {
+                CommandMemory command = (CommandMemory)request.Command;
+                command.Address = (uint)address;
+                command.MemoryType = (MemoryTypeEnum)memType;
+                command.ByteCount = (uint)length;
+
                 CommandResult result = ProcessCommand(request, out ISlaveResponse? response);
                 if (result.IsSuccess)
                 {
@@ -306,17 +313,29 @@ namespace JTAGICEmkII.HostService
 
         public ICommandResult GetParameter(Master.ParameterEnum paramId, out uint value)
         {
-            Parameter? parameterToRead = _parameters.Values.FirstOrDefault(p => p.ParameterId == paramId && p.IsRead && !p.IsUsed);
-            if (parameterToRead != null && GetParameterLocal(parameterToRead, true))
+            var result = CommandResult.Failed;
+            value = 0;
+            if(_parameters.TryGetValue(paramId, out Parameter? parameterToRead))
             {
-                value = parameterToRead.Value;
-                return CommandResult.Successs;
+                if (parameterToRead != null)
+                {
+                    result = GetParameterLocal(parameterToRead, true);
+                    if (result.IsSuccess)
+                        value = parameterToRead.Value;
+                }
+                else
+                {
+                    Logger.Error("TryGetValue failed for parameter " + paramId);
+                    value = 0;
+                }
             }
             else
             {
+                Logger.Error("Nothing to read for parameter " + paramId);
                 value = 0;
-                return CommandResult.Failed;
             }
+
+            return result;
         }
 
         public ICommandResult GetAllParameter()
@@ -324,13 +343,13 @@ namespace JTAGICEmkII.HostService
             var parametersToRead = _parameters.GetAllRead();
             foreach (var param in parametersToRead)
             {
-                if (!GetParameterLocal(param.Value, param.Value == parametersToRead.Last().Value))
+                if (!GetParameterLocal(param.Value, param.Value == parametersToRead.Last().Value).IsSuccess)
                 {
-                    return (CommandResult)false;
+                    return CommandResult.Failed;
                 }
             }
 
-            return (CommandResult)true;
+            return CommandResult.Success;
         }
 
         public ICommandResult SelfTest()
@@ -397,7 +416,7 @@ namespace JTAGICEmkII.HostService
 
         public ICommandResult ReadMemory(int memType, ulong address, ulong Length, out byte Value) => throw new NotImplementedException();
 
-        public ICommandResult ReadProgramCount(out ulong ProgramCounter)
+        public ICommandResult ReadProgramCounter(out ulong ProgramCounter)
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_READ_PC))
             {
@@ -440,7 +459,13 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        public ICommandResult SignOff() => throw new NotImplementedException();
+        public ICommandResult SignOff()
+        {
+            using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_SIGN_OFF))
+            {
+                return ProcessCommand(request, out ISlaveResponse? rxResponse);
+            }
+        }
 
         public async Task<ICommandResult> SignOnAsync()
         {
@@ -466,10 +491,10 @@ namespace JTAGICEmkII.HostService
 
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GET_SIGN_ON))
             {
-                if (ProcessCommand(request, out ISlaveResponse? response1))
+                if ((retval = ProcessCommand(request, out ISlaveResponse? response1)).IsSuccess)
                 {
                     response = response1 as ResponseSignOn;
-                    retval = (CommandResult)response!;
+                    retval = new CommandResult(response!);
                 }
                 else
                 {
@@ -595,7 +620,7 @@ namespace JTAGICEmkII.HostService
         public ICommandResult VerifiyPrograming() => throw new NotImplementedException();
         public ICommandResult WriteMemory(int MemType, ulong Address, byte Values) => throw new NotImplementedException();
 
-        public ICommandResult WriteProgramCount(ulong programCounter)
+        public ICommandResult WriteProgramCounter(ulong programCounter)
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_WRITE_PC))
             {
@@ -613,24 +638,18 @@ namespace JTAGICEmkII.HostService
                 if (disposing)
                 {
                     this.EventReceived -= HostService_EventReceived;
-                    _rxFrame.ResponseReceived -= RxFrame_Received;
-                    _rxFrame.Dispose();
-                    _txFrame.Dispose();
-                    // TODO: dispose managed state (managed objects)
+                    if (_rxFrame != null)
+                   {
+                        _rxFrame.ResponseReceived -= RxFrame_Received;
+                        _rxFrame!.Dispose();
+                    }
+
+                    _txFrame?.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
                 _disposedValue = true;
             }
         }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~HostDeviceService()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
 
         public void Dispose()
         {
@@ -685,12 +704,13 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        private bool GetParameterLocal(Parameter parameter, bool lastRequest)
+        private CommandResult GetParameterLocal(Parameter parameter, bool lastRequest)
         {
+            var result = CommandResult.Failed;
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, Master.MasterCommandEnum.CMND_GET_PARAMETER))
             {
                 ((Master.CommandParameter)request.Command).ParameterId = parameter.ParameterId;
-                if (ProcessCommand(request, out ISlaveResponse? response1, lastRequest))
+                if ((result = ProcessCommand(request, out ISlaveResponse? response1, lastRequest)).IsSuccess)
                 {
                     var response = response1 as ResponseMultipleByte;
 
@@ -702,19 +722,17 @@ namespace JTAGICEmkII.HostService
                         }
                         else if (parameter.Size == 2)
                         {
-                            parameter.Value = BitConverter.ToUInt16(response.GetDataBytes(), 0); ;
+                            parameter.Value = BitConverter.ToUInt16(response.GetDataBytes(), 0); 
                         }
                         else if (parameter.Size == 4)
                         {
-                            parameter.Value = BitConverter.ToUInt32(response.GetDataBytes(), 0); ;
+                            parameter.Value = BitConverter.ToUInt32(response.GetDataBytes(), 0); 
                         }
                         else
                         {
                             Logger.Warn($"Unsupported parameter size {parameter.Size} for parameter {parameter.ParameterId}.");
                             throw new InvalidOperationException($"Unsupported parameter size {parameter.Size}.");
                         }
-
-                        return true;
                     }
                     else
                     {
@@ -722,10 +740,8 @@ namespace JTAGICEmkII.HostService
                         throw new InvalidOperationException($"Unexpected response type.");
                     }
                 }
-                else
-                {
-                    return false;
-                }
+
+                return result;
             }
         }
 
@@ -753,12 +769,13 @@ namespace JTAGICEmkII.HostService
 
                         if (_request.WaitForResponse() && _request.Response != null)
                         {
-                            Logger.Debug($"Response received for command: {_request.Response.ResponseId}");
+                            
                             if (commandElement.OnReceivedResponse(_request.Response))
                             {
                                 response = _request.Response;
-                                retval = (CommandResult)response;
+                                retval = new CommandResult(response);
                                 OnRequestCompleted(this, new RequestEventArgs(_request));
+                                Logger.Debug($"Response received {_request.Response.ResponseId} for command: {_request.Command.MessageId}, timeout: {_request.IsRequestTimeout}");
                             }
                         }
                         else
@@ -789,8 +806,8 @@ namespace JTAGICEmkII.HostService
 
         private void OnRequestCompleted(object? sender, RequestEventArgs e)
         {
-            this.RequestCompleted?.Invoke(this, e);
             this._activityStructure.OnRequestCompleted(e.Request);
+            this.RequestCompleted?.Invoke(this, e);
         }
 
         private void RxFrame_Received(object? sender, ResponseReceivedEventArgs e)
@@ -798,7 +815,6 @@ namespace JTAGICEmkII.HostService
             if (e.Response.IsEvent)
             {
                 OnReceivedEvent(this, new EventReceivedEventArgs(e.Response));
-                _activityStructure.OnReceivedEvent(e.Response);
             }
             else if (_request != null)
             {
@@ -810,6 +826,7 @@ namespace JTAGICEmkII.HostService
 
         private void OnReceivedEvent(object? sender, EventReceivedEventArgs e)
         {
+            _activityStructure.OnReceivedEvent(e.Event);
             EventReceived?.Invoke(sender, e);
         }
 
@@ -874,7 +891,7 @@ namespace JTAGICEmkII.HostService
                     //_nextIndex = this.Nexts.FindIndex(n => n is TargetRunning);
                     break;
                 case SlaveResponseEnum.EVT_NONE:
-                case SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT:
+                case SlaveResponseEnum.EVT_ERROR_PHY_FORCE_BREAK_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_RELEASE_BREAK_TIMEOUT:
                 case SlaveResponseEnum.EVT_ERROR_PHY_MAX_BIT_LENGHT_DIFF:
                 case SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT:

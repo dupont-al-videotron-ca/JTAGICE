@@ -6,21 +6,21 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
+using log4net.Repository.Hierarchy;
 using MyFramework;
 
 namespace JTAGICEmkIITest.Moq
 {
     internal class RxFrameFifoMemory : IRxFrameAdaptor
     {
-        public int RxTimeout 
+        public int RxTimeout
         {
             get;
-            private set; 
+            private set;
         }
 
         private const int _defaultWaitDelay = 100;
         private readonly FifoBuffer<byte> _fifoBuffer;
-        private int waitDelay = _defaultWaitDelay;
         private RxFrame _rxFrame = null!;
 
         public RxFrameFifoMemory(FifoBuffer<byte> fifoBuffer) : this(fifoBuffer, -1)
@@ -33,7 +33,7 @@ namespace JTAGICEmkIITest.Moq
             RxTimeout = timeout;
         }
 
-        public bool IsEndOfFrame => _fifoBuffer.IsEmpty;
+        public bool IsByteToRead => _fifoBuffer.IsEmpty;
 
         public bool WaitForTimeout { get; set; } = false;
 
@@ -69,96 +69,78 @@ namespace JTAGICEmkIITest.Moq
 
         public Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1)
         {
-            bool timeoutOccured = false;
+            int localTimeout = -1;
             values = null;
-            if (_rxFrame.Timeout != -1)
+            if (timeout != -1)
             {
-                // force timeout to occured.
-                timeout = (int)(_rxFrame.Timeout * length);
-                waitDelay = timeout;
+                // force timeout to occur.
+                localTimeout = (int)(timeout * length);
             }
-            else
-            {
-                waitDelay = _defaultWaitDelay;
-            }   
 
-            if (!IsEndOfFrame)
+            _rxFrame.Logger.Debug($"ReadBytesAsync called with length: {length}, localTimeout: {localTimeout}, cancellationRequested: {cancellationToken.IsCancellationRequested}.");
+
+            while (true)
             {
-                values = new byte[length];
-                Task<byte[]> task = Task.Run(() => _fifoBuffer.Out((int)length));
-                if (task.Wait(RxTimeout))
+//                _rxFrame.Logger.Debug($"Attempting to read {length} bytes from FIFO buffer with current count: {_fifoBuffer.Count} and IsByteToRead: {IsByteToRead}.");
+
+                // Wait indefinitely until timeout or cancellation is requested
+                try
                 {
-                    byte[] result = task.Result;
-                    if (result.Length == length)
-                    {                 
-                        values = result;
+                    values = new byte[length];
+                    bool result = _fifoBuffer.Out(out byte[] data, (int)length, localTimeout);
+
+                    if (result)
+                    {
+                        Array.Copy(data, values, length);
                         return Task.FromResult(true);
+                    }
+                    else if (cancellationToken.IsCancellationRequested)
+                    {
+                        _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte.");
+                        break;
                     }
                     else
                     {
-                        _rxFrame.Logger.Debug($"Expected to read {length} bytes but only read {result} bytes.");
-                    }
-                }
-                else
-                {
-                    _rxFrame.Logger.Debug($"Read operation timed out after {RxTimeout} milliseconds.");
-                }
-
-                return Task.FromResult(false);
-
-            }
-            else
-            {
-                while (true)
-                {
-                    // Wait indefinitely until timeout or cancellation is requested
-                    try
-                    {
-                        _rxFrame.Logger.Debug($"Before timeoutOccured: {timeoutOccured}, waitDelay: {waitDelay}, timeout: {timeout}, cancellationRequest: {cancellationToken.IsCancellationRequested}.");
-                        Task.Delay(waitDelay, cancellationToken).Wait();
-                        _rxFrame.Logger.Debug($"After timeoutOccured: {timeoutOccured}, waitDelay: {waitDelay}, timeout: {timeout}, cancellationRequest: {cancellationToken.IsCancellationRequested}.");
                         if (WaitForTimeout)
                         {
                             _rxFrame.TimeoutOccured = true;
                             WaitForTimeout = false;
                             break;
                         }
+                        _rxFrame.Logger.Debug($"Read operation timed out after {localTimeout} milliseconds while waiting for {length} bytes.");
+                        break;
+                    }
 
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte.");
-                            break;
-                        }
-                    }
-                    catch (OperationCanceledException ex)
+                }
+                catch (OperationCanceledException ex)
+                {
+                    if (!WaitForTimeout)
                     {
-                        if (!WaitForTimeout)
-                        {
-                            _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte: {ex.Message}");
-                            break;
-                        }
-                    }
-                    catch (System.AggregateException ex)
-                    {
-                        if (ex.InnerExceptions.Any(e => e is TaskCanceledException))
-                        {
-                            _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte: {ex.InnerExceptions.First(e => e is TaskCanceledException).Message}");
-                            break;
-                        }
+                        _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte: {ex.Message}");
+                        break;
                     }
                 }
-
-                return Task.FromResult(false);
-
+                catch (System.AggregateException ex)
+                {
+                    if (ex.InnerExceptions.Any(e => e is TaskCanceledException))
+                    {
+                        _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte: {ex.InnerExceptions.First(e => e is TaskCanceledException).Message}");
+                        break;
+                    }
+                }
             }
+
+            return Task.FromResult(false);
+
         }
 
         bool IRxFrameAdaptor.ReadByte(out byte value, int timeout) => this.ReadByte(out value, timeout);
-    
+
         Task<bool> IRxFrameAdaptor.ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout) => this.ReadByteAsync(out value, cancellationToken, timeout);
-        
+
         bool IRxFrameAdaptor.ReadBytes(out byte[]? values, uint length, int timeout) => this.ReadBytes(out values, length, timeout);
-        
+
         Task<bool> IRxFrameAdaptor.ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout) => this.ReadBytesAsync(out values, length, cancellationToken, timeout);
+
     }
 }

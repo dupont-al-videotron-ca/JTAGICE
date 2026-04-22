@@ -37,21 +37,21 @@ namespace JTAGICEmkII.HostService
 
         public virtual bool CanSendCommand(IMasterCommand command)
         {
-            Logger.Debug($"{this.GetType()} Executing can send command called.");
+            Logger.Debug($"CanSendCommand called.");
             // all target states should be able to send the command, so we only check the command type here.
             return command.MessageId == this.CommandEnum;
         }
 
         public virtual bool CanSendResponse(ISlaveResponse response)
         {
-            Logger.Debug($"{this.GetType()} Executing can send response called.");
+            Logger.Debug($"CanSendResponse called.");
             // all target states should be able to send the reponse, so we only check the command type here.
             return response.ResponseId == this.ResponseEnum;
         }
 
         public virtual bool CommandSent()
         {
-            Logger.Debug($"{this.GetType()} Executing command sent called.");
+            Logger.Debug($"CommandSent called.");
             return true;
         }
 
@@ -99,7 +99,7 @@ namespace JTAGICEmkII.HostService
             {
                 this.HasError = false;
                 this.LastError = SlaveResponseEnum.RSP_OK;
-                this.Logger.Debug($"Received response: {SlaveResponseEnum.RSP_OK}.");
+                this.Logger.Debug($"OnReceivedResponse: {SlaveResponseEnum.RSP_OK}.");
                 return true;
             }
             else

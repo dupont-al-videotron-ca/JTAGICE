@@ -112,9 +112,9 @@ namespace JTAGICEmkII.HostService
 
         internal bool OnReceivedEvent(Slave.ISlaveResponse response)
         {
-            IVisitorCommand v = new VisitorOnReceivedResponse(response);
-            foreach (IActivityComElement activity in _activities.Where(a => a is IActivityComElement))
-            {
+            IVisitorActivity v = new VisitorActivityEventReceived(response);
+            foreach (IActivityElement activity in _activities.Where(a => a is IActivityElement))
+            {                                               
                 if (activity.Accept(v))
                     return true;
             }
@@ -188,9 +188,10 @@ namespace JTAGICEmkII.HostService
                 {
                     throw new InvalidOperationException($"Activity {activity} entry failed.");
                 }
-                else if (!ReferenceEquals(activity, this.CurrentActivity))
+                else if (!ReferenceEquals(activity.NextActivity, this.CurrentActivity))
                 {
-                    if (RunActivity(this.CurrentActivity))
+                    this.CurrentActivity = activity.NextActivity;
+                    if (RunActivity(activity.NextActivity))
                         this.CurrentActivity = activity;
                 }
 
@@ -198,9 +199,10 @@ namespace JTAGICEmkII.HostService
                 {
                     throw new InvalidOperationException($"Activity {activity} action failed.");
                 }
-                else if (!ReferenceEquals(activity, this.CurrentActivity))
+                else if (!ReferenceEquals(activity.NextActivity, this.CurrentActivity))
                 {
-                    if (RunActivity(this.CurrentActivity))
+                    this.CurrentActivity = activity.NextActivity;
+                    if (RunActivity(activity.NextActivity))
                         this.CurrentActivity = activity;
                 }
 
@@ -209,9 +211,10 @@ namespace JTAGICEmkII.HostService
                 {
                     throw new InvalidOperationException($"Activity {activity} exit failed.");
                 }
-                else if (!ReferenceEquals(activity, this.CurrentActivity))
+                else if (!ReferenceEquals(activity.NextActivity, this.CurrentActivity))
                 {
-                    if (RunActivity(this.CurrentActivity))
+                    this.CurrentActivity = activity.NextActivity;
+                    if (RunActivity(activity.NextActivity))
                         this.CurrentActivity = activity;
                 }
             }

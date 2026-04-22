@@ -14,10 +14,10 @@ using Xunit;
 
 namespace JTAGICEmkIITest.Moq
 {
-    public class HostDeviceMoq : IHostDeviceService
+    public class HostDeviceServiceMoq : IHostDeviceService
     {
 
-        public HostDeviceMoq()
+        public HostDeviceServiceMoq()
         {
             TargetMcuState = new TargetState();
         }
@@ -65,7 +65,7 @@ namespace JTAGICEmkIITest.Moq
             Value = 0xAA;
             return (CommandResult)ForceSuccess;
         }
-        public ICommandResult ReadProgramCount(out ulong ProgramCounter)
+        public ICommandResult ReadProgramCounter(out ulong ProgramCounter)
         {
             ProgramCounter = _programCounter;
             return (CommandResult)ForceSuccess;
@@ -105,7 +105,7 @@ namespace JTAGICEmkIITest.Moq
         public ICommandResult StopRunning() => (CommandResult) ForceSuccess;
         public ICommandResult VerifiyPrograming() => (CommandResult) ForceSuccess;
         public ICommandResult WriteMemory(int MemType, ulong Address, byte Values) => (CommandResult) ForceSuccess;
-        public ICommandResult WriteProgramCount(ulong ProgramCounter) => (CommandResult) ForceSuccess;
+        public ICommandResult WriteProgramCounter(ulong ProgramCounter) => (CommandResult) ForceSuccess;
         public ICommandResult WritePrograming(ulong Address, byte Values) => (CommandResult) ForceSuccess;
         public ICommandResult GetSync() => (CommandResult) ForceSuccess;
         public ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values) => (CommandResult) ForceSuccess;

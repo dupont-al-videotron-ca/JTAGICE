@@ -152,7 +152,7 @@ namespace JTAGICEmkIITest
         [InlineData(SlaveResponseEnum.EVT_PROGRAM_BREAK)]
         [InlineData(SlaveResponseEnum.EVT_PDSB_BREAK)]
         [InlineData(SlaveResponseEnum.EVT_PDSMB_BREAK)]
-        [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_FROECE_BREAK_TIMEOUT)]
+        [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_FORCE_BREAK_TIMEOUT)]
         [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_RELEASE_BREAK_TIMEOUT)]
         [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_MAX_BIT_LENGHT_DIFF)]
         [InlineData(SlaveResponseEnum.EVT_ERROR_PHY_SYNC_TIMEOUT)]

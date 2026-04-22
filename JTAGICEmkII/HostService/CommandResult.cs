@@ -11,7 +11,15 @@ namespace JTAGICEmkII.HostService
         public CommandResult(ISlaveResponse response)
         {
             ArgumentNullException.ThrowIfNull(response);
-            this.ErrorCode = (int)response.ResponseId!;
+            if(response.IsSuccess)
+            {
+                this.ErrorCode = (int)SlaveResponseEnum.RSP_OK;
+            }
+             else
+            {
+                this.ErrorCode = (int)response.ResponseId!;
+            }
+
             this.response = new Response(response);
         }
 
@@ -21,7 +29,7 @@ namespace JTAGICEmkII.HostService
         }
 
         private readonly static Dictionary<int, ResultMetadata> ResultMetadatas;
-        public static readonly CommandResult Successs = new (SlaveResponseEnum.RSP_OK);
+        public static readonly CommandResult Success = new (SlaveResponseEnum.RSP_OK);
         public static readonly CommandResult Failed = new (SlaveResponseEnum.RSP_FAILED);
 
 
@@ -30,18 +38,18 @@ namespace JTAGICEmkII.HostService
         public static explicit operator CommandResult(bool result)
         {
             if (result)
-                return CommandResult.Successs;
+                return CommandResult.Success;
             else
                 return CommandResult.Failed;
         }
 
-        public static explicit operator CommandResult(SlaveResponseEnum code)
-        {
-            if (code == SlaveResponseEnum.RSP_OK)
-                return CommandResult.Successs;
-            else
-                return new CommandResult(code);
-        }
+        //public static explicit operator CommandResult(SlaveResponseEnum code)
+        //{
+        //    if (code == SlaveResponseEnum.RSP_OK)
+        //        return CommandResult.Success;
+        //    else
+        //        return new CommandResult(code);
+        //}
 
         public static explicit operator CommandResult(Response code)
         {

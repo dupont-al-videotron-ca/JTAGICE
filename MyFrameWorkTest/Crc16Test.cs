@@ -15,7 +15,7 @@ using Xunit;
 using MyFramework;
 
 
-namespace MyFrameWorkTest
+namespace MyFrameworkTest
 {
     public class Crc16Test : XUnitTestBase
     {

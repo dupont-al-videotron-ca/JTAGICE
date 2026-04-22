@@ -37,7 +37,7 @@ namespace JTAGICEmkIITest.Moq
             _rxFrame = rxFrame;
         }
 
-        public bool IsEndOfFrame => _position >= _buffer.Length;
+        public bool IsByteToRead => _position >= _buffer.Length;
 
         public bool WaitForTimeout { get; set; } = false;
 
@@ -50,7 +50,7 @@ namespace JTAGICEmkIITest.Moq
         {
             byte[]? values = new byte[1];
             value = 0;
-            bool result = ReadBytesAsync(out values, 1, cancellationToken, timeout).GetAwaiter().GetResult();
+            bool result = ReadBytesAsync(out values, 1, cancellationToken, _rxFrame.Timeout).GetAwaiter().GetResult();
             if (result)
             {
                 value = values![0];
@@ -62,7 +62,7 @@ namespace JTAGICEmkIITest.Moq
 
         public bool ReadBytes(out byte[]? values, uint length, int timeout = -1)
         {
-            return ReadBytesAsync(out values, length, _rxFrame.CancellationToken, timeout).GetAwaiter().GetResult();
+            return ReadBytesAsync(out values, length, _rxFrame.CancellationToken, _rxFrame.Timeout).GetAwaiter().GetResult();
         }
 
         public Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1)
@@ -79,7 +79,7 @@ namespace JTAGICEmkIITest.Moq
                 waitDelay = _defaultWaitDelay;
             }
 
-            if (!IsEndOfFrame)
+            if (!IsByteToRead)
             {
                 values = new byte[length];
                 Array.Copy(_buffer, _position, values, 0, length);

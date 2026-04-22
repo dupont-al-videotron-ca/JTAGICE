@@ -67,8 +67,8 @@ namespace JTAGICEmkII.Master
             var buffer = base.WriteToBytes();
             if (ImmediateDataFlg)
             {
-                buffer = buffer.Concat(Data).ToArray();
-                MessageLength += (byte)Data.Count;
+                buffer = buffer.Concat(WriteDataToBytes()).ToArray();
+                MessageLength = (uint) buffer.Length;
             }
 
             return buffer;
@@ -77,7 +77,7 @@ namespace JTAGICEmkII.Master
         protected byte[] WriteDataToBytes()
         {
             var buffer = Data.ToArray();
-            MessageLength += (byte)Data.Count;
+            MessageLength += (uint)Data.Count;
             return buffer;
         }
 

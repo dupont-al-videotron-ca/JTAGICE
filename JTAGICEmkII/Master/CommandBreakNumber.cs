@@ -42,6 +42,7 @@ namespace JTAGICEmkII.Master
 
             // Add BreakNumber bytes to the buffer
             buffer = buffer.Concat(new byte[] { (byte)BreakNumber }).ToArray();
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
 

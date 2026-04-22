@@ -41,6 +41,7 @@ namespace JTAGICEmkIITest
         [InlineData(ParameterEnum.PARAM_HWD_VERSION, true)]
         [InlineData(ParameterEnum.PARAM_BAUD_RATE, true)]
         [InlineData(ParameterEnum.PARAM_PROGRAM_ENTRY_POINT, false)]
+        [InlineData(ParameterEnum.PARAM_BREAK_ADDR1, true)]
         public void ParametersTest_GetIsRead_shall_return_expected_value(ParameterEnum paramId, bool expectedIsRead)
         {
             //--- Setup
@@ -56,9 +57,29 @@ namespace JTAGICEmkIITest
         }
 
         [Theory]
+        [InlineData(ParameterEnum.PARAM_HWD_VERSION, true)]
+        [InlineData(ParameterEnum.PARAM_BAUD_RATE, true)]
+        [InlineData(ParameterEnum.PARAM_PROGRAM_ENTRY_POINT, true)]
+        [InlineData(ParameterEnum.PARAM_BREAK_ADDR1, false)]
+        public void ParametersTest_IsUsed_shall_return_expected_value(ParameterEnum paramId, bool expectedIsUsed)
+        {
+            //--- Setup
+            var test = new Parameters();
+
+            //--- Expectations
+
+            //--- Action
+            var result = test.GetIsUsed(paramId);
+
+            //--- Verification
+            Assert.Equal(expectedIsUsed, result);
+        }
+
+        [Theory]
         [InlineData(ParameterEnum.PARAM_HWD_VERSION, false)]
         [InlineData(ParameterEnum.PARAM_BAUD_RATE, true)]
         [InlineData(ParameterEnum.PARAM_PROGRAM_ENTRY_POINT, true)]
+        [InlineData(ParameterEnum.PARAM_BREAK_ADDR1, true)]
         public void ParametersTest_GetIsWrite_shall_return_expected_value(ParameterEnum paramId, bool expectedIsWrite)
         {
             //--- Setup

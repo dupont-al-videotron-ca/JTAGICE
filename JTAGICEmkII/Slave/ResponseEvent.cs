@@ -14,7 +14,7 @@ namespace JTAGICEmkII.Slave
 
         internal ResponseEvent(SlaveResponseEnum messageId) : base(messageId)
         {
-            if (messageId < SlaveResponseEnum.EventRangeMin || messageId > SlaveResponseEnum.EventRangeMax)
+            if (messageId <= SlaveResponseEnum.EventRangeMin || messageId > SlaveResponseEnum.EventRangeMax)
                 throw new ArgumentException($"Invalid message ID for {nameof(ResponseEvent)}. Expected a value between {SlaveResponseEnum.EventRangeMin} and {SlaveResponseEnum.EventRangeMax}, got {messageId}.");
         }
 

@@ -51,6 +51,11 @@
             return this[paramId].IsRead;
         }
 
+        public bool GetIsUsed(Master.ParameterEnum paramId)
+        {
+            return this[paramId].IsUsed;
+        }
+
         public bool GetIsWrite(Master.ParameterEnum paramId)
         {
             return this[paramId].IsWrite;

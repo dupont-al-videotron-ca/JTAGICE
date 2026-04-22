@@ -102,10 +102,10 @@ namespace Common.Test.Xunit
             if (disposing)
             {
                 CheckBeforeDispose();
-                Logger? rootLogger = (Logger)LogManager.GetLogger("root").Logger;
-                Logger?.Info("----- Ending test: " + this.GetType().Name + " -----");
+                Logger.Info("----- Ending test: " + this.GetType().Name + " -----");
                 _xUnitTestAppender.Close();
 
+                Logger? rootLogger = (Logger)LogManager.GetLogger("root").Logger;
                 rootLogger?.Repository?.Shutdown();
             }
 

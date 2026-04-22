@@ -23,6 +23,7 @@ namespace JTAGICEmkII.Master
             var buffer = base.WriteToBytes();
             // Add Address bytes to the buffer
             buffer = buffer.Concat(BitConverter.GetBytes(Address)).ToArray();
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
 

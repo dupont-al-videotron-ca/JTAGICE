@@ -54,6 +54,8 @@ namespace JTAGICEmkII.Master
             {
                 buffer = buffer.Concat(parameter.WriteToBytes()).ToArray();
             }
+
+            MessageLength = (uint)buffer.Length;
             return buffer;
         }
 
