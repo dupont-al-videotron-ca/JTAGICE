@@ -79,13 +79,12 @@ namespace JTAGICEmkIITest
             Assert.False(_activityStructure.TargetMcuState.IsStopped);
 
             //--- Action
-            var result = _activityStructure.RunActivity(test);
+            var result = RunTaskActivity(test, typeof(TargetStopped), null!, () => hostSession.IsSessionActive);
 
             //--- Verification
             Assert.True(result);
             Assert.True(hostSession.IsSessionActive);
-            Assert.NotNull(test.NextActivity);
-            Assert.True(test.NextActivity is TargetConnected);
+            Assert.True(_activityStructure.CurrentActivity is TargetStopped);
             Assert.True(_activityStructure.TargetMcuState.IsStopped);
         }
 

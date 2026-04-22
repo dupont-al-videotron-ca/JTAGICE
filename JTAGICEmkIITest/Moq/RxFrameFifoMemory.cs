@@ -97,6 +97,7 @@ namespace JTAGICEmkIITest.Moq
                     else if (cancellationToken.IsCancellationRequested)
                     {
                         _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte.");
+                        cancellationToken.ThrowIfCancellationRequested();
                         break;
                     }
                     else

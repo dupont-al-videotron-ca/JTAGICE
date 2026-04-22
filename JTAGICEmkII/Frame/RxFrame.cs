@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CS1591,CS1573,CS0465,CS0649,CS8019,CS1570,CS1584,CS1658,CS0436,CS8981,SYSLIB1092, CS8625, CS8618, CS8603, CS8604, CA1416
-#define LOGGER
+//#define LOGGER
 
 using System;
 using System.Buffers.Binary;
@@ -28,10 +28,10 @@ namespace JTAGICEmkII
 
             _source = new CancellationTokenSource();
 
-            PreviousSequenceNumber = -1;
+            PreviousSequenceNumber1 = -1;
             Timeout = 1000; // Default _timeout of 1000 milliseconds
             this._rxFrameAdaptor = rxComAdaptor ?? throw new ArgumentNullException(nameof(rxComAdaptor));
-            PreviousSequenceNumber2 = new SequenceNumber();
+            PreviousSequenceNumber = new SequenceNumber();
         }
 
 
@@ -59,8 +59,8 @@ namespace JTAGICEmkII
 
         #region Properties 
 
-        internal int PreviousSequenceNumber { get; set; }
-        internal SequenceNumber PreviousSequenceNumber2 { get; set; }
+        internal int PreviousSequenceNumber1 { get; set; }
+        internal SequenceNumber PreviousSequenceNumber { get; set; }
 
         internal bool TimeoutOccured { get; set; }
 
@@ -132,7 +132,7 @@ namespace JTAGICEmkII
 #if LOGGER
             Logger.Debug($"ResetReceiver.");
 #endif
-            PreviousSequenceNumber = -1;
+            PreviousSequenceNumber1 = -1;
             GoWaitStart();
         }
 
@@ -523,7 +523,7 @@ namespace JTAGICEmkII
             }
         }
 
-        public bool ManageSequenceNumber2()
+        public bool ManageSequenceNumber()
         {
 #if LOGGER
             Logger.Debug($"ManageSequenceNumber2, received sequence number: {_rxSequenceNumber}.");
@@ -537,19 +537,19 @@ namespace JTAGICEmkII
 
                 // Is first message received?
 #if LOGGER
-                Logger.Debug($"Initial {PreviousSequenceNumber2.IsInitial}, Last sequence number: {PreviousSequenceNumber2.NumberValue}.");
+                Logger.Debug($"Initial {PreviousSequenceNumber.IsInitial}, Last sequence number: {PreviousSequenceNumber.NumberValue}.");
 #endif
-                if (PreviousSequenceNumber2.IsInitial)
+                if (PreviousSequenceNumber.IsInitial)
                 {
-                    PreviousSequenceNumber2 = new SequenceNumber(_rxSequenceNumber);
+                    PreviousSequenceNumber = new SequenceNumber(_rxSequenceNumber);
                     retval = true;
                 }
                 else
                 {
-                    UInt16 expectedSequenceNumber1 = (UInt16)((PreviousSequenceNumber + 1) % SequenceNumberWrap);
+                    UInt16 expectedSequenceNumber1 = (UInt16)((PreviousSequenceNumber1 + 1) % SequenceNumberWrap);
                     Int16 diffSequenceNumber1 = (Int16)(expectedSequenceNumber1 - _rxSequenceNumber);
 
-                    SequenceNumber expectedSequenceNumber = new SequenceNumber(PreviousSequenceNumber2);
+                    SequenceNumber expectedSequenceNumber = new SequenceNumber(PreviousSequenceNumber);
                     expectedSequenceNumber++;
                     var diffSequenceNumber = expectedSequenceNumber.Difference(_rxSequenceNumber);
 #if LOGGER
@@ -557,14 +557,14 @@ namespace JTAGICEmkII
 #endif
                     if (diffSequenceNumber == 0)
                     {
-                        PreviousSequenceNumber2++;
+                        PreviousSequenceNumber++;
                         retval = true;
                     }
                     else if (diffSequenceNumber < 0)
                     {
                         // We mist a frame, log a warning but still accept this message and update the sequence number to avoid blocking the receiving of next messages.
                         Logger.Warn($"Missed frame(s), expected sequence number {expectedSequenceNumber}, received {_rxSequenceNumber}.");
-                        PreviousSequenceNumber2 = new SequenceNumber(_rxSequenceNumber);
+                        PreviousSequenceNumber = new SequenceNumber(_rxSequenceNumber);
                         retval = true;
                     }
                     else// if (diffSequenceNumber > 0)
@@ -576,7 +576,7 @@ namespace JTAGICEmkII
                 }
 
 #if LOGGER
-                Logger.Debug($"Return {retval} with sequence number: {PreviousSequenceNumber2.NumberValue}.");
+                Logger.Debug($"Return {retval} with sequence number: {PreviousSequenceNumber.NumberValue}.");
 #endif
                 return retval;
             }
@@ -587,35 +587,35 @@ namespace JTAGICEmkII
             }
         }
 
-        private bool ManageSequenceNumber()
+        private bool ManageSequenceNumber1()
         {
 
-            return ManageSequenceNumber2();
+            //return ManageSequenceNumber2();
 
             // Is Event ?
             if (_rxSequenceNumber != SequenceNumberEvent)
             {
                 bool retval = false;
 
-                UInt16 expectedSequenceNumber = (UInt16)((PreviousSequenceNumber + 1) % SequenceNumberWrap);
+                UInt16 expectedSequenceNumber = (UInt16)((PreviousSequenceNumber1 + 1) % SequenceNumberWrap);
                 Int16 diffSequenceNumber = (Int16)(expectedSequenceNumber - _rxSequenceNumber);
 
                 // Is first message received?
-                if (PreviousSequenceNumber == -1)
+                if (PreviousSequenceNumber1 == -1)
                 {
-                    PreviousSequenceNumber = _rxSequenceNumber;
+                    PreviousSequenceNumber1 = _rxSequenceNumber;
                     retval = true;
                 }
                 else if (diffSequenceNumber == 0)
                 {
-                    PreviousSequenceNumber = _rxSequenceNumber;
+                    PreviousSequenceNumber1 = _rxSequenceNumber;
                     retval = true;
                 }
                 else if (diffSequenceNumber < 0)
                 {
                     // We mist a frame, log a warning but still accept this message and update the sequence number to avoid blocking the receiving of next messages.
                     Logger.Warn($"Missed frame(s), expected sequence number {expectedSequenceNumber}, received {_rxSequenceNumber}.");
-                    PreviousSequenceNumber = _rxSequenceNumber;
+                    PreviousSequenceNumber1 = _rxSequenceNumber;
                     retval = true;
                 }
                 else// if (diffSequenceNumber > 0)

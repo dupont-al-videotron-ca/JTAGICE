@@ -41,18 +41,17 @@ namespace JTAGICEmkII.Frame
         private int _sequenceNumberModulo = 0xFFFF;
         private int _sequenceNumberWrap = 0xFFFE;
 
+
         #endregion
 
 
         #region Properties 
+        private byte _numberValueLowByte => (byte)(NumberValue & 0xFF);
+        private byte _numberValueHighByte => (byte)((NumberValue >> 8) & 0xFF);
 
         internal bool IsInitial => _sequenceNumber == -1;
 
         internal int NumberValue => _sequenceNumber;
-
-        private byte NumberValueLowByte => (byte)(NumberValue & 0xFF);
-
-        private byte NumberValueHighByte => (byte)((NumberValue >> 8) & 0xFF);
 
         public int SequenceNumberModulo { get => this._sequenceNumberModulo; set => this._sequenceNumberModulo = value; }
 
@@ -64,7 +63,7 @@ namespace JTAGICEmkII.Frame
 
         internal byte[] GetUInt16LittleEndian()
         {
-            return new byte[] { NumberValueLowByte, NumberValueHighByte };
+            return new byte[] { _numberValueLowByte, _numberValueHighByte };
         }
 
 

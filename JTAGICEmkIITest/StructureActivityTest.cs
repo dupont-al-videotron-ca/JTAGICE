@@ -320,7 +320,7 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void ActivityBaseComp_Shall_Test_ActivityExit_without_nextsLastRequest_true()
+        public void ActivityBaseComp_Shall_Test_ActivityExit_shall_return_true_without_nexts_LastRequest_true()
         {
             //--- Setup
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
@@ -339,17 +339,12 @@ namespace JTAGICEmkIITest
             var result = test.ActivityExit(true);
 
             //--- Verification
-            Assert.False(result);
+            Assert.True(result);
             Assert.Null(activityStructure.CurrentActivity);
-
-            this.VerifyLogForError = false;
-            var eventLog = this.LoggedEvents.FirstOrDefault(e => e.Level == log4net.Core.Level.Error);
-            Assert.NotNull(eventLog);
-            Assert.Equal("JTAGICEmkIITest.Moq.ActivityBaseCompMoq ActivityExit called with lastRequest true but no next activity to transition to.", eventLog.RenderedMessage);
         }
         
         [Fact]
-        public void ActivityBaseComp_Shall_Test_ActivityExit_without_nexts_LastRequest_false()
+        public void ActivityBaseComp_ActivityExit_shall_return_false_without_nexts_LastRequest_false()
         {
             //--- Setup
             var activityStructure = new JTAGICEmkII.HostService.StructureActivity(_hostService);
@@ -367,8 +362,8 @@ namespace JTAGICEmkIITest
             var result = test.ActivityExit(false);
 
             //--- Verification
-            Assert.True(result);
-            Assert.Null(test.NextActivity);
+            Assert.False(result);
+            Assert.Null(activityStructure.CurrentActivity);
 
         }
 

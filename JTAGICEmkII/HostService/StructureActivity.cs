@@ -178,6 +178,7 @@ namespace JTAGICEmkII.HostService
         {
             try
             {
+                Logger.Debug($"Running activity: {activity?.GetType().Name ?? "null"}");
                 if (activity is null)
                 {
                     // TODO: end off activity!

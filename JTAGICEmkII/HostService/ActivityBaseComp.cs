@@ -143,9 +143,9 @@ namespace JTAGICEmkII.HostService
             }
             else
             {
-                // keep _nextIndex until last request is done.;
+                // keep NextActivity until last request is done.;
                 Logger.Debug($"{this.GetType()} ActivityExit called with lastRequest false.");
-                return true;
+                return false;
             }
         }
 

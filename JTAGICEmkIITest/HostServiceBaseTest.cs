@@ -92,12 +92,12 @@ namespace JTAGICEmkIITest
         {
             ArgumentNullException.ThrowIfNull(eventResponse);
             _nbEventSent++;
-            _txFrame?.BuildAndSendFrameResponse((Response)eventResponse, true); 
-        }   
+            _txFrame?.BuildAndSendFrameResponse((Response)eventResponse, true);
+        }
 
         protected ISlaveResponse? CreateEventResponse(SlaveResponseEnum eventId)
         {
-            if(eventId <= SlaveResponseEnum.EventRangeMin || eventId > SlaveResponseEnum.EventRangeMax)
+            if (eventId <= SlaveResponseEnum.EventRangeMin || eventId > SlaveResponseEnum.EventRangeMax)
             {
                 throw new ArgumentException($"Invalid event id {eventId}");
             }
@@ -111,7 +111,7 @@ namespace JTAGICEmkIITest
                     eventBreak.BreakCause = EventBreakCauseEnum.PROGRAMME_BREAK;
                     eventBreak.ProgramCounter = 0x12345678;
                     break;
-                case SlaveResponseEnum.EVT_RUN:                    
+                case SlaveResponseEnum.EVT_RUN:
                     var eventRun = (ResponseMultipleByte)eventResponse;
                     eventRun.Data.Add(0x01);
                     break;
@@ -333,7 +333,17 @@ namespace JTAGICEmkIITest
             return parameters;
         }
 
+        protected bool RunTaskActivity(IActivityElement activityInTest, Type expectedType)
+        {
+            return RunTaskActivity(activityInTest, expectedType, null, null);
+        }
+
         protected bool RunTaskActivity(IActivityElement activityInTest, Type expectedType, Func<ICommandResult>? fct)
+        {
+            return RunTaskActivity(activityInTest, expectedType, fct, null);
+        }
+
+        protected bool RunTaskActivity(IActivityElement activityInTest, Type expectedType, Func<ICommandResult>? fct, Func<bool>? condition)
         {
             Task t = Task.Run(() => { return _activityStructure.RunActivity(activityInTest); }, _cancellationSource.Token);
 
@@ -349,9 +359,15 @@ namespace JTAGICEmkIITest
                     retval = true;
                 }
 
+                // Wait for the condition to be true, or for the activity to change
+                while (condition != null && !condition())
+                {
+                    Task.Delay(1).Wait();
+                }
+
                 while (_activityStructure.CurrentActivity?.GetType() != expectedType)
                 {
-                    Task.Delay(100);
+                    Task.Delay(1).Wait();
                 }
 
                 try

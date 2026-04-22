@@ -32,7 +32,7 @@ namespace JTAGICEmkIITest
         #region Tests ---------------------------------------------------------
 
         [Fact]
-        public void TargetStopped_Constructor_Test()
+        public void TargetRunning_Constructor_Test()
         {
             //--- Setup
             this.CreateHostServiceMoq();
@@ -50,7 +50,7 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void TargetStopped_shall_Accept_visitorActivity()
+        public void TargetRunning_shall_Accept_visitorActivity()
         {
             //--- Setup
             this.CreateHostServiceMoq();
@@ -66,7 +66,7 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void TargetStopped_RunActivity_shall_change_TargetMcuState_to_Running()
+        public void TargetRunning_RunActivity_shall_change_TargetMcuState_to_Running()
         {
             //--- Setup
             var host = this.CreateHostService();
@@ -78,17 +78,17 @@ namespace JTAGICEmkIITest
             //--- Expectations
 
             //--- Action
-            var t = RunTaskActivity(test, typeof(TargetRunning), null!);
+            var result = RunTaskActivity(test, typeof(TargetRunning), null!, () => _activityStructure.TargetMcuState.IsRunning);
 
             //--- Verification
-            Assert.True(t);
-            Assert.NotNull(test.NextActivity);
+            Assert.True(result);
+            Assert.NotNull(_activityStructure.CurrentActivity);
             Assert.True(_activityStructure.TargetMcuState.IsRunning);
 
         }
 
         [Fact]
-        public void TargetStopped_RunActivity_shall_change_activity_to_TargetStopped_on_Reset()
+        public void TargetRunning_RunActivity_shall_change_activity_to_TargetRunning_on_Reset()
         {
             //--- Setup
             var host = this.CreateHostService();
@@ -101,11 +101,11 @@ namespace JTAGICEmkIITest
             Assert.True(_activityStructure.TargetMcuState.IsRunning);
 
             //--- Action
-            var t = RunTaskActivity(test, typeof(TargetStopped), () => { return host.Reset(); });
+            var result = RunTaskActivity(test, typeof(TargetStopped), () => { return host.Reset(); });
 
 
             //--- Verification
-            Assert.True(t);
+            Assert.True(result);
             Assert.NotNull(_activityStructure.CurrentActivity);
             Assert.True(_activityStructure.CurrentActivity is TargetStopped);
             Assert.True(_activityStructure.TargetMcuState.IsStopped);
@@ -113,7 +113,7 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void TargetStopped_RunActivity_shall_change_activity_to_TargetStopped_on_GetSync()
+        public void TargetRunning_RunActivity_shall_change_activity_to_TargetRunning_on_GetSync()
         {
             //--- Setup
             var host = this.CreateHostService();
@@ -126,11 +126,11 @@ namespace JTAGICEmkIITest
             Assert.True(_activityStructure.TargetMcuState.IsRunning);
 
             //--- Action
-            var t = RunTaskActivity(test, typeof(TargetStopped), () => { return host.GetSync(); });
+            var result = RunTaskActivity(test, typeof(TargetStopped), () => { return host.GetSync(); });
 
 
             //--- Verification
-            Assert.True(t);
+            Assert.True(result);
             Assert.NotNull(_activityStructure.CurrentActivity);
             Assert.True(_activityStructure.CurrentActivity is TargetStopped);
             Assert.True(_activityStructure.TargetMcuState.IsStopped);
@@ -138,7 +138,7 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void TargetStopped_RunActivity_shall_change_activity_to_TargetStopped_on_StopRunning()
+        public void TargetRunning_RunActivity_shall_change_activity_to_TargetRunning_on_StopRunning()
         {
             //--- Setup
             var host = this.CreateHostService();
@@ -151,11 +151,11 @@ namespace JTAGICEmkIITest
             Assert.True(_activityStructure.TargetMcuState.IsRunning);
 
             //--- Action
-            var t = RunTaskActivity(test, typeof(TargetStopped), () => { return host.StopRunning(); });
+            var result = RunTaskActivity(test, typeof(TargetStopped), () => { return host.StopRunning(); });
 
 
             //--- Verification
-            Assert.True(t);
+            Assert.True(result);
             Assert.NotNull(_activityStructure.CurrentActivity);
             Assert.True(_activityStructure.CurrentActivity is TargetStopped);
             Assert.True(_activityStructure.TargetMcuState.IsStopped);
@@ -163,7 +163,7 @@ namespace JTAGICEmkIITest
         }
 
         [Fact]
-        public void TargetStopped_RunActivity_shall_change_activity_to_TargetStopped_on_BreakEvent()
+        public void TargetRunning_RunActivity_shall_change_activity_to_TargetRunning_on_BreakEvent()
         {
             //--- Setup
             var host = this.CreateHostService();
@@ -176,12 +176,12 @@ namespace JTAGICEmkIITest
             Assert.True(_activityStructure.TargetMcuState.IsRunning);
 
             //--- Action
-            var t = RunTaskActivity(test, typeof(TargetStopped), () => {
+            var result = RunTaskActivity(test, typeof(TargetStopped), () => {
                 this.CreateAndSendEvent(SlaveResponseEnum.EVT_BREAK);
                 return CommandResult.Success; });
 
             //--- Verification
-            Assert.True(t);
+            Assert.True(result);
             Assert.NotNull(_activityStructure.CurrentActivity);
             Assert.True(_activityStructure.CurrentActivity is TargetStopped);
             Assert.True(_activityStructure.TargetMcuState.IsStopped);

@@ -83,8 +83,7 @@ namespace JTAGICEmkIITest
 
             //--- Verification
             Assert.True(t);
-            Assert.NotNull(test.NextActivity);
-            Assert.True(test.NextActivity is TargetStopped);
+            Assert.True(_activityStructure.CurrentActivity is TargetStopped);
             Assert.True(_activityStructure.TargetMcuState.IsStopped);
 
         }
