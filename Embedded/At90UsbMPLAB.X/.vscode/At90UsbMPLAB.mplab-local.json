@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "reference": "@conf1",
+            "toolSerial": "020126001AUR000014"
+        },
+        {
+            "reference": "@conf1",
+            "toolSerial": "020126001AUR000014"
+        }
+    ]
+}
