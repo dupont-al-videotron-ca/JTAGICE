@@ -1,4 +1,0 @@
-D:/ALAIN/AT90USB/Projects/AT90USB/At90UsbMPLAB.X/_build/At90UsbMPLAB/default/CMakeFiles/At90UsbMPLAB_default_default_XC8_compile.dir
-D:/ALAIN/AT90USB/Projects/AT90USB/At90UsbMPLAB.X/_build/At90UsbMPLAB/default/CMakeFiles/At90UsbMPLAB_default_image_CtdRLKcd.dir
-D:/ALAIN/AT90USB/Projects/AT90USB/At90UsbMPLAB.X/_build/At90UsbMPLAB/default/CMakeFiles/edit_cache.dir
-D:/ALAIN/AT90USB/Projects/AT90USB/At90UsbMPLAB.X/_build/At90UsbMPLAB/default/CMakeFiles/rebuild_cache.dir
