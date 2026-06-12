@@ -51,17 +51,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=src/daq_dev.c src/ringbuffer.c src/SUDD.c src/Timer2CTC.c src/usart_debug.c src/usart_drv.c src/usb_api.c src/usb_drv.c src/usb_isr.c src/usb_requests.c src/usb_spec.c
+SOURCEFILES_QUOTED_IF_SPACED=src/daq_dev.c src/ringbuffer.c src/SUDD.c src/Timer2CTC.c src/usart_debug.c src/usart_drv.c src/usb_api.c src/usb_drv.c src/usb_isr.c src/usb_spec.c src/usb_ControlEndpoint.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/src/daq_dev.o ${OBJECTDIR}/src/ringbuffer.o ${OBJECTDIR}/src/SUDD.o ${OBJECTDIR}/src/Timer2CTC.o ${OBJECTDIR}/src/usart_debug.o ${OBJECTDIR}/src/usart_drv.o ${OBJECTDIR}/src/usb_api.o ${OBJECTDIR}/src/usb_drv.o ${OBJECTDIR}/src/usb_isr.o ${OBJECTDIR}/src/usb_requests.o ${OBJECTDIR}/src/usb_spec.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/src/daq_dev.o.d ${OBJECTDIR}/src/ringbuffer.o.d ${OBJECTDIR}/src/SUDD.o.d ${OBJECTDIR}/src/Timer2CTC.o.d ${OBJECTDIR}/src/usart_debug.o.d ${OBJECTDIR}/src/usart_drv.o.d ${OBJECTDIR}/src/usb_api.o.d ${OBJECTDIR}/src/usb_drv.o.d ${OBJECTDIR}/src/usb_isr.o.d ${OBJECTDIR}/src/usb_requests.o.d ${OBJECTDIR}/src/usb_spec.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/src/daq_dev.o ${OBJECTDIR}/src/ringbuffer.o ${OBJECTDIR}/src/SUDD.o ${OBJECTDIR}/src/Timer2CTC.o ${OBJECTDIR}/src/usart_debug.o ${OBJECTDIR}/src/usart_drv.o ${OBJECTDIR}/src/usb_api.o ${OBJECTDIR}/src/usb_drv.o ${OBJECTDIR}/src/usb_isr.o ${OBJECTDIR}/src/usb_spec.o ${OBJECTDIR}/src/usb_ControlEndpoint.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/src/daq_dev.o.d ${OBJECTDIR}/src/ringbuffer.o.d ${OBJECTDIR}/src/SUDD.o.d ${OBJECTDIR}/src/Timer2CTC.o.d ${OBJECTDIR}/src/usart_debug.o.d ${OBJECTDIR}/src/usart_drv.o.d ${OBJECTDIR}/src/usb_api.o.d ${OBJECTDIR}/src/usb_drv.o.d ${OBJECTDIR}/src/usb_isr.o.d ${OBJECTDIR}/src/usb_spec.o.d ${OBJECTDIR}/src/usb_ControlEndpoint.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/src/daq_dev.o ${OBJECTDIR}/src/ringbuffer.o ${OBJECTDIR}/src/SUDD.o ${OBJECTDIR}/src/Timer2CTC.o ${OBJECTDIR}/src/usart_debug.o ${OBJECTDIR}/src/usart_drv.o ${OBJECTDIR}/src/usb_api.o ${OBJECTDIR}/src/usb_drv.o ${OBJECTDIR}/src/usb_isr.o ${OBJECTDIR}/src/usb_requests.o ${OBJECTDIR}/src/usb_spec.o
+OBJECTFILES=${OBJECTDIR}/src/daq_dev.o ${OBJECTDIR}/src/ringbuffer.o ${OBJECTDIR}/src/SUDD.o ${OBJECTDIR}/src/Timer2CTC.o ${OBJECTDIR}/src/usart_debug.o ${OBJECTDIR}/src/usart_drv.o ${OBJECTDIR}/src/usb_api.o ${OBJECTDIR}/src/usb_drv.o ${OBJECTDIR}/src/usb_isr.o ${OBJECTDIR}/src/usb_spec.o ${OBJECTDIR}/src/usb_ControlEndpoint.o
 
 # Source Files
-SOURCEFILES=src/daq_dev.c src/ringbuffer.c src/SUDD.c src/Timer2CTC.c src/usart_debug.c src/usart_drv.c src/usb_api.c src/usb_drv.c src/usb_isr.c src/usb_requests.c src/usb_spec.c
+SOURCEFILES=src/daq_dev.c src/ringbuffer.c src/SUDD.c src/Timer2CTC.c src/usart_debug.c src/usart_drv.c src/usb_api.c src/usb_drv.c src/usb_isr.c src/usb_spec.c src/usb_ControlEndpoint.c
 
 
 
@@ -142,17 +142,17 @@ ${OBJECTDIR}/src/usb_isr.o: src/usb_isr.c  .generated_files/flags/release/b92305
 	@${RM} ${OBJECTDIR}/src/usb_isr.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -D__DEBUG=1 -g -DDEBUG  -gdwarf-2  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_isr.o.d" -MT "${OBJECTDIR}/src/usb_isr.o.d" -MT ${OBJECTDIR}/src/usb_isr.o -o ${OBJECTDIR}/src/usb_isr.o src/usb_isr.c 
 	
-${OBJECTDIR}/src/usb_requests.o: src/usb_requests.c  .generated_files/flags/release/9a04895893a9e586bfb85eb9562cda13801b36f7 .generated_files/flags/release/da39a3ee5e6b4b0d3255bfef95601890afd80709
-	@${MKDIR} "${OBJECTDIR}/src" 
-	@${RM} ${OBJECTDIR}/src/usb_requests.o.d 
-	@${RM} ${OBJECTDIR}/src/usb_requests.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -D__DEBUG=1 -g -DDEBUG  -gdwarf-2  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_requests.o.d" -MT "${OBJECTDIR}/src/usb_requests.o.d" -MT ${OBJECTDIR}/src/usb_requests.o -o ${OBJECTDIR}/src/usb_requests.o src/usb_requests.c 
-	
 ${OBJECTDIR}/src/usb_spec.o: src/usb_spec.c  .generated_files/flags/release/c8e6403853e29a6204f32b488e8e795921bd598d .generated_files/flags/release/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}/src" 
 	@${RM} ${OBJECTDIR}/src/usb_spec.o.d 
 	@${RM} ${OBJECTDIR}/src/usb_spec.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -D__DEBUG=1 -g -DDEBUG  -gdwarf-2  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_spec.o.d" -MT "${OBJECTDIR}/src/usb_spec.o.d" -MT ${OBJECTDIR}/src/usb_spec.o -o ${OBJECTDIR}/src/usb_spec.o src/usb_spec.c 
+	
+${OBJECTDIR}/src/usb_ControlEndpoint.o: src/usb_ControlEndpoint.c  .generated_files/flags/release/41114a4ca12ca5eb8545b0874c7310a2d754268c .generated_files/flags/release/da39a3ee5e6b4b0d3255bfef95601890afd80709
+	@${MKDIR} "${OBJECTDIR}/src" 
+	@${RM} ${OBJECTDIR}/src/usb_ControlEndpoint.o.d 
+	@${RM} ${OBJECTDIR}/src/usb_ControlEndpoint.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -D__DEBUG=1 -g -DDEBUG  -gdwarf-2  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_ControlEndpoint.o.d" -MT "${OBJECTDIR}/src/usb_ControlEndpoint.o.d" -MT ${OBJECTDIR}/src/usb_ControlEndpoint.o -o ${OBJECTDIR}/src/usb_ControlEndpoint.o src/usb_ControlEndpoint.c 
 	
 else
 ${OBJECTDIR}/src/daq_dev.o: src/daq_dev.c  .generated_files/flags/release/a273c5c1af11c6bcc2abe571095076ea14dd42bf .generated_files/flags/release/da39a3ee5e6b4b0d3255bfef95601890afd80709
@@ -209,17 +209,17 @@ ${OBJECTDIR}/src/usb_isr.o: src/usb_isr.c  .generated_files/flags/release/c39acb
 	@${RM} ${OBJECTDIR}/src/usb_isr.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_isr.o.d" -MT "${OBJECTDIR}/src/usb_isr.o.d" -MT ${OBJECTDIR}/src/usb_isr.o -o ${OBJECTDIR}/src/usb_isr.o src/usb_isr.c 
 	
-${OBJECTDIR}/src/usb_requests.o: src/usb_requests.c  .generated_files/flags/release/a829c2dc9364ace250dd5a82cbce98ea38b40a45 .generated_files/flags/release/da39a3ee5e6b4b0d3255bfef95601890afd80709
-	@${MKDIR} "${OBJECTDIR}/src" 
-	@${RM} ${OBJECTDIR}/src/usb_requests.o.d 
-	@${RM} ${OBJECTDIR}/src/usb_requests.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_requests.o.d" -MT "${OBJECTDIR}/src/usb_requests.o.d" -MT ${OBJECTDIR}/src/usb_requests.o -o ${OBJECTDIR}/src/usb_requests.o src/usb_requests.c 
-	
 ${OBJECTDIR}/src/usb_spec.o: src/usb_spec.c  .generated_files/flags/release/dd667b4d7f8b88cf9067395478b7c79d49587232 .generated_files/flags/release/da39a3ee5e6b4b0d3255bfef95601890afd80709
 	@${MKDIR} "${OBJECTDIR}/src" 
 	@${RM} ${OBJECTDIR}/src/usb_spec.o.d 
 	@${RM} ${OBJECTDIR}/src/usb_spec.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_spec.o.d" -MT "${OBJECTDIR}/src/usb_spec.o.d" -MT ${OBJECTDIR}/src/usb_spec.o -o ${OBJECTDIR}/src/usb_spec.o src/usb_spec.c 
+	
+${OBJECTDIR}/src/usb_ControlEndpoint.o: src/usb_ControlEndpoint.c  .generated_files/flags/release/f6952db5fc8cd8c9f1f6b698a83910552f30d921 .generated_files/flags/release/da39a3ee5e6b4b0d3255bfef95601890afd80709
+	@${MKDIR} "${OBJECTDIR}/src" 
+	@${RM} ${OBJECTDIR}/src/usb_ControlEndpoint.o.d 
+	@${RM} ${OBJECTDIR}/src/usb_ControlEndpoint.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -mcpu=$(MP_PROCESSOR_OPTION) -c  -x c -D__$(MP_PROCESSOR_OPTION)__   -mdfp="${DFP_DIR}/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_release=$(CND_CONF)  $(COMPARISON_BUILD)  -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF "${OBJECTDIR}/src/usb_ControlEndpoint.o.d" -MT "${OBJECTDIR}/src/usb_ControlEndpoint.o.d" -MT ${OBJECTDIR}/src/usb_ControlEndpoint.o -o ${OBJECTDIR}/src/usb_ControlEndpoint.o src/usb_ControlEndpoint.c 
 	
 endif
 
