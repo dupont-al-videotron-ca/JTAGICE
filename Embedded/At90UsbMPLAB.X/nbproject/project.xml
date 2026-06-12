@@ -12,10 +12,19 @@
                 <sourceRootElem>../Src</sourceRootElem>
                 <sourceRootElem>../AtmelStudioUSB/src</sourceRootElem>
                 <sourceRootElem>src</sourceRootElem>
+                <sourceRootElem>scr++</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
-                    <name>default</name>
+                    <name>release</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>debug</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>debug_CPP</name>
                     <type>2</type>
                 </confElem>
             </confList>

@@ -9,7 +9,7 @@
 #include "usb_drv.h"
 #include "usart_debug.h"
 #include "usb_api.h" // EP0_FIFO_Size and USB_NumInterfaces
-#include "usb_requests.h"
+#include "usb_ControlEndpoint.h"
 #include "at90usbkey.h"
 #include "timer2ctc.h"
 
@@ -18,16 +18,42 @@ extern uint8_t ResetCnt;
 uint8_t UsbDevConfValue = UsbUnconfiguredState;
 uint8_t AltSettingOfInterface[4] = {UsbInterfaceUnconfigured, UsbInterfaceUnconfigured, UsbInterfaceUnconfigured, UsbInterfaceUnconfigured};
 uint8_t RemoteWakeupActive = 0;
+USB_DeviceRequest SetupRequest;
 
 uint8_t TxIn = 0;
 uint8_t TxOut = 0;
 uint8_t InFifoCnt = 0;
 uint16_t InRetryCnt = 0;
 uint32_t ElapsedTime = 0;
-uint8_t bufferDescriptor[256];
+uint8_t BufferDescriptor[USB_StdDevReqMaxBuffer + 1];
 
 static bool UsbDevWriteIntoFifo(void *pSrc, uint8_t dataLength, uint8_t *written, uint8_t hostBufferSize);
 static bool WaitAckOrSetupFromHost();
+
+
+// Called by USB-END-OF-RESET interrupt
+// USB reset resets EP0! (see section 22.5)
+
+void UsbDevStartDeviceEP0(void)
+{
+    BoardPortD2GreenOff();
+    UsbDevSelectEndpoint(0);
+    if UsbDevIsEndpointEnabled()
+    {
+        Debug("~~~ EP0 already enabled!\r\n");
+        return;
+    }
+
+    Debug("~~~ Setting up EP0...\r\n");
+    UsbAllocatedEPs = 0;
+    if (UsbDevEP_Setup(0, UsbEP_TypeControl, EP0_FIFO_Size, 1, UsbEP_DirControl))
+        Debug("~~~ Successful set up EP0!\r\n");
+    else
+        Debug("~~~  Setup of EP0 failed!\r\n");
+
+    // Enable interrupt
+    UsbDevEnableReceivedSETUP_Int();
+}
 
 static bool SendInFifo()
 {
@@ -44,7 +70,6 @@ static bool SendInFifo()
 
     return false;
 }
-
 
 static bool UsbDevFlushInFifo()
 {
@@ -154,7 +179,8 @@ static bool UsbDevWriteIntoFifo(void *pSrc, uint8_t dataLength, uint8_t *written
 
 // Read n bytes from FIFO; FIFO should contain exactly n bytes
 // Limited to n < 256
-static void UsbDevReadBytesN(void *c, uint8_t n)
+
+void UsbDevReadBytesN(void *c, uint8_t n)
 {
     Assert(UsbDevGetByteCountLow() == n);
     while (n--) *(uint8_t*) c++ = UsbDevReadByteFromFifo();
@@ -200,7 +226,7 @@ static bool WaitAckOrSetupFromHost()
             UsbDevClearHasReceivedOUT_Data();
             return true;
         }
-        
+
         else if (UsbDevHasReceivedSETUP())
         {
             return true;
@@ -211,7 +237,7 @@ static bool WaitAckOrSetupFromHost()
 
 static bool UsbSendDescriptors(uint8_t cdi, uint8_t requested)
 {
-    memset(bufferDescriptor, 0, sizeof (bufferDescriptor));
+    memset(BufferDescriptor, 0, sizeof (BufferDescriptor));
 
     uint8_t written = 0;
     uint8_t nbByte = 0;
@@ -220,7 +246,7 @@ static bool UsbSendDescriptors(uint8_t cdi, uint8_t requested)
     uint8_t as; // alternate setting of interface
     uint8_t edi; // endpoint descriptor index
 
-    USB_ConfigurationDescriptor* pConfDes = (USB_ConfigurationDescriptor *) & bufferDescriptor[nbByte];
+    USB_ConfigurationDescriptor* pConfDes = (USB_ConfigurationDescriptor *) & BufferDescriptor[nbByte];
     if (UsbGetConfigurationDescriptor(pConfDes, cdi))
     {
         nbByte += pConfDes->bLength;
@@ -230,180 +256,40 @@ static bool UsbSendDescriptors(uint8_t cdi, uint8_t requested)
         do
         {
             as = 0;
-            USB_InterfaceDescriptor *pInterfaceDesc = (USB_InterfaceDescriptor *) & bufferDescriptor[nbByte];
+            USB_InterfaceDescriptor *pInterfaceDesc = (USB_InterfaceDescriptor *) & BufferDescriptor[nbByte];
             while (UsbGetInterfaceDescriptor(pInterfaceDesc, cdi, idi, as))
             {
                 nbByte += pInterfaceDesc->bLength;
                 //            UsbDumpInterfaceDescriptor(&u.intDes);
 
-                USB_EndpointDescriptor *pEndpointDesc = (USB_EndpointDescriptor *) & bufferDescriptor[nbByte];
+                USB_EndpointDescriptor *pEndpointDesc = (USB_EndpointDescriptor *) & BufferDescriptor[nbByte];
 
                 for (edi = 1; edi < UsbNumEndpointsAT90USB; edi++)
                 {
                     if (UsbGetEndpointDescriptor(pEndpointDesc, cdi, idi, as, edi))
                     {
                         nbByte += pEndpointDesc->bLength;
-                        pEndpointDesc = (USB_EndpointDescriptor *) & bufferDescriptor[nbByte];
+                        pEndpointDesc = (USB_EndpointDescriptor *) & BufferDescriptor[nbByte];
                         //UsbDumpEndpointDescriptor(&u.endDes);
                     }
                 }
                 as++;
             }
             idi++;
-            pInterfaceDesc = (USB_InterfaceDescriptor *) & bufferDescriptor[nbByte];
+            pInterfaceDesc = (USB_InterfaceDescriptor *) & BufferDescriptor[nbByte];
         }
         while (as > 0);
 
-        return UsbDevWriteIntoFifoAndFlush(bufferDescriptor, nbByte, &written, requested);
+        return UsbDevWriteIntoFifoAndFlush(BufferDescriptor, nbByte, &written, requested);
     }
     else
     {
         return false;
     }
 }
-
-#if 0
-
-struct // we can use the same piece of memory for these descriptors
-{
-    USB_ConfigurationDescriptor confDes;
-    USB_InterfaceDescriptor intDes[1];
-    USB_EndpointDescriptor endDes[3];
-} debug_problems;
-
-static bool UsbSendDescriptors3(uint8_t cdi, uint8_t requested)
-{
-    memset(bufferDescriptor, 0, 256);
-    //memset(&debug_problems, 0, sizeof(debug_problems));
-
-    uint8_t written = 0;
-    volatile uint8_t nbByte = 0;
-
-    uint8_t idi; // interface descriptor index
-    uint8_t as; // alternate setting of interface
-    uint8_t edi; // endpoint descriptor index
-
-    USB_ConfigurationDescriptor* pConfDes;
-    USB_ConfigurationDescriptor* pConfDes2;
-    USB_ConfigurationDescriptor confDes;
-    USB_ConfigurationDescriptor confDes2;
-    pConfDes = (USB_ConfigurationDescriptor *) bufferDescriptor;
-    pConfDes2 = &confDes2;
-
-    UsbGetConfigurationDescriptor(&confDes2, cdi);
-
-    if (UsbGetConfigurationDescriptor((USB_ConfigurationDescriptor *) bufferDescriptor, cdi))
-    {
-        memcpy(&confDes, bufferDescriptor, sizeof (USB_ConfigurationDescriptor));
-        memcpy(pConfDes2, bufferDescriptor, sizeof (USB_ConfigurationDescriptor));
-
-        nbByte += pConfDes->bLength;
-
-        //        UsbDumpConfigurationDescriptor(&u.confDes);
-        idi = 0;
-        do
-        {
-            as = 0;
-            USB_InterfaceDescriptor *pInterfaceDesc = (USB_InterfaceDescriptor *) (pConfDes + pConfDes->bLength);
-            while (UsbGetInterfaceDescriptor(pInterfaceDesc, cdi, idi, as))
-            {
-                nbByte += pInterfaceDesc->bLength;
-                pInterfaceDesc = (USB_InterfaceDescriptor *) (pInterfaceDesc + pInterfaceDesc->bLength);
-                //            UsbDumpInterfaceDescriptor(&u.intDes);
-
-                USB_EndpointDescriptor *pEndpointDesc = (USB_EndpointDescriptor *) pInterfaceDesc;
-
-                for (edi = 1; edi < UsbNumEndpointsAT90USB; edi++)
-                {
-                    if (UsbGetEndpointDescriptor(pEndpointDesc, cdi, idi, as, edi))
-                    {
-                        nbByte += pEndpointDesc->bLength;
-                        pEndpointDesc = pEndpointDesc + pEndpointDesc->bLength;
-                        //UsbDumpEndpointDescriptor(&u.endDes);
-                    }
-                }
-                as++;
-            }
-            idi++;
-        }
-        while (as > 0);
-
-        return UsbDevWriteIntoFifoAndFlush(bufferDescriptor, nbByte, &written, requested);
-    }
-    else
-    {
-        return false;
-    }
-}
-
-static bool UsbSendDescriptors2(uint8_t cdi, uint8_t requested)
-{
-    uint8_t written = 0;
-
-    union // we can use the same piece of memory for these descriptors
-    {
-        USB_ConfigurationDescriptor confDes;
-        USB_InterfaceDescriptor intDes;
-        USB_EndpointDescriptor endDes;
-    } u;
-
-    //uint8_t cdi; // configuration descriptor index
-    uint8_t idi; // interface descriptor index
-    uint8_t as; // alternate setting of interface
-    uint8_t edi; // endpoint descriptor index
-
-    if (UsbGetConfigurationDescriptor(&u.confDes, cdi))
-    {
-        UsbDumpConfigurationDescriptor(&u.confDes);
-        if (!UsbDevWriteIntoFifo(&u.confDes, u.confDes.bLength, &written, requested))
-        {
-            FatalError = true;
-            //return false;
-        }
-        idi = 0;
-        do
-        {
-            as = 0;
-            while (UsbGetInterfaceDescriptor(&u.intDes, cdi, idi, as))
-            {
-                UsbDumpInterfaceDescriptor(&u.intDes);
-                if (!UsbDevWriteIntoFifo(&u.intDes, u.intDes.bLength, &written, requested))
-                {
-                    FatalError = true;
-                    //return false;
-                }
-
-                for (edi = 1; edi < UsbNumEndpointsAT90USB; edi++)
-                {
-                    if (UsbGetEndpointDescriptor(&u.endDes, cdi, idi, as, edi))
-                    {
-                        UsbDumpEndpointDescriptor(&u.endDes);
-                        if (!UsbDevWriteIntoFifo(&u.endDes, u.endDes.bLength, &written, requested))
-                        {
-                            FatalError = true;
-                            //return false;
-                        }
-                    }
-                }
-                as++;
-            }
-            idi++;
-        }
-        while (as > 0);
-
-        UsbDevFlushInFifo();
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-#endif
 
 void UsbProcessSetupRequest(void)
 {
-    USB_DeviceRequest req;
 
     union // we can use the same piece of memory for these descriptors
     {
@@ -411,38 +297,41 @@ void UsbProcessSetupRequest(void)
         USB_ConfigurationDescriptor confDes;
         char strDes[USB_MaxStringDescriptorLength];
     } u;
+
     uint8_t b;
     UsbDevSelectEndpoint(0);
-    UsbDevReadBytesN(&req, 8);
+
+    UsbDevReadBytesN(&SetupRequest, sizeof(SetupRequest));
+
     // Caution: We have to delay the AcknowledgeSETUP() if request is a 3 stage-transfer with out data
     // because host may send out data immediately after our acknowledge and may not see our stall request!
-    if (!(req.bRequest == USB_StdDevReqSET_DESCRIPTOR)) // ! 3 stage-transfer with out data
+    if (!(SetupRequest.bRequest == USB_StdDevReqSET_DESCRIPTOR)) // ! 3 stage-transfer with out data
         UsbDevAcknowledgeSETUP();
 
-    UsbDumpSetupRequest(&req);
-    if (UsbIsVendorRequest(req.bmRequestType))
+    UsbDumpSetupRequest(&SetupRequest);
+    if (UsbIsVendorRequest(SetupRequest.bmRequestType))
     {
         ReqDebug("Received UsbVendorRequest");
-        UsbDevProcessVendorRequest(&req);
+        UsbDevProcessVendorRequest(&SetupRequest);
         UsbDevSelectEndpoint(0);
         // should call SendZLP
         UsbDevSendControlIn(); // send ZLP
     }
-    else if (UsbIsStandardRequest(req.bmRequestType))
+    else if (UsbIsStandardRequest(SetupRequest.bmRequestType))
     {
-        switch (req.bRequest)
+        switch (SetupRequest.bRequest)
         {
             case USB_StdDevReqGET_STATUS: // 3 stages with 2 byte IN-data -- not tested yet
                 ReqDebug("USB_StdDevReqGET_STATUS");
-                Assert(req.wValue == 0);
-                Assert(req.wLength == 2);
-                switch (req.bmRequestType)
+                Assert(SetupRequest.wValue == 0);
+                Assert(SetupRequest.wLength == 2);
+                switch (SetupRequest.bmRequestType)
                 {
                     case 128: // device: Self-Power-Bit, Remote-Wakeup-Bit set?
-                        Assert(req.wIndex == 0);
+                        Assert(SetupRequest.wIndex == 0);
                         if (UsbDevConfValue == UsbUnconfiguredState)
                         {
-                            ReqDebug("Error: USB_StdDevReqGET_STATUS device in unconfigured state!");
+                            ReqDebug("Error: USB_StdDevReqGET_STATUS device in un-configured state!");
                             UsbDevRequestStallHandshake();
                             return;
                         }
@@ -455,16 +344,16 @@ void UsbProcessSetupRequest(void)
                     case 129: // interface: Always return 0
                         if (UsbDevConfValue == UsbUnconfiguredState)
                         {
-                            ReqDebug("Error: USB_StdDevReqGET_STATUS interface in unconfigured state!");
+                            ReqDebug("Error: USB_StdDevReqGET_STATUS interface in un-configured state!");
                             UsbDevRequestStallHandshake();
                             return;
                         }
-                        //Assert(req.wIndex < USB_Interfaces[UsbDevConfValue]);
+                        //Assert(SetupReuqest.wIndex < USB_Interfaces[UsbDevConfValue]);
                         UsbDevWriteByte(0);
                         break;
                     case 130: // endpoint: is this endpoint stalled?
-                        Assert((MSB(req.wIndex) == 0));
-                        b = LSB(req.wIndex) & 127; // endpoint number
+                        Assert((MSB(SetupRequest.wIndex) == 0));
+                        b = LSB(SetupRequest.wIndex) & 127; // endpoint number
                         if (b >= UsbNumEndpointsAT90USB)
                         {
                             ReqDebug("Error: USB_StdDevReqGET_STATUS endpoint does not exist!");
@@ -473,12 +362,12 @@ void UsbProcessSetupRequest(void)
                         }
                         if ((UsbDevConfValue == UsbUnconfiguredState) && (b > 0))
                         {
-                            ReqDebug("Error: USB_StdDevReqGET_STATUS for ep > 0 in unconfigured state!");
+                            ReqDebug("Error: USB_StdDevReqGET_STATUS for ep > 0 in un-configured state!");
                             UsbDevRequestStallHandshake();
                             return;
                         }
                         UsbDevSelectEndpoint(b);
-                        if (UsbDevIsEndpointStalled()) // stalled bit is marked write-only in datasheet -- do we need a separate state variable?
+                        if (UsbDevIsEndpointStalled()) // stalled bit is marked write-only in data sheet -- do we need a separate state variable?
                             UsbDevWriteByte(1);
                         else
                             UsbDevWriteByte(0);
@@ -496,19 +385,19 @@ void UsbProcessSetupRequest(void)
             case USB_StdDevReqCLEAR_FEATURE: // 2 stages (no data-stage) -- not tested yet
             case USB_StdDevReqSET_FEATURE:
                 ReqDebug("USB_StdDevReqCLEAR/SET_FEATURE");
-                Assert(req.wLength == 0);
-                switch (req.bmRequestType)
+                Assert(SetupRequest.wLength == 0);
+                switch (SetupRequest.bmRequestType)
                 {
                     case 0: // device
                         BoardPortD5RedOff();
-                        Assert(req.wIndex == 0);
-                        if (req.wValue != 1) // Feature selector != DEVICE_REMOTE_WAKEUP
+                        Assert(SetupRequest.wIndex == 0);
+                        if (SetupRequest.wValue != 1) // Feature selector != DEVICE_REMOTE_WAKEUP
                         {
                             ReqDebug("Error: USB_StdDevReqSET/CLEAR_FEATURE wrong feature selector for device!");
                             UsbDevRequestStallHandshake();
                             return;
                         }
-                        if (req.bRequest == USB_StdDevReqCLEAR_FEATURE)
+                        if (SetupRequest.bRequest == USB_StdDevReqCLEAR_FEATURE)
                         {
                             RemoteWakeupActive = 0;
                         }
@@ -530,14 +419,14 @@ void UsbProcessSetupRequest(void)
                         return;
                         break;
                     case 2: // endpoint
-                        Assert(MSB(req.wIndex) == 0);
-                        if (req.wValue != 0) // Feature selector != ENDPOINT_STALL
+                        Assert(MSB(SetupRequest.wIndex) == 0);
+                        if (SetupRequest.wValue != 0) // Feature selector != ENDPOINT_STALL
                         {
                             ReqDebug("Error: USB_StdDevReqSET/CLEAR_FEATURE wrong feature selector for endpoint!");
                             UsbDevRequestStallHandshake();
                             return;
                         }
-                        b = LSB(req.wIndex) & 127; // endpoint address
+                        b = LSB(SetupRequest.wIndex) & 127; // endpoint address
                         if (b >= UsbNumEndpointsAT90USB)
                         {
                             ReqDebug("Error: USB_StdDevReqSET/CLEAR_FEATURE endpoint does not exist!");
@@ -546,13 +435,13 @@ void UsbProcessSetupRequest(void)
                         }
                         if ((UsbDevConfValue == UsbUnconfiguredState) && (b > 0))
                         {
-                            ReqDebug("Error: USB_StdDevReqClearSetFeature for ep > 0 in unconfigured state!");
+                            ReqDebug("Error: USB_StdDevReqClearSetFeature for ep > 0 in un-configured state!");
                             UsbDevRequestStallHandshake();
                             return;
                         }
                         // Caution: what shall we do if (b == 0)?
                         UsbDevSelectEndpoint(b);
-                        if (req.bRequest == USB_StdDevReqCLEAR_FEATURE)
+                        if (SetupRequest.bRequest == USB_StdDevReqCLEAR_FEATURE)
                         {
                             UsbDevClearStallRequest();
                             UsbDevResetEndpoint(b); // should we do an endpoint reset?
@@ -573,17 +462,18 @@ void UsbProcessSetupRequest(void)
                 break;
             case USB_StdDevReqSET_ADDRESS: // 2 stages (no data-stage)
                 ReqDebug("USB_StdDevReqSET_ADDRESS");
-                if ((LSB(req.wValue) == 0) && (UsbDevConfValue != UsbUnconfiguredState))
+                if ((LSB(SetupRequest.wValue) == 0) && (UsbDevConfValue != UsbUnconfiguredState))
                 {
                     ReqDebug("Error: USB_StdDevReqSET_ADDRESS address 0 in configured state!");
                     UsbDevRequestStallHandshake();
                     return;
                 }
-                Assert(req.bmRequestType == 0);
-                Assert(MSB(req.wValue) == 0);
-                Assert(req.wIndex == 0);
-                Assert(req.wLength == 0);
-                UsbDevSetAddress(LSB(req.wValue));
+
+                Assert(SetupRequest.bmRequestType == 0);
+                Assert(MSB(SetupRequest.wValue) == 0);
+                Assert(SetupRequest.wIndex == 0);
+                Assert(SetupRequest.wLength == 0);
+                UsbDevSetAddress(LSB(SetupRequest.wValue));
 
                 UsbSendZLP(true); // send ZLP
                 //UsbDevWaitTransmitterReady();
@@ -597,21 +487,21 @@ void UsbProcessSetupRequest(void)
                 break;
             case USB_StdDevReqGET_CONFIGURATION: // 3 stages with 1 byte IN-data -- not tested yet
                 ReqDebug("USB_StdDevReqGET_CONFIGURATION");
-                Assert(req.bmRequestType == 128);
-                Assert(req.wValue == 0);
-                Assert(req.wIndex == 0);
-                Assert(req.wLength == 1);
+                Assert(SetupRequest.bmRequestType == 128);
+                Assert(SetupRequest.wValue == 0);
+                Assert(SetupRequest.wIndex == 0);
+                Assert(SetupRequest.wLength == 1);
                 UsbDevWriteByte(UsbDevConfValue);
                 UsbDevSendControlIn();
                 WaitAckOrSetupFromHost();
                 break;
             case USB_StdDevReqSET_CONFIGURATION: // 2 stages (no data-stage)
                 ReqDebug("USB_StdDevReqSET_CONFIGURATION");
-                Assert(req.bmRequestType == 0);
-                Assert(MSB(req.wValue) == 0);
-                Assert(req.wIndex == 0);
-                Assert(req.wLength == 0);
-                if (UsbDevSetConfiguration(LSB(req.wValue)))
+                Assert(SetupRequest.bmRequestType == 0);
+                Assert(MSB(SetupRequest.wValue) == 0);
+                Assert(SetupRequest.wIndex == 0);
+                Assert(SetupRequest.wLength == 0);
+                if (UsbDevSetConfiguration(LSB(SetupRequest.wValue)))
                 {
                     UsbDevSelectEndpoint(0); // UsbDevSetConfiguration() may select other ep
                     UsbSendZLP(false); // send ZLP
@@ -632,11 +522,11 @@ void UsbProcessSetupRequest(void)
                     UsbDevRequestStallHandshake();
                     return;
                 }
-                Assert(req.bmRequestType == 129);
-                Assert(req.wValue == 0);
-                Assert(MSB(req.wIndex) == 0);
-                Assert(req.wLength == 1);
-                UsbDevWriteByte(AltSettingOfInterface[(uint8_t) LSB(req.wIndex)]);
+                Assert(SetupRequest.bmRequestType == 129);
+                Assert(SetupRequest.wValue == 0);
+                Assert(MSB(SetupRequest.wIndex) == 0);
+                Assert(SetupRequest.wLength == 1);
+                UsbDevWriteByte(AltSettingOfInterface[(uint8_t) LSB(SetupRequest.wIndex)]);
                 UsbDevSendControlIn();
                 WaitAckOrSetupFromHost();
                 break;
@@ -648,11 +538,11 @@ void UsbProcessSetupRequest(void)
                     UsbDevRequestStallHandshake();
                     return;
                 }
-                Assert(req.bmRequestType == 1);
-                Assert(MSB(req.wValue) == 0);
-                Assert(MSB(req.wIndex) == 0);
-                Assert(req.wLength == 0);
-                if (UsbDevSetInterface(UsbDevConfValue, LSB(req.wIndex), LSB(req.wValue)))
+                Assert(SetupRequest.bmRequestType == 1);
+                Assert(MSB(SetupRequest.wValue) == 0);
+                Assert(MSB(SetupRequest.wIndex) == 0);
+                Assert(SetupRequest.wLength == 0);
+                if (UsbDevSetInterface(UsbDevConfValue, LSB(SetupRequest.wIndex), LSB(SetupRequest.wValue)))
                 {
                     UsbDevSelectEndpoint(0); // UsbDevSetInterface() may select other ep
                     UsbSendZLP(false); // send ZLP
@@ -670,26 +560,26 @@ void UsbProcessSetupRequest(void)
                 return;
             case USB_StdDevReqGET_DESCRIPTOR: // 3 stages transfer
                 ReqDebug("USB_StdDevReqGET_DESCRIPTOR");
-                Assert(req.bmRequestType == 128);
+                Assert(SetupRequest.bmRequestType == 128);
             {
-                uint8_t requested = LSB(req.wLength); // we will never send more than 255 bytes
+                uint8_t requested = LSB(SetupRequest.wLength); // we will never send more than 255 bytes
                 uint8_t written = 0;
-                if (MSB(req.wLength) != 0)
+                if (MSB(SetupRequest.wLength) != 0)
                 {
-                    requested = 255;
+                    requested = USB_StdDevReqMaxBuffer;
                 }
 
-                switch (MSB(req.wValue))
+                switch (MSB(SetupRequest.wValue))
                 {
                     case 1: // Device-Descriptor
-                        Assert(req.wIndex == 0);
-                        Assert(LSB(req.wValue) == 0);
+                        Assert(SetupRequest.wIndex == 0);
+                        Assert(LSB(SetupRequest.wValue) == 0);
                         UsbGetDeviceDescriptor(&u.devDes);
                         UsbDumpDeviceDescriptor(&u.devDes);
                         UsbDevWriteIntoFifoAndFlush(&u.devDes, u.devDes.bLength, &written, requested);
                         break;
                     case 2: // Configuration-Descriptor
-                        if (!UsbSendDescriptors(LSB(req.wValue), requested))
+                        if (!UsbSendDescriptors(LSB(SetupRequest.wValue), requested))
                         {
                             ReqDebug("Error: USB_StdDevReqGET_DESCRIPTOR: can not sent Configuration-Descriptor!");
                             UsbDevRequestStallHandshake();
@@ -697,7 +587,7 @@ void UsbProcessSetupRequest(void)
                         }
                         break;
                     case 3: // String-Descriptor
-                        UsbGetStringDescriptor(u.strDes, LSB(req.wValue)); // strDes is an array, so no & is necessary!
+                        UsbGetStringDescriptor(u.strDes, LSB(SetupRequest.wValue)); // strDes is an array, so no & is necessary!
                         UsbDumpStringDescriptor(u.strDes);
                         UsbDevWriteIntoFifoAndFlush(u.strDes, u.strDes[0], &written, requested);
                         break;

@@ -16,7 +16,8 @@
 
 // D2 D5
 #define BoardPortDLedInit() 	DDRD |= (1 << DDD4) | (1 << DDD5) | (1 << DDD6) | (1 << DDD7);
-#define BoardPortDLedsOff() 	PORTD &= ~(1 << DDD4) | (1 << DDD5) | (1 << DDD6) | (1 << DDD7);
+#define BoardPortDLedsOff() 	PORTD &= ~((1 << DDD4) | (1 << DDD5) | (1 << DDD6) | (1 << DDD7));
+#define BoardPortDLedsOn()      PORTD |= ((1 << DDD4) | (1 << DDD5) | (1 << DDD6) | (1 << DDD7));
 
 //D2
 #define BoardPortD2RedToggle()  ToggleBit(PORTD , DDD4)

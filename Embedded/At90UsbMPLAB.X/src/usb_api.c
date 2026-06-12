@@ -12,7 +12,7 @@
 #include "usb_drv.h"
 #include "daq_dev.h" // ProcessUserCommand(), DAQ_Result
 #include "usb_api.h"
-#include "usb_requests.h"
+#include "usb_ControlEndpoint.h"
 
 // The behavior of USB devices is specified by different descriptors defined by www.usb.org.
 // In the simplest case a device has one Device-Descriptor, one Configuration-Descriptor,

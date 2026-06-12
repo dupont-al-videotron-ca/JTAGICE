@@ -14,6 +14,8 @@
 #include "defines.h" 
 
 #define UsbNumEndpointsAT90USB	7
+#define UsbNumEmpointControl 0
+
 
 #define UsbEP_TypeControl	0
 #define UsbEP_TypeIso		1
@@ -40,7 +42,6 @@ void UsbDevLaunchDevice(bool lowspeed);
 bool UsbDevEP_Setup(uint8_t num, uint8_t type, uint16_t size, uint8_t banks, uint8_t dir);
 void UsbInitialReset(void);
 void UsbStartPLL(void);
-void UsbDevStartDeviceEP0(void);
 
 // A few simple macros
 #define UsbDevWaitStartupFinished()		while (!UsbStartupFinished);
@@ -299,5 +300,6 @@ void UsbDevStartDeviceEP0(void);
 #define UsbDisablePLL()				ClearBit(PLLCSR, PLLE)
 #define UsbIsPLL_Locked()			BitIsSet(PLLCSR, PLOCK)
 #define UsbWaitPLL_Locked()			while (!(PLLCSR & (1<<PLOCK)));
+
 
 #endif

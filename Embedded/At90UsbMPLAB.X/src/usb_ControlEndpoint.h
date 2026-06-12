@@ -8,9 +8,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "usb_spec.h"
+#include "usb_drv.h"
 #include "usb_api.h" // USB_MaxInterfaces
 
 // USB-Standard-Device-Requests, H.J. Kelm USB 2.0, section 2.9.1, page 108
+#define USB_StdDevReqMaxBuffer      255 // maximum buffer size
+
 #define USB_StdDevReqGET_STATUS		0x00
 #define USB_StdDevReqCLEAR_FEATURE	0x01
 #define USB_StdDevReqSET_FEATURE	0x03
@@ -39,14 +42,15 @@
 extern uint8_t UsbDevConfValue; // current configuration of our device; 0 is unconfigured state
 extern uint8_t AltSettingOfInterface [USB_MaxInterfaces]; // current alternate setting of active interfaces
 
-void UsbProcessSetupRequest(void);
+typedef struct 
+{
+    USB_DeviceRequest request;
+    bool setupRead;    
+} USB_IntrControlEndpoint_t;
 
-//void UsbDevWriteDescriptor(void *d, uint8_t *written, uint8_t requested);
-//void UsbDevReadBytesN(void *c, uint8_t n);
-//void WaitZLP_FromHost(void);
-//void UsbProcessSetupRequest(void);
-//bool UsbSendDescriptors(uint8_t cdi, uint8_t *written, uint8_t requested);
-//bool UsbDevSetInterface(uint8_t inf, uint8_t as);
-//bool UsbDevSetConfiguration(uint8_t c);
+
+void UsbProcessSetupRequest(void);
+void UsbDevStartDeviceEP0(void);
+
 
 #endif
