@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\At90UsbMPLAB.X\scr++\ClassRingbuffer.cpp" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\daq_dev.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\ringbuffer.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\SUDAP.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\SUDD.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\Timer2CTC.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\usart_debug.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\usart_drv.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\usb_api.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\usb_ControlEndpoint.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\usb_drv.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\usb_isr.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\usb_spec.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\At90UsbMPLAB.X\scr++\ClassRingbuffer.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\AT90UsbKey.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\com_def.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\daq_dev.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\defines.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\macros.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\ringbuffer.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\Timer2CTC.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\usart_debug.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\usart_drv.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\usb_api.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\usb_ControlEndpoint.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\usb_drv.h" />
+    <ClInclude Include="..\At90UsbMPLAB.X\src\usb_spec.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{7EC089D6-FC6C-54FD-0DE0-15D18B298D86}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <NMakeOutput>AT90USB_VS.exe</NMakeOutput>
+    <NMakePreprocessorDefinitions>_DEBUG;__AVR_AT90USB1287__;__WNDOWS__
+;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <PublicIncludeDirectories>
+    </PublicIncludeDirectories>
+    <NMakeIncludeSearchPath>D:\ALAIN\MyDev\MyCandle\Embedded\At90UsbMPLAB.X\Src;D:\ALAIN\MyDev\MyCandle\Embedded\At90UsbMPLAB.X\Src++;C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <IncludePath>D:\ALAIN\MyDev\MyCandle\Embedded\At90UsbMPLAB.X\Src++;D:\ALAIN\MyDev\MyCandle\Embedded\At90UsbMPLAB.X\Src;C:\Program Files %28x86%29\Atmel\Studio\7.0\packs\atmel\ATmega_DFP\1.7.374\include;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include;$(ExternalIncludePath)</ExternalIncludePath>
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+    <AllProjectBMIsArePublic>true</AllProjectBMIsArePublic>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <NMakeOutput>AT90USB_VS.exe</NMakeOutput>
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <NMakeOutput>AT90USB_VS.exe</NMakeOutput>
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <NMakeOutput>AT90USB_VS.exe</NMakeOutput>
+    <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
