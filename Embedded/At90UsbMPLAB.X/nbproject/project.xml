@@ -27,6 +27,10 @@
                     <name>debug_CPP</name>
                     <type>2</type>
                 </confElem>
+                <confElem>
+                    <name>release_CPP</name>
+                    <type>2</type>
+                </confElem>
             </confList>
             <formatting>
                 <project-formatting-style>false</project-formatting-style>

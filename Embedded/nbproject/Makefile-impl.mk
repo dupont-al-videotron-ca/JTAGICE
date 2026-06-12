@@ -24,14 +24,14 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=At90UsbMPLAB.X
+PROJECTNAME=Embedded
 
 # Active Configuration
-DEFAULTCONF=debug_CPP
+DEFAULTCONF=default
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=release debug debug_CPP release_CPP 
+ALLCONFS=default 
 
 
 # build
@@ -45,19 +45,13 @@ ALLCONFS=release debug debug_CPP release_CPP
 
 # clobber
 .clobber-impl: .clobber-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=release clean
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=debug clean
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=debug_CPP clean
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=release_CPP clean
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=default clean
 
 
 
 # all
 .all-impl: .all-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=release build
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=debug build
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=debug_CPP build
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=release_CPP build
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=default build
 
 
 
