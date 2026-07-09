@@ -9,7 +9,7 @@
 #include "Timer2CTC.h"
 #include "AT90UsbKey.h"
 
-uint32_t volatile Timertick; // tick 1 ms
+volatile uint32_t Timertick; // tick 1 ms
 volatile bool FatalError; 
 
 static void WaveformModeClear()
@@ -34,11 +34,33 @@ uint32_t GetTimerTick()
     return retval;
 }
 
+bool IsTimeExpired(uint32_t oldtick, uint8_t timeout)
+{
+    int32_t diff = (int32_t)(GetTimerTick() - (oldtick + timeout));
+    if (diff >= 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 uint32_t GetElapseTime(uint32_t oldTick)
 {
     return GetTimerTick() - oldTick;
 }
 
+void Sleep(uint32_t ms)
+{
+    if(ms != 0)
+    {
+        uint32_t tick = GetTimerTick();
+        while(!IsTimeExpired(tick, ms));
+    }
+    
+}
 static void Timer2SetWaveFormeMode(uint8_t mode) 
 {
     

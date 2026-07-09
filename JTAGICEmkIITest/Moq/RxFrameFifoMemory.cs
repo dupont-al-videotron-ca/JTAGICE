@@ -11,7 +11,7 @@ using MyFramework;
 
 namespace JTAGICEmkIITest.Moq
 {
-    internal class RxFrameFifoMemory : IRxFrameAdaptor
+    internal class RxFrameFifoMemory : IRxFrameAdaptorTest
     {
         public int RxTimeout
         {
@@ -41,25 +41,6 @@ namespace JTAGICEmkIITest.Moq
         {
             ArgumentNullException.ThrowIfNull(rxFrame);
             _rxFrame = rxFrame;
-        }
-
-        public bool ReadByte(out byte value, int timeout = -1)
-        {
-            return ReadByteAsync(out value, _rxFrame.CancellationToken, _rxFrame.Timeout).GetAwaiter().GetResult();
-        }
-
-        public Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1)
-        {
-            byte[]? values = new byte[1];
-            value = 0;
-            bool result = ReadBytesAsync(out values, 1, cancellationToken, timeout).GetAwaiter().GetResult();
-            if (result)
-            {
-                value = values![0];
-                return Task.FromResult(true);
-            }
-
-            return Task.FromResult(false);
         }
 
         public bool ReadBytes(out byte[]? values, uint length, int timeout = -1)
@@ -97,7 +78,6 @@ namespace JTAGICEmkIITest.Moq
                     else if (cancellationToken.IsCancellationRequested)
                     {
                         _rxFrame.Logger.Debug($"Cancellation requested while waiting for byte.");
-                        cancellationToken.ThrowIfCancellationRequested();
                         break;
                     }
                     else
@@ -134,10 +114,6 @@ namespace JTAGICEmkIITest.Moq
             return Task.FromResult(false);
 
         }
-
-        bool IRxFrameAdaptor.ReadByte(out byte value, int timeout) => this.ReadByte(out value, timeout);
-
-        Task<bool> IRxFrameAdaptor.ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout) => this.ReadByteAsync(out value, cancellationToken, timeout);
 
         bool IRxFrameAdaptor.ReadBytes(out byte[]? values, uint length, int timeout) => this.ReadBytes(out values, length, timeout);
 

@@ -22,8 +22,8 @@ namespace JTAGICEmkII.Master
 
 
         #region Properties 
-        public BreakpointTypeEnum Type { get; set; }
-        public BreakpointModeEnum Mode { get; set; }
+        public BreakpointTypeEnumM Type { get; set; }
+        public BreakpointModeEnumM Mode { get; set; }
 
         override public int Size => base.Size + 2;
 
@@ -49,10 +49,10 @@ namespace JTAGICEmkII.Master
                 throw new ArgumentException("Data cannot be null or empty.", nameof(data));
 
             MessageId = (MasterCommandEnum)data[0];
-            Type = (BreakpointTypeEnum)data[1];
+            Type = (BreakpointTypeEnumM)data[1];
             BreakNumber = data[2];
             Address = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(3, 4));
-            Mode = (BreakpointModeEnum)data[7];
+            Mode = (BreakpointModeEnumM)data[7];
         }
 
         #endregion

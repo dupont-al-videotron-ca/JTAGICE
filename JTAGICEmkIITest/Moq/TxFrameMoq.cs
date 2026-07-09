@@ -11,7 +11,7 @@ using Windows.Foundation.Collections;
 
 namespace JTAGICEmkIITest.Moq
 {
-    internal class TxFrameMoq : ITxFrameAdaptor
+    internal class TxFrameMoq : ITxFrameAdaptorBuffer
     {
 
         #region Constructors 

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using JTAGICEmkII;
 using JTAGICEmkII.HostService;
+using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using log4net.Repository.Hierarchy;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
@@ -23,8 +24,10 @@ namespace JTAGICEmkIITest.Moq
         }
 
         private uint _breakpoint;
+        private BreakpointTypeEnumM _breakpointType;
+        private BreakpointModeEnumM _brakpointMode;
         private ResponseSignOn? _signOnResponse = null;
-        private uint _programCounter;
+        private ulong _programCounter;
 
         public event EventHandler<RequestEventArgs>? RequestCompleted;
         public event EventHandler<EventReceivedEventArgs>? EventReceived;
@@ -47,9 +50,11 @@ namespace JTAGICEmkIITest.Moq
         public ICommandResult EraseDevice() => (CommandResult)ForceSuccess;
         public ICommandResult EraseMemory(int MemType, ulong Address, ulong Length) => (CommandResult)ForceSuccess;
         public ICommandResult GetAllParameter() => (CommandResult)ForceSuccess;
-        public ICommandResult GetBreakpoint(int Index, int BreakpointType, int BrakpointMode, out ulong breakpoint)
+        public ICommandResult GetBreakpoint(int Index, out int BreakpointType, out int BrakpointMode, out ulong breakpoint)
         {
             breakpoint = _breakpoint;
+            BreakpointType = (int)BreakpointTypeEnumS.BKPT_PRG_MEMORY;
+            BrakpointMode = (int)BreakpointModeEnumS.BKPT_MODE_PROGRAM;
             return (CommandResult)ForceSuccess;
         }
         public ICommandResult GetParameter(int paramId, out uint value)
@@ -75,7 +80,9 @@ namespace JTAGICEmkIITest.Moq
         public ICommandResult SetAllParameter() => (CommandResult)ForceSuccess;
         public ICommandResult SetBreakpoint(int index, ulong Breakpoint, int BreakpointType, int BrakpointMode)
         {
-            _programCounter = (uint)Breakpoint;
+            _breakpoint = (uint)Breakpoint;
+            _breakpointType = (BreakpointTypeEnumM)BreakpointType;
+            _brakpointMode = (BreakpointModeEnumM)BrakpointMode;
             return (CommandResult)ForceSuccess;
         }
         public ICommandResult SetDeviceDescriptor() => (CommandResult)ForceSuccess;
@@ -105,7 +112,11 @@ namespace JTAGICEmkIITest.Moq
         public ICommandResult StopRunning() => (CommandResult) ForceSuccess;
         public ICommandResult VerifiyPrograming() => (CommandResult) ForceSuccess;
         public ICommandResult WriteMemory(int MemType, ulong Address, byte Values) => (CommandResult) ForceSuccess;
-        public ICommandResult WriteProgramCounter(ulong ProgramCounter) => (CommandResult) ForceSuccess;
+        public ICommandResult WriteProgramCounter(ulong ProgramCounter)
+        {
+            _programCounter = ProgramCounter;
+            return (CommandResult)ForceSuccess;
+        }
         public ICommandResult WritePrograming(ulong Address, byte Values) => (CommandResult) ForceSuccess;
         public ICommandResult GetSync() => (CommandResult) ForceSuccess;
         public ICommandResult WriteMemory(int MemType, ulong Address, byte[] Values) => (CommandResult) ForceSuccess;

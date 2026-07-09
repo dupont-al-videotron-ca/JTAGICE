@@ -9,13 +9,25 @@
 #define USB_Spec1_1	0x0110
 #define USB_Spec2_0	0x0200
 
+#define USB_StdDevReqGET_STATUS		0x00
+#define USB_StdDevReqCLEAR_FEATURE	0x01
+#define USB_StdDevReqSET_FEATURE	0x03
+#define USB_StdDevReqSET_ADDRESS	0x05
+#define USB_StdDevReqGET_DESCRIPTOR	0x06
+#define USB_StdDevReqSET_DESCRIPTOR	0x07
+#define USB_StdDevReqGET_CONFIGURATION	0x08
+#define USB_StdDevReqSET_CONFIGURATION	0x09
+#define USB_StdDevReqGET_INTERFACE	0x0A
+#define USB_StdDevReqSET_INTERFACE	0x0B
+#define USB_StdDevReqSYNCH_FRAME	0x0C
+
 #define USB_ControlTransfer	0
 #define USB_IsochronousTransfer	1
 #define USB_BulkTransfer	2
 #define USB_InterruptTransfer	3
 
 #define USB_DeviceDescriptorType		0x01
-#define USB_ConfigurationDescriptorType		0x02
+#define USB_ConfigurationDescriptorType	0x02
 #define USB_StringDescriptorType		0x03
 #define USB_InterfaceDescriptorType		0x04
 #define USB_EndpointDescriptorType		0x05
@@ -33,6 +45,19 @@
 #define USB_SerialNumberStringIndex		3
 
 // USB uses little endian format, avr-gcc too, so no byte-swap is necessary for 16 bit data
+
+// Meaning of bmRequestType, H.J. Kelm USB 2.0, section 2.9.1, page 107
+#define UsbIsDataHostToDevice(bm)	(!(bm & (1<<7)))
+#define UsbIsDataDeviceToHost(bm)	(bm & (1<<7))
+
+#define UsbIsStandardRequest(bm)	(bm & (3<<5)) == 0
+#define UsbIsClassRequest(bm)		(bm & (3<<5)) == (1<<5)
+#define UsbIsVendorRequest(bm)		(bm & (3<<5)) == (1<<6)
+
+#define UsbIsRequestForDevice(bm)	(bm & (31) == 0
+#define UsbIsRequestForInterface(bm)	(bm & (31) == 1
+#define UsbIsRequestForEndpoint(bm)	(bm & (31) == 2
+#define UsbIsRequestForOther(bm)	(bm & (31) == 3
 
 // USB-Device-Request, H.J. Kelm USB 2.0, section 2.9.1, page 107
 typedef struct

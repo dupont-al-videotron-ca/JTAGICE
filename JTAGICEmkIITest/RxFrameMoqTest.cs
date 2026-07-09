@@ -104,10 +104,10 @@ namespace JTAGICEmkIITest
         [Fact]
         public void StartReceiving_shall_receive_Command_Breakpoint()
         {
-            byte[] payload = new byte[] { (byte)BreakpointTypeEnum.BKPT_PRG_MEMORY, 
+            byte[] payload = new byte[] { (byte)BreakpointTypeEnumM.BKPT_PRG_MEMORY, 
                             0x55, 
                             0x01, 0x02, 0x03, 0x04, 
-                            (byte)JTAGICEmkII.Master.BreakpointModeEnum.BKPT_MODE_PROGRAM };
+                            (byte)BreakpointModeEnumM.BKPT_MODE_PROGRAM };
             var frame = CreateBytesCommand(MasterCommandEnum.CMND_SET_BREAK, payload);
             var test = CreateFrameForTest(frame);
 
@@ -286,21 +286,7 @@ namespace JTAGICEmkIITest
             Assert.True(rxFrame.ReadBytes(out byte[]? values, (uint)buffer.Length));
             Assert.Equal(buffer, values);
         }
-        [Fact]
-        public async Task GetByteAsync_shall_return_bytes_in_order()
-        {
-            byte[] buffer = new byte[] { 0x01, 0x02, 0x03 };
-            byte value = 0;
 
-            var rxFrame = CreateFrameForTest(buffer);
-            Assert.True(await rxFrame.ReadByteAsync(out value, CancellationToken.None));
-            Assert.Equal(0x01, value);
-            Assert.True(await rxFrame.ReadByteAsync(out value, CancellationToken.None));
-            Assert.Equal(0x02, value);
-            Assert.True(await rxFrame.ReadByteAsync(out value, CancellationToken.None));
-            Assert.Equal(0x03, value);
-
-        }
         [Fact]
         public async Task GetBytesAsync_shall_return_bytes_in_order()
         {
@@ -376,9 +362,9 @@ namespace JTAGICEmkIITest
         public void StartReceiving_shall_receive_ResponseBreakpoint()
         {
             var payload = new byte[] {
-                (byte)BreakpontTypeEnum.BKPT_PRG_MEMORY,
+                (byte)BreakpointTypeEnumS.BKPT_PRG_MEMORY,
                 0x01, 0x00, 0x00, 0x00, // Address 0x00000001 
-                (byte)JTAGICEmkII.Slave.BreakpointModeEnum.BKPT_MODE_PROGRAM};
+                (byte)JTAGICEmkII.Slave.BreakpointModeEnumS.BKPT_MODE_PROGRAM};
 
             var frame = CreateBytesResponse(SlaveResponseEnum.RSP_GET_BREAK, payload);
             var test = CreateFrameForTest(frame);
@@ -391,8 +377,8 @@ namespace JTAGICEmkIITest
 
             Assert.IsAssignableFrom<ResponseBreakpoint>(result);
             ResponseBreakpoint responseBreakpoint = (ResponseBreakpoint)result;
-            Assert.Equal(BreakpontTypeEnum.BKPT_PRG_MEMORY, responseBreakpoint.BreakpontType);
-            Assert.Equal(JTAGICEmkII.Slave.BreakpointModeEnum.BKPT_MODE_PROGRAM, responseBreakpoint.BreakpointMode);
+            Assert.Equal(BreakpointTypeEnumS.BKPT_PRG_MEMORY, responseBreakpoint.BreakpontType);
+            Assert.Equal(JTAGICEmkII.Slave.BreakpointModeEnumS.BKPT_MODE_PROGRAM, responseBreakpoint.BreakpointMode);
             Assert.Equal((UInt32)0x000001, responseBreakpoint.Address);
         }
 

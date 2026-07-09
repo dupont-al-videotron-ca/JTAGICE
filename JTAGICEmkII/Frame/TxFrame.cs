@@ -7,6 +7,7 @@ using log4net.Repository.Hierarchy;
 using log4net;
 using MyFramework;
 using JTAGICEmkII.Master;
+using JTAGICEmkII.Frame;
 
 namespace JTAGICEmkII
 {
@@ -16,8 +17,7 @@ namespace JTAGICEmkII
         #region Constructors 
         public TxFrame(ITxFrameAdaptor txComAdaptor)
         {
-            commandSequenceNumber = 0;
-            responseSequenceNumber = 0;
+            sequenceNumber = new SequenceNumber(0);
             Logger = LogManager.GetLogger(this.GetType());
             this.txFrameAdaptor = txComAdaptor ?? throw new ArgumentNullException(nameof(txComAdaptor));
         }
@@ -30,9 +30,7 @@ namespace JTAGICEmkII
 
         private const byte ESC = 27;
         private const byte TOKEN = 14;
-        private UInt16 commandSequenceNumber;
-        private UInt16 responseSequenceNumber;
-        private const UInt16 SequenceNumberWrap = 0xFFFF;
+        private SequenceNumber sequenceNumber;
         private const UInt16 SequenceNumberEvent = 0xFFFF;
 
         #endregion
@@ -103,11 +101,6 @@ namespace JTAGICEmkII
 
         #region Private Methods 
 
-        private void IncrementNextSequenceNumber()
-        {
-            commandSequenceNumber = (UInt16)((commandSequenceNumber + 1) % SequenceNumberWrap);
-        }
-
         private List<Byte> BuildTxFrame(Command command)
         {
             var payload = command.WriteToBytes();
@@ -115,8 +108,7 @@ namespace JTAGICEmkII
             // Start of frame
             message.Add(ESC);
             // Sequence number
-            message.Add((byte)(commandSequenceNumber & 0xFF));
-            message.Add((byte)((commandSequenceNumber >> 8) & 0xFF));
+            message.AddRange(sequenceNumber.GetUInt16LittleEndian());
             // frame size
             var messageSize = (uint)command.MessageLength;
             message.Add((byte)(messageSize & 0xFF));
@@ -133,8 +125,8 @@ namespace JTAGICEmkII
             message.Add((byte)(crc & 0xFF)); // payload length LSB
             message.Add((byte)((crc >> 8) & 0xFF)); // payload length Msb
 
-            Logger.Debug($"Tx Frame: commandId: {command.MessageId}, sequenceNumber:{commandSequenceNumber}, crc: 0x{crc:X4}, messageSize: {command.MessageLength}.");
-            IncrementNextSequenceNumber();
+            Logger.Debug($"Tx Frame: commandId: {command.MessageId}, sequenceNumber:{sequenceNumber.NumberValue}, crc: 0x{crc:X4}, messageSize: {command.MessageLength}.");
+            sequenceNumber++;
 
             return message;
         }
@@ -148,8 +140,7 @@ namespace JTAGICEmkII
             // Sequence number
             if (!isEvent)
             {
-                message.Add((byte)(commandSequenceNumber & 0xFF));
-                message.Add((byte)((commandSequenceNumber >> 8) & 0xFF));
+                message.AddRange(sequenceNumber.GetUInt16LittleEndian());
             }
             else
             {
@@ -174,8 +165,8 @@ namespace JTAGICEmkII
             message.Add((byte)(crc & 0xFF)); // payload length LSB
             message.Add((byte)((crc >> 8) & 0xFF)); // payload length Msb
 
-            Logger.Debug($"Rx Frame: responseId: {response.ResponseId}, sequenceNumber:{commandSequenceNumber}, crc: 0x{crc:x4}, messageSize: {response.MessageLength}.");
-            IncrementNextSequenceNumber();
+            Logger.Debug($"Rx Frame: responseId: {response.ResponseId}, sequenceNumber:{sequenceNumber.NumberValue}, crc: 0x{crc:x4}, messageSize: {response.MessageLength}.");
+            sequenceNumber++;
 
             return message;
         }
@@ -186,21 +177,14 @@ namespace JTAGICEmkII
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed _state (managed objects)
+                    // Dispose managed _state (managed objects)
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
+                // free unmanaged resources (unmanaged objects) and override finalizer
+                // set large fields to null
                 disposedValue = true;
             }
         }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~TxFrame()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
 
         public void Dispose()
         {

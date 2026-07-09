@@ -26,7 +26,7 @@ namespace JTAGICEmkII.HostService
 
         #region Fields 
 
-        private List<IActivityElement> _activities;
+        private readonly List<IActivityElement> _activities;
         private readonly IHostDeviceService _hostService;
 
         public ILog Logger { get; }
@@ -69,7 +69,7 @@ namespace JTAGICEmkII.HostService
             if (CurrentActivity is null)
                 throw new InvalidOperationException("No current activity to accept visitor.");
 
-            if (CurrentActivity is IActivityComElement)
+            if (this.CurrentActivity is IActivityComElement)
             {
                 return ((IActivityComElement)CurrentActivity).Accept(visitor);
             }
@@ -82,7 +82,7 @@ namespace JTAGICEmkII.HostService
             if (CurrentActivity is null)
                 throw new InvalidOperationException("No current activity to accept visitor.");
 
-            if (CurrentActivity is IActivityElement)
+            if (this.CurrentActivity is not null)
             {
                 return ((IActivityElement)CurrentActivity).Accept(visitor);
             }
@@ -181,7 +181,7 @@ namespace JTAGICEmkII.HostService
                 Logger.Debug($"Running activity: {activity?.GetType().Name ?? "null"}");
                 if (activity is null)
                 {
-                    // TODO: end off activity!
+                    // end off activity!
                     return true;
                 }
 

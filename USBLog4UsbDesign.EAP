@@ -1,0 +1,8 @@
+EAConnectString:EA --- DBType=1;Connect=Provider=SQLOLEDB.1;Integrated Security=SSPI;Persist Security Info=False;Initial Catalog=EA;Data Source=Alain-pc\sqlexpress;LazyLoad=1;
+OpenActions:$diagram://{D38A7D7F-D576-48df-BCA7-3276491D33EB}
+$diagram://{5E544391-1452-4858-9E38-E20BDC21E34E}
+$diagram://{398E0E43-3F82-4963-AA5A-F61E16F355C8}
+$diagram://{4EA4E2FC-4EB7-44dd-BE5F-24335B04BD75}
+$diagram://{AB73526E-D4D9-4d09-8966-786403622AAA}
+$diagram://{A016B18B-8D06-434c-9D07-9BB19849857E}
+$diagram://{97E22AB7-CC97-4a8c-941C-BD9C520C6B25}

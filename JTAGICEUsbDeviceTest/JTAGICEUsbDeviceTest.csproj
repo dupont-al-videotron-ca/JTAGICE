@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common.Test.XUnit\Common.Test.XUnit.csproj" />
+    <ProjectReference Include="..\JTAGICEmkIITest\JTAGICEmkIITest.csproj" />
+    <ProjectReference Include="..\MyUsbDevice\MyUsbDevice.csproj" />
+    <ProjectReference Include="..\UsbDeviceBase\UsbDeviceBase.csproj" />
+  </ItemGroup>
+
+</Project>

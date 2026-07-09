@@ -2,13 +2,13 @@
 // Debugging by sending messages over the serial port
 // S. Salewski 22-MAR-2007
 
-#include "defines.h"
 
 #ifdef DEBUG
 
 #include "usart_debug.h"
 #include "usb_spec.h"
 #include "usart_drv.h"
+#include "defines.h"
 
 void
 UsbDumpDeviceDescriptor(USB_DeviceDescriptor *d)

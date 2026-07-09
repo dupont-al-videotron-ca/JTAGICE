@@ -39,35 +39,6 @@
 #include <stdbool.h>
 #include "macros.h" 
 
-// TODO Insert appropriate #include <>
-
-// TODO Insert C++ class definitions if appropriate
-
-// TODO Insert declarations
-
-// Comment a function and leverage automatic documentation with slash star star
-/**
-    <p><b>Function prototype:</b></p>
-  
-    <p><b>Summary:</b></p>
-
-    <p><b>Description:</b></p>
-
-    <p><b>Precondition:</b></p>
-
-    <p><b>Parameters:</b></p>
-
-    <p><b>Returns:</b></p>
-
-    <p><b>Example:</b></p>
-    <code>
- 
-    </code>
-
-    <p><b>Remarks:</b></p>
- */
-// TODO Insert declarations or function prototypes (right here) to leverage 
-// live documentation
 #define ComOutputModeDisconnected   (0)
 #define ComOutputModeOne            (1)
 #define ComOutputModeTwo            (2)
@@ -104,16 +75,14 @@ extern "C" {
 #endif /* __cplusplus */
 
 extern volatile bool FatalError;  
-extern uint32_t GetTimerTick();
-extern uint32_t GetElapseTime(uint32_t oldTick);
+uint32_t GetTimerTick();
+uint32_t GetElapseTime(uint32_t oldTick);
+bool IsTimeExpired(uint32_t oldtick, uint8_t timeout);
 
 void Timer2CTC_Initialize();
 void Timer2CTC_Reset();
 void Timer2CTC_StartTick(bool enableIntr);
 void Timer2CTC_StartB(uint8_t ocr, bool enableIntr);
-
-    // TODO If C++ is being used, regular C code needs function names to have C 
-    // linkage so the functions can be used by the c code. 
 
 #ifdef	__cplusplus
 }

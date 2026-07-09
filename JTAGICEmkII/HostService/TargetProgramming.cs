@@ -18,7 +18,6 @@ namespace JTAGICEmkII.HostService
 
         public TargetProgramming(StructureActivity activityStructure, IActivityElement? parent) : base(activityStructure, parent)
         {
-            PrgOption = new ProgrammingOptions();
         }
 
         public override bool Accept(IVisitorActivity visitor)
@@ -27,10 +26,16 @@ namespace JTAGICEmkII.HostService
             return visitor.Visit(this);
         }
 
-        public ProgrammingOptions PrgOption { get; set; }
+        public ProgrammingOptions? PrgOption { get; set; }
 
         public override bool ActivityAction()
         {
+            if(PrgOption == null)
+            {
+                Logger.Error("Invalid programming options: null.");
+                throw new InvalidOperationException("Programming options cannot be null.");
+            }
+
             if (!this.ActivityStructure.TargetMcuState.IsProgramming)
             {
                 Logger.Debug("Entering programming mode...");
@@ -109,8 +114,8 @@ namespace JTAGICEmkII.HostService
                                 PrgOption.ResultErrorAddress = currentAddress + (UInt64)i;
                                 PrgOption.ExpectedData = srcBuffer[i];
                                 PrgOption.ReadData = readBuffer[i];
-                                // TODO: Add logging to indicate the address and data that failed to verify 
-                                Logger.Debug($"Programming verifify error: {PrgOption.ToString()}.");
+
+                                Logger.Info($"Programming verify error: {PrgOption.ToString()}.");
                                 GoLeaveFail();
                                 return true;
                             }

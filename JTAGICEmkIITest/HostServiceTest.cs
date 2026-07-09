@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Common.Test.Xunit;
 using JTAGICEmkII.HostService;
+using JTAGICEmkII.Master;
 using JTAGICEmkII.Slave;
 using log4net;
 using Xunit;
@@ -469,11 +470,13 @@ namespace JTAGICEmkIITest
             //-- Expectation
 
             //-- Action
-            var result = test.GetBreakpoint(0, 0, 0x03, out ulong bp);
+            var result = test.GetBreakpoint(0, out int breakpointType, out int brakpointMode, out ulong bp);
 
             //-- Verification
             CheckResult(result);
             Assert.Equal((ulong)0x12345678, bp);
+            Assert.Equal((int)BreakpointTypeEnumS.BKPT_PRG_MEMORY, breakpointType);
+            Assert.Equal((int)BreakpointModeEnumS.BKPT_MODE_PROGRAM, brakpointMode);  
         }
 
         [Fact]

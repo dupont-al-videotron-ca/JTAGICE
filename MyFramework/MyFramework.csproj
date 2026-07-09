@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="LibObjectFile" Version="2.1.1" />
-    <PackageReference Include="log4net" Version="3.3.0" />
+    <PackageReference Include="log4net" Version="3.3.2" />
   </ItemGroup>
 
 </Project>

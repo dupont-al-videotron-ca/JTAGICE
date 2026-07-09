@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 
 namespace JTAGICEmkIITest.Moq
 {
-    internal class RxFrameMoq : IRxFrameAdaptor
+    internal class RxFrameMoq : IRxFrameAdaptorTest
     {
         private byte[] _buffer;
         private int _position;
@@ -132,10 +132,6 @@ namespace JTAGICEmkIITest.Moq
 
             }
         }
-
-        bool IRxFrameAdaptor.ReadByte(out byte value, int timeout) => this.ReadByte(out value, timeout);
-
-        Task<bool> IRxFrameAdaptor.ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout) => this.ReadByteAsync(out value, cancellationToken, timeout);
 
         bool IRxFrameAdaptor.ReadBytes(out byte[]? values, uint length, int timeout) => this.ReadBytes(out values, length, timeout);
 

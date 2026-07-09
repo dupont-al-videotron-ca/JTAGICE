@@ -20,6 +20,9 @@ uint8_t AltSettingOfInterface[4] = {UsbInterfaceUnconfigured, UsbInterfaceUnconf
 uint8_t RemoteWakeupActive = 0;
 USB_DeviceRequest SetupRequest;
 
+
+
+
 uint8_t TxIn = 0;
 uint8_t TxOut = 0;
 uint8_t InFifoCnt = 0;
@@ -46,7 +49,7 @@ void UsbDevStartDeviceEP0(void)
 
     Debug("~~~ Setting up EP0...\r\n");
     UsbAllocatedEPs = 0;
-    if (UsbDevEP_Setup(0, UsbEP_TypeControl, EP0_FIFO_Size, 1, UsbEP_DirControl))
+    if (UsbDrv_EndpointSetup(0, UsbEP_TypeControl, EP0_FIFO_Size, 1, UsbEP_DirControl))
         Debug("~~~ Successful set up EP0!\r\n");
     else
         Debug("~~~  Setup of EP0 failed!\r\n");
@@ -247,6 +250,8 @@ static bool UsbSendDescriptors(uint8_t cdi, uint8_t requested)
     uint8_t edi; // endpoint descriptor index
 
     USB_ConfigurationDescriptor* pConfDes = (USB_ConfigurationDescriptor *) & BufferDescriptor[nbByte];
+    USB_ConfigurationDescriptor confDes;
+    UsbGetConfigurationDescriptor(&confDes, cdi);
     if (UsbGetConfigurationDescriptor(pConfDes, cdi))
     {
         nbByte += pConfDes->bLength;
@@ -288,7 +293,7 @@ static bool UsbSendDescriptors(uint8_t cdi, uint8_t requested)
     }
 }
 
-void UsbProcessSetupRequest(void)
+void UsbProcessSetupRequest_Intr(void)
 {
 
     union // we can use the same piece of memory for these descriptors
@@ -506,6 +511,7 @@ void UsbProcessSetupRequest(void)
                     UsbDevSelectEndpoint(0); // UsbDevSetConfiguration() may select other ep
                     UsbSendZLP(false); // send ZLP
                     BoardPortD5GreenOn();
+
                 }
                 else
                 {
@@ -542,7 +548,7 @@ void UsbProcessSetupRequest(void)
                 Assert(MSB(SetupRequest.wValue) == 0);
                 Assert(MSB(SetupRequest.wIndex) == 0);
                 Assert(SetupRequest.wLength == 0);
-                if (UsbDevSetInterface(UsbDevConfValue, LSB(SetupRequest.wIndex), LSB(SetupRequest.wValue)))
+                if (UsbApi_SetInterface(UsbDevConfValue, LSB(SetupRequest.wIndex), LSB(SetupRequest.wValue)))
                 {
                     UsbDevSelectEndpoint(0); // UsbDevSetInterface() may select other ep
                     UsbSendZLP(false); // send ZLP

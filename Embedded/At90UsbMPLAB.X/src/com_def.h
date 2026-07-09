@@ -9,20 +9,26 @@
 #define MyUSB_ProductID 0x0001 // arbitrary value
 #define USB_VendorRequestCode (1<<6)
 
-// Endpoint 1, used for transferring status information:
-// Bulk IN, 8 byte FIFO
-// Filled by "NAK-IN-WAS-SEND" ISR
-#define EP1_FIFO_Size 8
+#define EP0_FIFO_Size 8 // 8, 16, 32 or 64 byte
 
-// Endpoint 2, used for transferring DAQ data:
+// Endpoint 1, used for transferring Log information:
+// Bulk IN, 64 byte FIFO
+// Filled by "NAK-IN-WAS-SEND" ISR
+#define EP1_FIFO_Size 64
+
+// Endpoint 2, used for transferring app data:
 // Bulk IN, 64 byte dual bank FIFO
 // Filled from within timer ISR
 #define EP2_FIFO_Size 64
 
-// Endpoint 3, used to set digital port B
-// Bulk OUT, 8 byte FIFO
+// Endpoint 3, used to set app data
+// Bulk OUT, 64 byte FIFO
 // Read by "OUT-FIFO-IS-FILLED" ISR
-#define EP3_FIFO_Size 8
+#define EP3_FIFO_Size 64
+
+#define EP_MAX_FIFO_SIZE EP2_FIFO_Size
+
+#define ENDPOINT_MAX_CFG 3
 
 #define MaxSamples 65535
 

@@ -91,7 +91,7 @@ namespace JTAGICEmkII
 		/// <param name="index"></param>
 		/// <param name="breakpointType"></param>
 		/// <param name="brakpointMode"></param>
-		ICommandResult GetBreakpoint(int index, int breakpointType, int brakpointMode, out ulong breakpoint);
+		ICommandResult GetBreakpoint(int index, out int breakpointType, out int brakpointMode, out ulong breakpoint);
 
 		ICommandResult EraseDevice();
 

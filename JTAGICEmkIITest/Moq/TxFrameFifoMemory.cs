@@ -8,7 +8,7 @@ using MyFramework;
 
 namespace JTAGICEmkIITest.Moq
 {
-    internal class TxFrameFifoMemory : ITxFrameAdaptor
+    internal class TxFrameFifoMemory : ITxFrameAdaptorBuffer
     {
 
         #region Constructors 

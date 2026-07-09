@@ -26,8 +26,8 @@ namespace JTAGICEmkIITest
         protected StructureActivity _activityStructure;
         protected readonly CancellationTokenSource _cancellationSource;
 
-        private Parameters _parameters;
-        private HostDeviceService? _hostService;
+        protected Parameters _parameters;
+        protected HostDeviceService? _hostService;
         public HostServiceBaseTest() : base()
         {
             _activityStructure = null!;
@@ -266,9 +266,9 @@ namespace JTAGICEmkIITest
 
                 case MasterCommandEnum.CMND_GET_BREAK:
                     var _break = (ResponseBreakpoint)ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_GET_BREAK)!;
-                    _break.BreakpontType = BreakpontTypeEnum.BKPT_PRG_MEMORY;
+                    _break.BreakpontType = BreakpointTypeEnumS.BKPT_PRG_MEMORY;
                     _break.Address = 0x12345678;
-                    _break.BreakpointMode = JTAGICEmkII.Slave.BreakpointModeEnum.BKPT_MODE_PROGRAM;
+                    _break.BreakpointMode = JTAGICEmkII.Slave.BreakpointModeEnumS.BKPT_MODE_PROGRAM;
                     return _break;
                 case MasterCommandEnum.CMND_SET_BREAK:
                     return ResponseFactory.CreateResponse(SlaveResponseEnum.RSP_OK);
@@ -403,7 +403,7 @@ namespace JTAGICEmkIITest
             return hostService;
         }
 
-        protected HostDeviceService CreateHostService(int timeout = -1, bool callInit = true)
+        protected virtual HostDeviceService CreateHostService(int timeout = -1, bool callInit = true)
         {
             FifoBuffer<byte> buffer = new FifoBuffer<byte>();
             var rxadapt = new Moq.RxFrameFifoMemory(buffer, timeout);

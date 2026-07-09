@@ -7,17 +7,21 @@
 #include <avr/interrupt.h> 
 #include "usb_drv.h"
 #include "usart_debug.h"
-#include "usb_api.h" // EP0_FIFO_Size 
+#include "com_def.h" 
+
+
 
 uint8_t UsbAllocatedEPs = 0;
 volatile uint8_t UsbStartupFinished = 0;
+
+UsbEndpointData_t  UsbEPData[ENDPOINT_MAX_CFG];
 
 // Set some registers to their initial (reset) value.
 // Reason: Atmels bootloader activates some interrupts.
 // This function deactivates it, so we have clean start
 // conditions if our program is started from bootloader.
 
-void UsbInitialReset(void)
+void UsbDrv_DeviceReset(void)
 {
     USBCON = (1 << FRZCLK);
     OTGIEN = 0;
@@ -30,7 +34,7 @@ void UsbInitialReset(void)
 
 // Start PLL and enable clock
 
-void UsbStartPLL(void)
+void UsbDrv_DeviceStartPLL(void)
 {
     UsbSetPLL_XTAL_Frequency();
     UsbEnablePLL();
@@ -39,9 +43,9 @@ void UsbStartPLL(void)
 }
 
 // Basic USB activation necessary to trigger a wakeup interrupt
-void UsbDevLaunchDevice(bool lowspeed)
+void UsbDrv_DeviceLaunch(bool lowspeed)
 {
-    UsbInitialReset();
+    UsbDrv_DeviceReset();
     if (1) // set it to (1) if you need very small code size (i.e. bootloader, saves 78 bytes)
     {
         UHWCON = ((1 << UIMOD) | (1 << UVREGE));
@@ -67,10 +71,30 @@ void UsbDevLaunchDevice(bool lowspeed)
         UsbDevEnableWakeupCPU_Int();
         UsbDevEnableEndOfResetInt(); // call this AFTER (UsbEnableController(); UsbEnableOTG_Pad();)
     }
-    UsbStartPLL();
+    UsbDrv_DeviceStartPLL();
     UsbDevAttach();
     //sei();
 }
+
+void UsbDrv_DisableAndFreeEndpoint(uint8_t ep)
+{
+    uint8_t pep = UsbDevGetEndpoint();
+    UsbDevSelectEndpoint(ep);
+    UsbDevDisableEndpoint();
+    UsbDevClearEndpointAllocBit();
+    UsbDevSelectEndpoint(pep);
+}
+
+void UsbDrv_SetUnconfiguredState(void)
+{
+    uint8_t i;
+    UsbDevConfValue = UsbUnconfiguredState;
+    i = UsbNumEndpointsAT90USB;
+    while (--i > 0) // free all endpoints but EP0
+        UsbDrv_DisableAndFreeEndpoint(i);
+    UsbAllocatedEPs = 1;
+}
+
 
 // To reduce codesize, you may comment this function out and allocate your ep with low level macros
 // num: 0...6
@@ -80,7 +104,7 @@ void UsbDevLaunchDevice(bool lowspeed)
 // dir: UsbEP_DirOut, UsbEP_DirControl, UsbEP_DirIn
 // more than one control ep or more than one bank for control ep0 may work, but is not recommended
 
-bool UsbDevEP_Setup(uint8_t num, uint8_t type, uint16_t size, uint8_t banks, uint8_t dir)
+bool UsbDrv_EndpointSetup(uint8_t num, uint8_t type, uint16_t size, uint8_t banks, uint8_t dir)
 {
     uint8_t i, j;
     banks--;
@@ -108,6 +132,14 @@ bool UsbDevEP_Setup(uint8_t num, uint8_t type, uint16_t size, uint8_t banks, uin
     UECFG1X |= (1 << ALLOC);
     if (UESTA0X & (1 << CFGOK))
     {
+        if (dir == UsbEP_DirOut)
+        {
+            UsbDevEnableReceivedOUT_DATA_Int();
+        }
+        else
+        {
+            UsbDevEnableNAK_IN_Int(); // trigger interrupt when host got a NAK as a result of a read request
+        }
         UsbAllocatedEPs++;
         return true;
     }

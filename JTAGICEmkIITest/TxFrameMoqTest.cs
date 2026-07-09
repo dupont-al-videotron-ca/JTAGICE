@@ -36,7 +36,7 @@ namespace JTAGICEmkIITest
 
             // Assert
             Assert.Equal(values.Length, result);
-            Assert.Equal(values, ((ITxFrameAdaptor)test.Adaptor).Buffer);
+            Assert.Equal(values, ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer);
         }
 
 
@@ -54,7 +54,7 @@ namespace JTAGICEmkIITest
 
             // Assert
             Assert.Equal(values.Length, result);
-            Assert.Equal(values, ((ITxFrameAdaptor)test.Adaptor).Buffer);
+            Assert.Equal(values, ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer);
         }
 
         [Fact]
@@ -69,7 +69,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             int result = test.BuildAndSendFrameResponse(response);
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
@@ -94,7 +94,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -121,7 +121,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -146,7 +146,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -171,7 +171,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -198,7 +198,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -226,7 +226,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -252,7 +252,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -283,7 +283,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -311,7 +311,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -340,7 +340,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -397,7 +397,7 @@ namespace JTAGICEmkIITest
             int result = test.BuildAndSendFrameResponse(response);
 
             Assert.Equal(expectedResponse.MessageLength, response.MessageLength);
-            byte[] buffer = test.Adaptor.Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(buffer.Length, result);
 
@@ -456,7 +456,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             int result = test.BuildAndSendFrameCommand(command);
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(expectedFrame.ToArray(), buffer);
 
@@ -495,7 +495,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             int result = test.BuildAndSendFrameResponse(command);
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
             Assert.Equal(expectedFrame.ToArray(), buffer);
         }
@@ -568,7 +568,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             int result = test.BuildAndSendFrameCommand(command);
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
@@ -594,7 +594,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             var result = test.BuildAndSendFrameCommand(command);
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
@@ -618,12 +618,12 @@ namespace JTAGICEmkIITest
             // Act & Assert
             var result = test.BuildAndSendFrameCommand(command);
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
             Assert.Equal(buffer.Length - TxFrame.FrameSizeOverhead, (int)command.MessageLength);
-            Assert.Equal(buffer, ((ITxFrameAdaptor)test.Adaptor).Buffer);
+            Assert.Equal(buffer, ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer);
             Assert.Equal(msgId, command.MessageId);
 
         }
@@ -645,7 +645,7 @@ namespace JTAGICEmkIITest
             var result = test.BuildAndSendFrameCommand(command);
 
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
@@ -671,7 +671,7 @@ namespace JTAGICEmkIITest
             var result = test.BuildAndSendFrameCommand(command);
 
 
-            byte[] buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            byte[] buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
@@ -694,7 +694,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             var result = test.BuildAndSendFrameCommand(command);
 
-            var buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            var buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
@@ -715,7 +715,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             var result = test.BuildAndSendFrameCommand(command);
 
-            var buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            var buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);
@@ -737,7 +737,7 @@ namespace JTAGICEmkIITest
             // Act & Assert
             var result = test.BuildAndSendFrameCommand(command);
 
-            var buffer = ((ITxFrameAdaptor)test.Adaptor).Buffer;
+            var buffer = ((ITxFrameAdaptorBuffer)test.Adaptor).Buffer;
             ValidateCRC(buffer);
 
             Assert.Equal(buffer.Length, result);

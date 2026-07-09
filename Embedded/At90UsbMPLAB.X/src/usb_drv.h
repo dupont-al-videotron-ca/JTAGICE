@@ -12,10 +12,11 @@
 #include <stdbool.h>
 #include "macros.h" 
 #include "defines.h" 
+#include "com_def.h" 
 
 #define UsbNumEndpointsAT90USB	7
 #define UsbNumEmpointControl 0
-
+#define UsbMaxBank 2
 
 #define UsbEP_TypeControl	0
 #define UsbEP_TypeIso		1
@@ -23,7 +24,7 @@
 #define UsbEP_TypeInterrupt	3
 #define UsbEP_DirOut		0
 #define UsbEP_DirControl	0
-#define UsbEP_DirIn		1
+#define UsbEP_DirIn		    1
 
 #define UsbUnconfiguredState	0
 #define UsbInterfaceUnconfigured 0xFF
@@ -37,16 +38,20 @@
 
 extern uint8_t UsbAllocatedEPs;
 extern volatile uint8_t UsbStartupFinished;
+extern uint8_t UsbDevConfValue;
 
-void UsbDevLaunchDevice(bool lowspeed);
-bool UsbDevEP_Setup(uint8_t num, uint8_t type, uint16_t size, uint8_t banks, uint8_t dir);
-void UsbInitialReset(void);
-void UsbStartPLL(void);
+void UsbDrv_DisableAndFreeEndpoint(uint8_t ep);
+void UsbDrv_SetUnconfiguredState(void);
+
+void UsbDrv_DeviceLaunch(bool lowspeed);
+bool UsbDrv_EndpointSetup(uint8_t num, uint8_t type, uint16_t size, uint8_t banks, uint8_t dir);
+void UsbDrv_DeviceReset(void);
+void UsbDrv_DeviceStartPLL(void);
 
 // A few simple macros
 #define UsbDevWaitStartupFinished()		while (!UsbStartupFinished);
 #define UsbOutEndpointAdress(endpointIndex)	(endpointIndex & 15)
-#define UsbInEndpointAdress(endpointIndex)	(endpointIndex & 15) | (1<<7)
+#define UsbInEndpointAdress(endpointIndex)	((endpointIndex & 15) | (1<<7))
 #define UsbConfigurationValue(confIndex)	(confIndex + 1)			// +1, because 0 indicates unconfigured (addressed) state
 //#define UsbMaxPower2mA(mA)			(mA/2)
 #define UsbConfDesAttrBusPowered		(1<<7)				// use | to combine these 3 Attributes
@@ -163,6 +168,7 @@ void UsbStartPLL(void);
 // USB device endpoint registers, section 22.19.2 page 284
 // UENUM (Usb Endpoint NUMber)
 #define UsbDevSelectEndpoint(num)		UENUM = (num & 7)		// num == 0, 1, ..., 6
+#define UsbDevGetEndpoint(num)		    (UENUM & 7)		// num == 0, 1, ..., 6
 
 // UERST (Usb Endpoint ReSeT)
 #define UsbDevResetEndpoints(mask)		UERST = (mask & 127); UERST = 0	// reset selected endpoints; is UERST = 0 necessary?
@@ -301,5 +307,29 @@ void UsbStartPLL(void);
 #define UsbIsPLL_Locked()			BitIsSet(PLLCSR, PLOCK)
 #define UsbWaitPLL_Locked()			while (!(PLLCSR & (1<<PLOCK)));
 
+#define IsUsbDeveiceConfigured() (UsbDevConfValue != UsbUnconfiguredState)
+typedef struct
+{
+    uint8_t TxIn;
+    uint8_t TxOut;
+    uint8_t InFifoCnt;
+    uint16_t InRetryCnt;
+    uint16_t InNAKCnt;
+} UsbInEndpointData_t;
+
+typedef struct
+{
+    uint8_t RxIn;
+    uint8_t RxOut;
+    uint8_t Buffer[UsbMaxBank*EP_MAX_FIFO_SIZE];
+    //uint8_t OutFifoCnt;
+    uint16_t OutRetryCnt;
+} UsbOutEndpointData_t;
+
+typedef union
+{
+    UsbInEndpointData_t In;
+    UsbOutEndpointData_t Out;
+} UsbEndpointData_t;
 
 #endif

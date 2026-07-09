@@ -1,7 +1,7 @@
 // AT90USB/usb_isr.c
 // USB Interrupt Service Routines
 // S. Salewski 22-MAR-2007
-
+// TODO: move to usb_drv.c, make more generic and support more endpoints
 #include <avr/interrupt.h>
 #include <stdint.h>
 #include "usb_drv.h"
@@ -11,10 +11,13 @@
 #include "at90usbkey.h"
 #include "Timer2CTC.h"
 
-USB_IntrControlEndpoint_t IntrSetupReuqest;
 extern USB_DeviceRequest SetupRequest;
 uint8_t ResetCnt = 0;
+
 extern void UsbDevReadBytesN(void *c, uint8_t n);
+extern void Usb_OutEnpoint_HandleInterrupt(uint8_t epNumber);
+extern void Usb_InEnpoint_HandleInterrupt(uint8_t ep);
+            
 uint8_t Vbuscnt = 0;
 // USB General Interrupt Handler (Figure 21.11)
 // USB Registers: USBINT.0, USBINT.1, UDINT
@@ -74,50 +77,55 @@ ISR(USB_COM_vect)
     Debug("ISR(USB_COM_vect)\r\n");
     mask = UsbDevGetEndpointIntBits();
     ep = UsbNumEndpointsAT90USB;
+    uint8_t current_ep = UsbDevGetEndpoint();
+
     while (ep-- > 0)
     {
 
         if (mask & (1 << ep))
         {
-            UsbDevSelectEndpoint(ep);
-            
-            if (ep == UsbNumEmpointControl)
-            {
-                if (UsbDevHasReceivedSETUP())
-                {
-//                    UsbDevReadBytesN(&SetupRequest, sizeof (SetupRequest));
-                    IntrSetupReuqest.setupRead = true;
-                }
-            }
-
-#if 0      
-            UEIENX = 0;
             switch (ep)
             {
-                case 0:
+                case UsbNumEmpointControl:
+                    UsbDevSelectEndpoint(ep);
+                    if (UsbDevHasReceivedSETUP())
+                    {
+                        BoardPortD2GreenOn();
+                        UsbProcessSetupRequest_Intr();
+                        BoardPortD2GreenOff();
+                    }
+                    
+                    if (UsbDevNAK_ResponseSendToOutRequest())
+                    {
+                        UsbDevClearNAK_ResponseOutBit();
+                    }
+
+                    if (UsbDevSTALLHandshakeSend())
+                    {
+                        UsbDevClearSTALLHandshakeSend();
+                    }
+
                     break;
                 case 1:
-                    UsbDevEP1IntAction();
+                    Usb_InEnpoint_HandleInterrupt(ep);
                     break;
                 case 2:
-                    UsbDevEP2IntAction();
+                    Usb_InEnpoint_HandleInterrupt(ep);
                     break;
                 case 3:
-                    UsbDevEP3IntAction();
+//                    Usb_OutEnpoint_HandleInterrupt(ep);
                     break;
                 case 4:
-                    UsbDevEP4IntAction();
-                    break;
                 case 5:
-                    UsbDevEP5IntAction();
-                    break;
                 case 6:
-                    UsbDevEP6IntAction();
+                    UsbDevSelectEndpoint(ep);
+                    UEIENX = 0; // disable all interrupts of this endpoint
                     break;
                 default:
                     Debug("Error in ISR(USB_COM_vect)\r\n");
             }
-#endif    
         }
     }
+
+    UsbDevSelectEndpoint(current_ep);
 }

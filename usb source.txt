@@ -5,7 +5,8 @@ class GUID = {745a17a0-74d3-11d0-b6fe-00a0c90f57da}
 AT90USB
 path = USB\VID_03EB&PID_0001\001
 class GUID = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
-device path use to createfile \\?\usb#vid_03eb&pid_0001#001#{a5dcbf10-6530-11d2-901f-00c04fb951ed}
+device path use to createfile win 10 \\?\usb#vid_03eb&pid_0001#001#{a5dcbf10-6530-11d2-901f-00c04fb951ed}
+device path use to createfile win 11 \\?\USB#VID_03EB&PID_0001#7&4110fb5&0&4#{a5dcbf10-6530-11d2-901f-00c04fb951ed}
 
 Candle :
 Path = USB\VID_1D50&PID_606F&MI_00\7&26789201&1&0000

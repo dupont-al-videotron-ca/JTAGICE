@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\At90UsbMPLAB.X\src\SUDAP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\At90UsbMPLAB.X\src\daq_dev.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -52,6 +49,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\At90UsbMPLAB.X\scr++\ClassRingbuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\At90UsbMPLAB.X\src\Log4Usb\Log4Usb.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\At90UsbMPLAB.X\src\Usb_InEndpoint.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\At90UsbMPLAB.X\src\Usb_OutEndpoint.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -96,6 +102,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\At90UsbMPLAB.X\scr++\ClassRingbuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\At90UsbMPLAB.X\src\Log4Usb\Log4Usb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\At90UsbMPLAB.X\src\Usb_InEndpoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\At90UsbMPLAB.X\src\Usb_OutEndpoint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

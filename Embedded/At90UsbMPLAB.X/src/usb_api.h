@@ -22,6 +22,9 @@
 #include <stdbool.h>
 #include "usb_spec.h"
 
+// AppId
+#define AppLoggerId 0x01
+
 // USB Vendor ID is assigned by www.usb.org
 // Vendor- and product id is defined in com_def.h, because we need it in our host program too!
 //#define MyUSB_VendorID	0x03eb // Atmel code
@@ -31,15 +34,12 @@
 // modify these values for your application!
 #define USB_NumConfigurations		1 // 1 or more
 #define USB_MaxConfigurations		4 // our device can have multiple configuration with different number of interfaces
-#define USB_MaxInterfaces		4 // each interface of a configuration has a number of endpoints
+#define USB_MaxInterfaces		    4 // each interface of a configuration has a number of endpoints
 #define USB_MaxStringDescriptorLength	22
 
 // An interface can have multiple alternate settings, but number of endpoints of this interface is fix.
 // To ensure that reallocation of endpoints with new FIFO size of one interface will not interfere with other interfaces,
 // only the interface with highest number should use multiple alternate settings with different endpoint FIFO sizes
-
-#define EP0_FIFO_Size 8 // 8, 16, 32 or 64 byte
-// FIFO size of EP1 upto EP6 is defined in com_def.h
 
 // These macros are called if an endpoint interrupt is triggered (if enabled)
 // and may be used to fill (IN-Endpoint) or read (OUT-Endpoint) the FIFO.
@@ -50,6 +50,15 @@
 #define UsbDevEP5IntAction()
 #define UsbDevEP6IntAction()
 
+typedef struct
+{
+    uint8_t bEndpointAddress;
+    uint16_t wMaxPacketSize;
+    uint8_t bNumBank;
+
+} UsbEndpointCfg_t;
+
+
 // These functions provides the host with device specific USB descriptors during the enumeration process
 void UsbGetDeviceDescriptor(USB_DeviceDescriptor *d);
 bool UsbGetConfigurationDescriptor(USB_ConfigurationDescriptor *c, uint8_t confIndex);
@@ -59,7 +68,7 @@ void UsbGetStringDescriptor(char s[], uint8_t index);
 
 // These functions allocate FIFO memory and setup all used endpoints
 bool UsbDevSetConfiguration(uint8_t c);
-bool UsbDevSetInterface(uint8_t conf, uint8_t inf, uint8_t as);
+bool UsbApi_SetInterface(uint8_t conf, uint8_t inf, uint8_t as);
 
 // User defined function, used in our application to start data acquisition
 void UsbDevProcessVendorRequest(USB_DeviceRequest *req);

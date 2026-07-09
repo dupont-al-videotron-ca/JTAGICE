@@ -166,16 +166,21 @@ namespace JTAGICEmkII
         #region Protected Methods 
 
         internal bool ReadByte(out byte value, int timeout = -1)
-            => _rxFrameAdaptor.ReadByte(out value, timeout);
+        {
+            var retval = this.ReadBytes(out byte[]? values, 1, timeout);
+            if(retval && values != null && values.Length == 1)
+                value = values[0];
+            else
+                value = 0;
+
+            return retval;
+        }
 
         internal bool ReadBytes(out byte[]? values, uint length, int timeout = -1)
             => _rxFrameAdaptor.ReadBytes(out values, length, timeout);
 
         internal Task<bool> ReadBytesAsync(out byte[]? values, uint length, CancellationToken cancellationToken, int timeout = -1)
             => _rxFrameAdaptor.ReadBytesAsync(out values, length, cancellationToken, timeout);
-
-        internal Task<bool> ReadByteAsync(out byte value, CancellationToken cancellationToken, int timeout = -1) =>
-            _rxFrameAdaptor.ReadByteAsync(out value, cancellationToken, timeout);
 
         internal void OnRxTimeoutOccured()
         {

@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include "defines.h"
 #include "com_def.h"
 #include "usart_debug.h"
@@ -12,7 +13,11 @@
 #include "usb_drv.h"
 #include "daq_dev.h" // ProcessUserCommand(), DAQ_Result
 #include "usb_api.h"
+#include "Log4Usb.h"
 #include "usb_ControlEndpoint.h"
+#include "Usb_InEndpoint.h"
+
+extern volatile bool FatalError; 
 
 // The behavior of USB devices is specified by different descriptors defined by www.usb.org.
 // In the simplest case a device has one Device-Descriptor, one Configuration-Descriptor,
@@ -53,208 +58,203 @@
 // EP2: Bulk-IN, 64 bytes FIFO, dual bank.
 // EP3: Bulk-OUT, 8 bytes FIFO, one bank.
 
-const uint8_t USB_Interfaces[USB_MaxConfigurations] = {1, 0, 0, 0}; // number of interfaces in each configuration
-const uint8_t USB_MaxPower_2mA[USB_MaxConfigurations] = {50, 0, 0, 0}; // power consumption of each configuration in 2mA units
+const uint8_t USB_Interfaces[USB_MaxConfigurations] = { 1, 0, 0, 0 }; // number of interfaces in each configuration
+const uint8_t USB_MaxPower_2mA[USB_MaxConfigurations] = { 50, 0, 0, 0 }; // power consumption of each configuration in 2mA units
 const uint8_t USB_AltSettings[USB_MaxConfigurations][USB_MaxInterfaces] =
-	{{1, 0, 0, 0}, // number of alt. settings of interfaces of first configuration 
-	 {0, 0, 0, 0}, // number of alt. settings of interfaces of second configuration 
-	 {0, 0, 0, 0},
-	 {0, 0, 0, 0}};
+{ {1, 0, 0, 0}, // number of alt. settings of interfaces of first configuration 
+ {0, 0, 0, 0}, // number of alt. settings of interfaces of second configuration 
+ {0, 0, 0, 0},
+ {0, 0, 0, 0} };
 const uint8_t USB_Endpoints[USB_MaxConfigurations][USB_MaxInterfaces] =
-	{{3, 0, 0, 0}, // number of endpoints of interfaces of first configuration 
-	 {0, 0, 0, 0}, // number of endpoints of interfaces of second configuration 
-	 {0, 0, 0, 0},
-	 {0, 0, 0, 0}};
+{ {ENDPOINT_MAX_CFG , 0, 0, 0}, // number of endpoints of interfaces of first configuration 
+ {0, 0, 0, 0}, // number of endpoints of interfaces of second configuration 
+ {0, 0, 0, 0},
+ {0, 0, 0, 0} };
 
-static void UsbDevDisableAndFreeEndpoint(uint8_t i);
-static void UsbDevSetUnconfiguredState(void);
+const UsbEndpointCfg_t UsbEndpointCfg[ENDPOINT_MAX_CFG] =
+{
+    {UsbInEndpointAdress(1), EP1_FIFO_Size, 2}, // In endpoint 1, used for log information 
+    {UsbInEndpointAdress(2), EP2_FIFO_Size, 2}, // In endpoint 2, used for app data in
+    {UsbOutEndpointAdress(3), EP3_FIFO_Size, 2} // Out endpoint 3, used for app data out
+};
 
 void
-UsbGetDeviceDescriptor(USB_DeviceDescriptor *d)
+UsbGetDeviceDescriptor(USB_DeviceDescriptor* d)
 {
-  d->bLength = USB_DeviceDescriptorLength;
-  d->bDescriptorType = USB_DeviceDescriptorType;
-  d->bcdUSB = USB_Spec1_1;
-  d->bDeviceClass = UsbNoDeviceClass;
-  d->bDeviceSubClass = UsbNoDeviceSubClass;
-  d->bDeviceProtocoll = UsbNoDeviceProtokoll;
-  d->bMaxPacketSize0 = EP0_FIFO_Size;
-  d->idVendor = MyUSB_VendorID;
-  d->idProduct = MyUSB_ProductID;
-  d->bcdDevice = MyUSB_DeviceBCD;
-  d->iManufacturer = USB_ManufacturerStringIndex;
-  d->iProduct = USB_ProductStringIndex;
-  d->iSerialNumber = USB_SerialNumberStringIndex;
-  d->bNumConfigurations = USB_NumConfigurations;
+    d->bLength = USB_DeviceDescriptorLength;
+    d->bDescriptorType = USB_DeviceDescriptorType;
+    d->bcdUSB = USB_Spec1_1;
+    d->bDeviceClass = UsbNoDeviceClass;
+    d->bDeviceSubClass = UsbNoDeviceSubClass;
+    d->bDeviceProtocoll = UsbNoDeviceProtokoll;
+    d->bMaxPacketSize0 = EP0_FIFO_Size;
+    d->idVendor = MyUSB_VendorID;
+    d->idProduct = MyUSB_ProductID;
+    d->bcdDevice = MyUSB_DeviceBCD;
+    d->iManufacturer = USB_ManufacturerStringIndex;
+    d->iProduct = USB_ProductStringIndex;
+    d->iSerialNumber = USB_SerialNumberStringIndex;
+    d->bNumConfigurations = USB_NumConfigurations;
 }
 
-bool UsbGetConfigurationDescriptor(USB_ConfigurationDescriptor *c, uint8_t confIndex)
+bool UsbGetConfigurationDescriptor(USB_ConfigurationDescriptor* c, uint8_t confIndex)
 {
-  uint8_t i;
-  if (confIndex >= USB_NumConfigurations) return false; 
-  c->bLength = USB_ConfigurationDescriptorLength;
-  c->bDescriptorType = USB_ConfigurationDescriptorType;
-  c->wTotalLength = USB_ConfigurationDescriptorLength;
-  i = USB_Interfaces[confIndex];
-  c->bNumInterfaces = i;
-  while (i-- > 0)
-    c->wTotalLength += (USB_InterfaceDescriptorLength+USB_EndpointDescriptorLength*USB_Endpoints[confIndex][i])*USB_AltSettings[confIndex][i];
-  c->bConfigurationValue = UsbConfigurationValue(confIndex);
-  c->iConfiguration = UsbNoDescriptionString; // no textual configuration description
-  c->bmAttributes = UsbConfDesAttrBusPowered; // bus-powered, no remote wakeup
-  c->MaxPower = USB_MaxPower_2mA[confIndex];
-  return true;
+    uint8_t i;
+    if (confIndex >= USB_NumConfigurations) return false;
+    c->bLength = USB_ConfigurationDescriptorLength;
+    c->bDescriptorType = USB_ConfigurationDescriptorType;
+    c->wTotalLength = USB_ConfigurationDescriptorLength;
+    i = USB_Interfaces[confIndex];
+    c->bNumInterfaces = i;
+    while (i-- > 0)
+        c->wTotalLength += (USB_InterfaceDescriptorLength + USB_EndpointDescriptorLength * USB_Endpoints[confIndex][i]) * USB_AltSettings[confIndex][i];
+    c->bConfigurationValue = UsbConfigurationValue(confIndex);
+    c->iConfiguration = UsbNoDescriptionString; // no textual configuration description
+    c->bmAttributes = UsbConfDesAttrBusPowered; // bus-powered, no remote wakeup
+    c->MaxPower = USB_MaxPower_2mA[confIndex];
+    return true;
 }
 
 bool
-UsbGetInterfaceDescriptor(USB_InterfaceDescriptor *i, uint8_t confIndex, uint8_t intIndex, uint8_t altSetting)
+UsbGetInterfaceDescriptor(USB_InterfaceDescriptor* i, uint8_t confIndex, uint8_t intIndex, uint8_t altSetting)
 {
-  if ((confIndex>=USB_NumConfigurations)||(intIndex>=USB_Interfaces[confIndex])||(altSetting>=USB_AltSettings[confIndex][intIndex])) return false;
-  i->bLength = USB_InterfaceDescriptorLength;
-  i->bDescriptorType = USB_InterfaceDescriptorType;
-  i->bInterfaceNumber = intIndex;
-  i->bAlternateSetting = altSetting;
-  i->bNumEndpoints = USB_Endpoints[confIndex][intIndex];
-  i->bInterfaceClass = UsbNoInterfaceClass;
-  i->bInterfaceSubClass = UsbNoInterfaceSubClass;
-  i->bInterfaceProtocol = UsbNoInterfaceProtokoll;
-  i->iInterface = UsbNoDescriptionString; // no textual interface description
-  return true;
+    if ((confIndex >= USB_NumConfigurations) || (intIndex >= USB_Interfaces[confIndex]) || (altSetting >= USB_AltSettings[confIndex][intIndex])) return false;
+    i->bLength = USB_InterfaceDescriptorLength;
+    i->bDescriptorType = USB_InterfaceDescriptorType;
+    i->bInterfaceNumber = intIndex;
+    i->bAlternateSetting = altSetting;
+    i->bNumEndpoints = USB_Endpoints[confIndex][intIndex];
+    i->bInterfaceClass = UsbNoInterfaceClass;
+    i->bInterfaceSubClass = UsbNoInterfaceSubClass;
+    i->bInterfaceProtocol = UsbNoInterfaceProtokoll;
+    i->iInterface = UsbNoDescriptionString; // no textual interface description
+    return true;
 }
 
 // Not used for EP0, so 1 <= endIndex <= USB_NumEndpoints <= 6
 bool
-UsbGetEndpointDescriptor(USB_EndpointDescriptor *e, uint8_t confIndex, uint8_t intIndex, uint8_t altSetting, uint8_t endIndex)
+UsbGetEndpointDescriptor(USB_EndpointDescriptor* e, uint8_t confIndex, uint8_t intIndex, uint8_t altSetting, uint8_t endIndex)
 {
-  if ((confIndex>=USB_NumConfigurations)||(intIndex>=USB_Interfaces[confIndex])||(altSetting>=USB_AltSettings[confIndex][intIndex])||
-      (endIndex>USB_Endpoints[confIndex][intIndex])) return false;
-  // components identical for all of our endpoints
-  e->bLength = USB_EndpointDescriptorLength;
-  e->bDescriptorType = USB_EndpointDescriptorType;
-  e->bmAttributes = USB_BulkTransfer;
-  e->bInterval = 0; // bulk endpoint, no polling
-  // components which differ
-  switch (endIndex) // only endpoints for interface 0 in our application
-  {
-    case 1: 
-      e->bEndpointAddress = UsbInEndpointAdress(1);
-      e->wMaxPacketSize = EP1_FIFO_Size;
-    break;
-    case 2: 
-      e->bEndpointAddress = UsbInEndpointAdress(2);
-      e->wMaxPacketSize = EP2_FIFO_Size;
-    break;
-    case 3: 
-      e->bEndpointAddress = UsbOutEndpointAdress(3);
-      e->wMaxPacketSize = EP3_FIFO_Size;
-    break;
-  }
-  return true;
+    if ((confIndex >= USB_NumConfigurations) || (intIndex >= USB_Interfaces[confIndex]) || (altSetting >= USB_AltSettings[confIndex][intIndex]) ||
+        (endIndex > USB_Endpoints[confIndex][intIndex])) return false;
+    // components identical for all of our endpoints
+    e->bLength = USB_EndpointDescriptorLength;
+    e->bDescriptorType = USB_EndpointDescriptorType;
+    e->bmAttributes = USB_BulkTransfer;
+    e->bInterval = 0; // bulk endpoint, no polling
+    // components which differ
+    switch (endIndex) // only endpoints for interface 0 in our application
+    {
+    case 1:
+        e->bEndpointAddress = UsbInEndpointAdress(1);
+        e->wMaxPacketSize = EP1_FIFO_Size;
+        break;
+    case 2:
+        e->bEndpointAddress = UsbInEndpointAdress(2);
+        e->wMaxPacketSize = EP2_FIFO_Size;
+        break;
+    case 3:
+        e->bEndpointAddress = UsbOutEndpointAdress(3);
+        e->wMaxPacketSize = EP3_FIFO_Size;
+        break;
+    }
+    return true;
 }
 
 void
 UsbGetStringDescriptor(char s[], uint8_t index)
 {
-  uint8_t i;
+    
+    uint8_t i;
 #if (USB_MaxStringDescriptorLength < 18)
 #error USB_MaxStringDescriptorLength too small!
 #endif
-  i = USB_MaxStringDescriptorLength;
-  while (i--) *s++ = '\0';
-  s -= USB_MaxStringDescriptorLength;
-  s[1] = USB_StringDescriptorType;
-  switch (index)
-  {
+    i = USB_MaxStringDescriptorLength;
+    while (i--) *s++ = '\0';
+    s -= USB_MaxStringDescriptorLength;
+    s[1] = USB_StringDescriptorType;
+    switch (index)
+    {
     case USB_LanguageDescriptorIndex: // == 0
-      s[0] = 4;
-      s[2] = 9; // two byte language code, only support for English
-      s[3] = 4;
-      break;
+        s[0] = 4;
+        s[2] = 9; // two byte language code, only support for English
+        s[3] = 4;
+        break;
     case USB_ManufacturerStringIndex:
-      s[2] = 'S';
-      s[4] = 'A';
-      s[6] = 'L';
-      s[8] = 'E';
-      s[10] = 'W';
-      s[12] = 'S';
-      s[14] = 'K';
-      s[16] = 'I';
-      s[0] = 18; // length of descriptor
-      break;
+        s[2] = 'S';
+        s[4] = 'A';
+        s[6] = 'L';
+        s[8] = 'E';
+        s[10] = 'W';
+        s[12] = 'S';
+        s[14] = 'K';
+        s[16] = 'I';
+        s[0] = 18; // length of descriptor
+        break;
     case USB_ProductStringIndex:
-      s[2] = 'A';
-      s[4] = 'T';
-      s[6] = '9';
-      s[8] = '0';
-      s[10] = 'U';
-      s[12] = 'S';
-      s[14] = 'B';
-      s[0] = 16;
-      break;
+        s[2] = 'A';
+        s[4] = 'T';
+        s[6] = '9';
+        s[8] = '0';
+        s[10] = 'U';
+        s[12] = 'S';
+        s[14] = 'B';        
+        s[16] = '1';
+        s[0] = 16;
+        break;
     case USB_SerialNumberStringIndex:
-      s[2] = '0';
-      s[4] = '0';
-      s[6] = '1';
-      s[0] = 8;
-      break;
+        s[2] = '0';
+        s[4] = '0';
+        s[6] = '1';
+        s[0] = 8;
+        break;
     default:
-      s[2] = '?';
-      s[0] = 4;
-  }
-}
-
-static void
-UsbDevDisableAndFreeEndpoint(uint8_t i)
-{
-  UsbDevSelectEndpoint(i);
-  UsbDevDisableEndpoint();
-  UsbDevClearEndpointAllocBit();
-}
-
-static void
-UsbDevSetUnconfiguredState(void)
-{
-  uint8_t i;
-  UsbDevConfValue = UsbUnconfiguredState;
-  i =  UsbNumEndpointsAT90USB;
-  while (--i > 0) // free all endpoints but EP0
-    UsbDevDisableAndFreeEndpoint(i);
-  UsbAllocatedEPs = 1;
+        s[2] = '?';
+        s[0] = 4;
+    }
 }
 
 // A device can have multiple configurations. In the simplest case configurations may differ only in power consumption.
 // But configurations can be totally different (differ in number of interfaces, endpoints, ...
-bool
-UsbDevSetConfiguration(uint8_t c)
+// TODO: move to usb_drv.c
+bool UsbDevSetConfiguration(uint8_t c)
 {
-  uint8_t i;
-  switch (c)
-  {
+    uint8_t i;
+    switch (c)
+    {
     case 0: // go back to unconfigured (addressed) state
-      UsbDevSetUnconfiguredState();
-      return true;
-      break;
+        UsbDrv_SetUnconfiguredState();
+        return true;
+        break;
     case 1: // set configuration 1
-      if (UsbDevConfValue != c)
-      {
-        i = USB_MaxInterfaces;
-        while (i-- > 0) AltSettingOfInterface[i] = UsbInterfaceUnconfigured;
-      }
-      for (i = 0; i < USB_Interfaces[c-1]; i++)
-      {
-        if (!UsbDevSetInterface(c, i , 0))
+        if (UsbDevConfValue != c)
         {
-          UsbDevSetUnconfiguredState();
-          return false;
+            i = USB_MaxInterfaces;
+            while (i-- > 0) AltSettingOfInterface[i] = UsbInterfaceUnconfigured;
         }
-      }
-      UsbDevConfValue = c;
-      return true;
-      break;
+        for (i = 0; i < USB_Interfaces[c - 1]; i++)
+        {
+            if (!UsbApi_SetInterface(c, i, 0))
+            {
+                UsbDrv_SetUnconfiguredState();
+                return false;
+            }
+        }
+        UsbDevConfValue = c;
+        return true;
+        break;
     default:
-      Debug("UsbDevSetConfiguration(): configuration does not exist!\r\n");
-      return false;
-  }
+        Debug("UsbDevSetConfiguration(): configuration does not exist!\r\n");
+        return false;
+    }
+}
+
+
+void UsbDevProcessVendorRequest(USB_DeviceRequest* req)
+{
+    Log_Fatal("Not implemented yet.");
+    FatalError = true;
+    //ProcessUserCommand(req->bRequest, req->wValue, req->wIndex);
 }
 
 // Multiple interfaces can exist at the same time! These interfaces have to use different endpoints.
@@ -271,139 +271,114 @@ UsbDevSetConfiguration(uint8_t c)
 // If you really need more than one interface with different alternate settings (endpoint FIFO sizes) you may try to
 // insert unused dummy endpoints to prevent memory slides or overlaps. Or use different configurations or force reallocation of all endpoints.
 // Our application uses only interface 0 with endpoints ep1, ep2, ep3. But the code is designed to support more interfaces.
-bool UsbDevSetInterface(uint8_t conf, uint8_t inf, uint8_t as)
+bool UsbApi_SetInterface(uint8_t conf, uint8_t inf, uint8_t as)
 {
-  uint8_t i;
-  if (conf-- == UsbUnconfiguredState) // each interface should be bound to a configuration
-  {
-    Debug("UsbDevSetInterface(): called from unconfigured (addressed) state!\r\n");
-    return false;
-  }
-  if ((inf >= USB_Interfaces[conf]) || (as >= USB_AltSettings[conf][inf]))
-  {
-    Debug("UsbDevSetInterface(): interface not supported!\r\n"); 
-    return false;
-  }
-  if ((as > 0) && (inf != (USB_Interfaces[conf]-1)))
-  {
-    Debug("UsbDevSetInterface(): Multiple interfaces with more than one alternate setting => FIFO memory conflicts may occur!\r\n"); 
-    return false;
-  }
-  if (AltSettingOfInterface[inf] == as) // no changes, reset toggle bits of endpoints of this interface
-  {
+    uint8_t i;
+    if (conf-- == UsbUnconfiguredState) // each interface should be bound to a configuration
+    {
+        Debug("UsbDevSetInterface(): called from unconfigured (addressed) state!\r\n");
+        return false;
+    }
+    if ((inf >= USB_Interfaces[conf]) || (as >= USB_AltSettings[conf][inf]))
+    {
+        Debug("UsbDevSetInterface(): interface not supported!\r\n");
+        return false;
+    }
+    if ((as > 0) && (inf != (USB_Interfaces[conf] - 1)))
+    {
+        Debug("UsbDevSetInterface(): Multiple interfaces with more than one alternate setting => FIFO memory conflicts may occur!\r\n");
+        return false;
+    }
+
+    if (AltSettingOfInterface[inf] == as) // no changes, reset toggle bits of endpoints of this interface
+    {
+        if (conf == 0)
+        {
+            if (inf == 0) // first interface of first configuration 
+            {
+                for (i = 1; i < 4; i++) // reset toggle bit of all endpoints of this interface; an endpoint reset may be necessary too
+                {
+                    UsbDevSelectEndpoint(i);
+                    UsbDevResetEndpoint(i);
+                    UsbDevResetDataToggleBit();
+                }
+            }
+            else if (inf == 1) // second interface of first configuration
+            {
+                // reset endpoints of second interface
+            }
+        }
+        else if (conf == 2) // similar operations 
+        {
+        }
+        return true;
+    }
+
     if (conf == 0)
     {
-      if (inf == 0) // first interface of first configuration 
-      {
-        for (i = 1; i < 4; i++) // reset toggle bit of all endpoints of this interface; an endpoint reset may be necessary too
+        if (inf == 0) // first allocation or reallocation with new alternate setting
         {
-          UsbDevSelectEndpoint(i);
-          UsbDevResetEndpoint(i);
-          UsbDevResetDataToggleBit();
+            UsbDrv_DisableAndFreeEndpoint(3);
+            UsbDrv_DisableAndFreeEndpoint(2);
+            UsbDrv_DisableAndFreeEndpoint(1);
+            UsbAllocatedEPs = 1;
+            AltSettingOfInterface[0] = UsbInterfaceUnconfigured;
+            if (as == 0) // use alternate setting 0 
+            {
+                uint8_t ep = 1;
+                const UsbEndpointCfg_t *pcfg  = &UsbEndpointCfg[ep - 1];
+                if (UsbDrv_EndpointSetup(ep, UsbEP_TypeBulk, pcfg->wMaxPacketSize, pcfg->bNumBank, UsbEP_DirIn))
+                {
+                    Debug("!!! Successful set up EP1!\r\n");
+                    //UsbDevSelectEndpoint(1); this ep is already selected by UsbDevEP_Setup()
+                }
+                else
+                {
+                    Debug("!!!  Setup of EP1 failed!\r\n"); // should not occur ;-)
+                    return false;
+                }
+
+                ep = 2;
+                pcfg = &UsbEndpointCfg[ep - 1];
+
+                if (UsbDrv_EndpointSetup(ep, UsbEP_TypeBulk, pcfg->wMaxPacketSize, pcfg->bNumBank, UsbEP_DirIn))
+                {
+                    Debug("!!! Successful set up EP2!\r\n");
+
+                }
+                else
+                {
+                    Debug("!!!  Setup of EP2 failed!\r\n");
+                    return false;
+                }
+                ep = 3;
+                pcfg = &UsbEndpointCfg[ep - 1];
+                if (UsbDrv_EndpointSetup(ep, UsbEP_TypeBulk, pcfg->wMaxPacketSize, pcfg->bNumBank, UsbEP_DirOut))
+                {
+                    Debug("!!! Successful set up EP3!\r\n");
+                    UsbDevEnableReceivedOUT_DATA_Int(); // trigger interrupt when out data is available
+                }
+                else
+                {
+                    Debug("!!!  Setup of EP3 failed!\r\n");
+                    return false;
+                }
+            }
+            else if (as == 1) // alternate setting 1
+            {
+                // set up same endpoints with different parameters (FIFO-size)
+            }
+            AltSettingOfInterface[0] = as;
+            UsbStartupFinished = 1;
+            return true;
         }
-      }
-      else if (inf == 1) // second interface of first configuration
-      {
-        // reset endpoints of second interface
-      }
+        else if (inf == 1) // setup interface 1 
+        {
+        }
     }
-    else if (conf == 2) // similar operations 
+    else if (conf == 1) // similar setup if configuration 2 with other interfaces is selected
     {
     }
-    return true;
-  }
-  if (conf == 0)
-  {
-    if (inf == 0) // first allocation or reallocation with new alternate setting
-    {
-      UsbDevDisableAndFreeEndpoint(3);
-      UsbDevDisableAndFreeEndpoint(2);
-      UsbDevDisableAndFreeEndpoint(1);
-      UsbAllocatedEPs = 1;
-      AltSettingOfInterface[0] = UsbInterfaceUnconfigured;
-      if (as == 0) // use alternate setting 0 
-      {
-        if (UsbDevEP_Setup(1, UsbEP_TypeBulk, EP1_FIFO_Size, 1, UsbEP_DirIn))
-        {
-          Debug("!!! Successful set up EP1!\r\n");
-          //UsbDevSelectEndpoint(1); this ep is already selected by UsbDevEP_Setup()
-          UsbDevEnableNAK_IN_Int(); // trigger interrupt when host got a NAK as a result of a read request
-        }
-        else
-        {
-          Debug("!!!  Setup of EP1 failed!\r\n"); // should not occur ;-)
-          return false;
-        }
-        if (UsbDevEP_Setup(2, UsbEP_TypeBulk, EP2_FIFO_Size, 2, UsbEP_DirIn))
-        {
-          Debug("!!! Successful set up EP2!\r\n");
-        }
-        else
-        {
-          Debug("!!!  Setup of EP2 failed!\r\n");
-          return false;
-        }
-        if (UsbDevEP_Setup(3, UsbEP_TypeBulk, EP3_FIFO_Size, 1, UsbEP_DirOut))
-        {
-          Debug("!!! Successful set up EP3!\r\n");
-          UsbDevEnableReceivedOUT_DATA_Int(); // trigger interrupt when out data is available
-        }
-        else
-        {
-          Debug("!!!  Setup of EP3 failed!\r\n");
-          return false;
-        }
-      }
-      else if (as == 1) // alternate setting 1
-      {
-        // set up same endpoints with different parameters (FIFO-size)
-      }
-      AltSettingOfInterface[0] = as;
-      UsbStartupFinished = 1;
-      return true;
-    }
-    else if (inf == 1) // setup interface 1 
-    {
-    }
-  }
-  else if (conf == 1) // similar setup if configuration 2 with other interfaces is selected
-  {
-  }
-  return false; // dummy to suppress compiler warning 
+    return false; // dummy to suppress compiler warning 
 }
 
-void
-UsbDevProcessVendorRequest(USB_DeviceRequest *req)
-{
-  ProcessUserCommand(req->bRequest, req->wValue, req->wIndex);
-}
-
-// This function is called whenever host tries to read data from ep1
-// We send a status byte which indicates success of DAQ operation
-void
-UsbDevFillEP1FIFO(void)
-{
-  if UsbDevIsFifoEmpty()
-  {
-    UsbDevClearTransmitterReady();
-    UsbDevClearNAK_ResponseInBit();
-    UsbDevWriteByte(DAQ_Result);
-    UsbDevSendInData();
-  }
-}
-
-// This function is called whenever OUT FIFO has data for us
-void
-UsbDevReadEP3FIFO(void)
-{
-  if (UsbDevHasReceivedOUT_Data())
-  {
-    UsbDevClearHasReceivedOUT_Data();
-    if (UsbDevReadAllowed())
-    {
-      DDRB = 0xFF;
-      PORTB = UsbDevReadByteFromFifo();
-      UsbDevClearFifoControllBit(); // maybe we should use an alias for this macro
-    }
-  }
-}

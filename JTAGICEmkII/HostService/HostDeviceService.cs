@@ -79,6 +79,8 @@ namespace JTAGICEmkII.HostService
         internal StructureActivity ActivityStructure { get => _activityStructure; }
 
         public HostSession HostSession => this._hostSession;
+        
+        public ProgrammingOptions? PrgOption { get; set; }
 
         #endregion
 
@@ -236,8 +238,7 @@ namespace JTAGICEmkII.HostService
             }
         }
 
-        // TODO: return type and mode.
-        public ICommandResult GetBreakpoint(int index, int breakpointType, int brakpointMode, out ulong breakpoint)
+        public ICommandResult GetBreakpoint(int index, out int breakpointType, out int brakpointMode, out ulong breakpoint)
         {
             using (var request = CommandRequestFactory.CreateRequest(this._activityStructure, MasterCommandEnum.CMND_GET_BREAK))
             {
@@ -248,11 +249,15 @@ namespace JTAGICEmkII.HostService
                 {
                     ResponseBreakpoint response = (ResponseBreakpoint)rxResponse!;
                     breakpoint = response.Address;
+                    breakpointType = (int)response.BreakpontType;
+                    brakpointMode = (int)response.BreakpointMode;
                     return result;
                 }
                 else
                 {
                     breakpoint = 0;
+                    breakpointType = -1;
+                    brakpointMode = -1;
                     return result;
                 }
             }
@@ -453,8 +458,8 @@ namespace JTAGICEmkII.HostService
                 CommandBreakpoint command = (CommandBreakpoint)request.Command;
                 command.BreakNumber = (byte)index;
                 command.Address = (uint)Breakpoint;
-                command.Type = (BreakpointTypeEnum)BreakpointType;
-                command.Mode = (Master.BreakpointModeEnum)BrakpointMode;
+                command.Type = (BreakpointTypeEnumM)BreakpointType;
+                command.Mode = (BreakpointModeEnumM)BrakpointMode;
                 return ProcessCommand(request, out ISlaveResponse? rxResponse);
             }
         }

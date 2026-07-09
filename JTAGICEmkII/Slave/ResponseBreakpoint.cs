@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+
 namespace JTAGICEmkII.Slave
 {
     internal class ResponseBreakpoint : Response
@@ -21,9 +22,9 @@ namespace JTAGICEmkII.Slave
 
         #region Properties 
 
-        public BreakpontTypeEnum BreakpontType { get; set; }
+        public BreakpointTypeEnumS BreakpontType { get; set; }
         public UInt32 Address { get; set; }
-        public BreakpointModeEnum BreakpointMode { get; set; }
+        public BreakpointModeEnumS BreakpointMode { get; set; }
         public override int Size => base.Size + 6;
 
         #endregion
@@ -47,9 +48,9 @@ namespace JTAGICEmkII.Slave
             if (data.Length < Size)
                 throw new ArgumentOutOfRangeException($"Data length is insufficient for response {this.GetType().Name}.");
 
-            BreakpontType = (BreakpontTypeEnum)data[base.Size];
+            BreakpontType = (BreakpointTypeEnumS)data[base.Size];
             Address = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(base.Size+1, 4));
-            BreakpointMode = (BreakpointModeEnum)data[base.Size+5];
+            BreakpointMode = (BreakpointModeEnumS)data[base.Size+5];
         }
 
         #endregion

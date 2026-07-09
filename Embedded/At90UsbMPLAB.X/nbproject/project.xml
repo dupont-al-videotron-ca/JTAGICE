@@ -4,31 +4,17 @@
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
             <name>At90UsbMPLAB</name>
-            <creation-uuid>2207f440-1435-4172-b4c0-47500afed54d</creation-uuid>
+            <creation-uuid>04cd5e22-20f6-4c5c-a8ab-a479f10c1c5c</creation-uuid>
             <make-project-type>0</make-project-type>
             <sourceEncoding>ISO-8859-1</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList>
-                <sourceRootElem>../Src</sourceRootElem>
-                <sourceRootElem>../AtmelStudioUSB/src</sourceRootElem>
                 <sourceRootElem>src</sourceRootElem>
-                <sourceRootElem>scr++</sourceRootElem>
+                <sourceRootElem>src/Log4Usb</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
-                    <name>release</name>
-                    <type>2</type>
-                </confElem>
-                <confElem>
-                    <name>debug</name>
-                    <type>2</type>
-                </confElem>
-                <confElem>
-                    <name>debug_CPP</name>
-                    <type>2</type>
-                </confElem>
-                <confElem>
-                    <name>release_CPP</name>
+                    <name>default</name>
                     <type>2</type>
                 </confElem>
             </confList>

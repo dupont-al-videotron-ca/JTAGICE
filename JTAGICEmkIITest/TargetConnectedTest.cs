@@ -13,7 +13,7 @@ namespace JTAGICEmkIITest
 {
     public class TargetConnectedTest : HostServiceBaseTest
     {
-        private Mock<IVisitorActivity> _visitorActivityMoq;
+        private readonly Mock<IVisitorActivity> _visitorActivityMoq;
 
         #region Declarations --------------------------------------------------
 
@@ -46,7 +46,7 @@ namespace JTAGICEmkIITest
             test.AddNext(next);
 
             //--- Verification
-            Assert.Equal(0x06, _activityStructure.Count());
+            Assert.Equal(0x06, _activityStructure.Count);
         }
 
         [Fact]
