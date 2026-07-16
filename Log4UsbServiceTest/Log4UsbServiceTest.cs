@@ -11,7 +11,6 @@ using log4net.Core;
 using Log4UsbService.EmbeddedData;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Moq;
-using Newtonsoft.Json.Linq;
 using UsbDeviceBase;
 using Windows.Devices.Usb;
 using WinRT;

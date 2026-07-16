@@ -26,4 +26,10 @@
     <ProjectReference Include="..\..\..\GitHub\FluentArgs\source\FluentArgs\FluentArgs.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="FluentArgs">
+      <HintPath>..\..\..\GitHub\FluentArgs\source\FluentArgs\bin\Debug\netstandard2.0\FluentArgs.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

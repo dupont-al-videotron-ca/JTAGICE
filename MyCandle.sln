@@ -46,8 +46,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Log4UsbServiceTest", "Log4U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmbeddedConsoleApp", "EmbeddedConsoleApp\EmbeddedConsoleApp.csproj", "{291B5A01-0474-4D79-BA6D-69234533243E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentArgs", "..\..\GitHub\FluentArgs\source\FluentArgs\FluentArgs.csproj", "{BD50E50E-D251-9C3F-6595-2B5DE39436F8}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -202,18 +200,6 @@ Global
 		{291B5A01-0474-4D79-BA6D-69234533243E}.Release|x64.Build.0 = Release|Any CPU
 		{291B5A01-0474-4D79-BA6D-69234533243E}.Release|x86.ActiveCfg = Release|Any CPU
 		{291B5A01-0474-4D79-BA6D-69234533243E}.Release|x86.Build.0 = Release|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Debug|x64.Build.0 = Debug|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Debug|x86.Build.0 = Debug|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Release|x64.ActiveCfg = Release|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Release|x64.Build.0 = Release|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Release|x86.ActiveCfg = Release|Any CPU
-		{BD50E50E-D251-9C3F-6595-2B5DE39436F8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
