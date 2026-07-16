@@ -212,7 +212,7 @@ namespace MyFramework.Threading
                 mPopCount--;
 
                 if (mPopCount <= 0)
-                    throw new MyFramework.Exception.MyInternalException("mPopCount is negative");
+                    throw new MyFramework.Exceptions.MyInternalException("mPopCount is negative");
 
             } while (mPopCount != 1);
 

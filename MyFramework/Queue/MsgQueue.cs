@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using MyFramework.Exception;
+using MyFramework.Exceptions;
 using log4net;
 
 namespace MyFramework.Queue

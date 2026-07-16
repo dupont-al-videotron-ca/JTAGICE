@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace MyFramework.Exception
+namespace MyFramework.Exceptions
 {
     /// <summary>
     /// MyFramework's queue exception.

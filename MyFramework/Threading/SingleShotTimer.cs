@@ -30,8 +30,6 @@ namespace MyFramework.Threading
         {
         }
 
-        protected override void Dispose(bool disposing) => base.Dispose(disposing);
-
         /// <summary>
         /// Starts  / Restarts the timer.
         /// </summary>
