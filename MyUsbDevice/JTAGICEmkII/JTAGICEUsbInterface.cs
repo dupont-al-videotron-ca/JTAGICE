@@ -30,6 +30,11 @@ namespace MyUsbDevice.JTAGICEmkII
 
         #region Properties 
 
+        public PipeOutBase? OutPipe => this.OutPipes.TryGetValue(2, out var pipe) ? pipe : null;
+
+        public PipeInBase? InPipe => this.InPipes.TryGetValue(2, out var pipe) ? pipe : null;
+
+
         #endregion
 
 

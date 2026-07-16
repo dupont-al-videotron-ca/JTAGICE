@@ -24,6 +24,21 @@ namespace MyUsbDevice.JTAGICEmkII
 
         public override string DeviceName => "JTAGICE mkII";
 
-        protected override UsbInterfaceBase CreateInterface(UsbInterfaceDescriptor descriptor, IEnumerable<KeyValuePair<int, PipeOutBase>> outPipes, IEnumerable<KeyValuePair<int, PipeInBase>> inPipes) => throw new NotImplementedException();
+        protected override UsbInterfaceBase CreateInterface(UsbInterfaceDescriptor descriptor, IEnumerable<KeyValuePair<int, PipeOutBase>> outPipes, IEnumerable<KeyValuePair<int, PipeInBase>> inPipes)
+        {
+            return new JTAGICEUsbInterface(descriptor, outPipes, inPipes);
+        }
+
+        public JTAGICEUsbInterface JTAGICEInterface 
+        {
+            get
+            {
+                if (this.ImplInterfaces.TryGetValue(0, out var iface))
+                {
+                    return iface as JTAGICEUsbInterface;
+                }
+                return null!;
+            }
+        }   
     }
 }
