@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "EmbeddedConsoleApp": {
+      "commandName": "Project",
+      "commandLineArgs": "-i patate -o poutine -q 1"
+    }
+  }
+}
