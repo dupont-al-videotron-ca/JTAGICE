@@ -126,7 +126,7 @@ namespace UsbDeviceBase
                 }
                 else
                 {
-                    logger.Debug($"Endpoint {usbEndpointDescriptor.EndpointNumber} of interface {intf.InterfaceNumber} is not an IN endpoint. Skipping pipe creation.");
+                    //logger.Debug($"Endpoint {usbEndpointDescriptor.EndpointNumber} of interface {intf.InterfaceNumber} is not an IN endpoint. Skipping pipe creation.");
                 }
             }
             return retval;
@@ -167,7 +167,7 @@ namespace UsbDeviceBase
                 }
                 else
                 {
-                    logger.Debug($"Endpoint {usbEndpointDescriptor.EndpointNumber} of interface {intf.InterfaceNumber} is not an OUT endpoint. Skipping pipe creation.");
+                    //logger.Debug($"Endpoint {usbEndpointDescriptor.EndpointNumber} of interface {intf.InterfaceNumber} is not an OUT endpoint. Skipping pipe creation.");
                 }
             }
             return retval;

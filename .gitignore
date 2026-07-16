@@ -359,3 +359,7 @@ MigrationBackup/
 !"DataAccessLayer\SQLite_Lib\x86\e_sqlite3.dll"
 
 JTAGICE_mkII/
+Embedded/At90UsbMPLAB.X/.generated_files
+Embedded/At90UsbMPLAB.X/build
+Embedded/At90UsbMPLAB.X/dist
+Embedded/At90UsbMPLAB.X/debug

@@ -115,6 +115,9 @@ namespace Common.Test.Xunit
 
         private void CheckBeforeDispose()
         {
+            if (VerifyMockSetup)
+                MockRepository.VerifyAll();
+
             if (VerifyLogForError)
             {
 
@@ -126,8 +129,6 @@ namespace Common.Test.Xunit
                 Assert.False(_xUnitTestAppender.IsLoggingEventsEq(log4net.Core.Level.Warn));
             }
 
-            if (VerifyMockSetup)
-                MockRepository.VerifyAll();
         }
     }
 }

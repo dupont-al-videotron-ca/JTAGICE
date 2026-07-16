@@ -25,6 +25,7 @@ namespace UsbDeviceBase
 
         #region Properties 
 
+
         #endregion
 
 

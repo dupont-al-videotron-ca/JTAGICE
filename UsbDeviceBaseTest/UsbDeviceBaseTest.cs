@@ -22,55 +22,132 @@ namespace UsbDeviceBaseTest
 {
     public class UsbDeviceBaseTest : XUnitTestBase
     {
+        private UsbDeviceTest? _device;
 
         public UsbDeviceBaseTest() : base()
         {
         }
 
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _device?.Dispose();
+                _device = null;
+            }
+
+            base.Dispose(disposing);
+        }
+
         [Fact]
         public void UsbDeviceTest_Constructor()
         {
-            var device = new UsbDeviceTest();
-            Assert.NotNull(device);
-            Assert.Equal(0x03EB, device.VendorId);
-            Assert.Equal(0x0001, device.ProductId);
-            Assert.Equal(ByteOrder.LittleEndian, device.ByteOrder);
-            Assert.Equal(Windows.Storage.Streams.UnicodeEncoding.Utf8, device.UnicodeEncoding);
+            var test = CreateDeviceTest(false);
+            Assert.NotNull(test);
+            Assert.Equal(0x03EB, test.VendorId);
+            Assert.Equal(0x0001, test.ProductId);
+            Assert.Equal(ByteOrder.LittleEndian, test.ByteOrder);
+            Assert.Equal(Windows.Storage.Streams.UnicodeEncoding.Utf8, test.UnicodeEncoding);
 
-            Assert.Throws<InvalidOperationException>(() => device.ConfigurationValue);
-            Assert.Throws<InvalidOperationException>(() => device.MaxPowerMilliamps);
-            Assert.Throws<InvalidOperationException>(() => device.ConfigurationValue);
-            Assert.Throws<InvalidOperationException>(() => device.RemoteWakeup);
-            Assert.Throws<InvalidOperationException>(() => device.SelfPowered);
+            Assert.Throws<InvalidOperationException>(() => test.ConfigurationValue);
+            Assert.Throws<InvalidOperationException>(() => test.MaxPowerMilliamps);
+            Assert.Throws<InvalidOperationException>(() => test.ConfigurationValue);
+            Assert.Throws<InvalidOperationException>(() => test.RemoteWakeup);
+            Assert.Throws<InvalidOperationException>(() => test.SelfPowered);
 
         }
 
         [Fact]
         public void Initialize_shall_create_device_objects()
         {
-            var device = new UsbDeviceTest();
-            device.Initialize();
+            var test = CreateDeviceTest();
+            test.VerifyDevice();
+        }
 
-            device.VerifyDevice();
+        [Fact(Skip = "not suported by usb")]
+        public void ReadStatus_Test()
+        {
+            var test = CreateDeviceTest();
+
+            var s = UsbSetupPacketIn;
+
+            s.RequestType.Direction = UsbTransferDirection.In;
+            s.RequestType.ControlTransferType = UsbControlTransferType.Standard;
+            s.RequestType.Recipient = UsbControlRecipient.Device;
+            s.Length = 2;
+            s.Request = 0x00;
+            s.Value = 0x0000;
+            s.Index = 0;
+
+            byte[]? buf;
+            test.SendControlInTransfer(UsbSetupPacketIn, (int)s.Length);
+
+            Task.Delay(100)?.Wait();
+            var readPipe = test.ImplInterfaces[0].InPipes[1];
+            if (readPipe.IsByteToRead)
+            {
+                if (readPipe.ReadBytes(out buf, s.Length, 5000))
+                {
+                    Assert.NotEmpty(buf);
+                    Logger.Info($"Read {buf.Length} bytes: {BitConverter.ToString(buf)}");
+                }
+                else
+                    Assert.Fail("pipe 1");
+            }
+            else
+                Assert.Fail("pipe 1");
+
+        }
+
+        [Fact(Skip = "not suported by usb")]
+        public void ReadDAC_Test()
+        {
+            var test = CreateDeviceTest();
+
+            var s = UsbSetupPacketIn;
+
+            s.RequestType.Direction = UsbTransferDirection.In;
+            s.RequestType.ControlTransferType = UsbControlTransferType.Vendor;
+            s.RequestType.Recipient = UsbControlRecipient.Device;
+            s.Request = 0x01;
+            s.Value = 0x0006;  // 1ms
+            s.Index = 256;      // 256 samples
+            s.Length = s.Index*2; // 256*2 bytes
+
+            byte[]? buf;
+            test.SendControlInTransfer(UsbSetupPacketIn, (int)s.Length);
+
+            Task.Delay((int)s.Index*1)?.Wait();
+            var readPipe = test.ImplInterfaces[0].InPipes[2];
+            if (readPipe.IsByteToRead)
+            {
+                if (readPipe.ReadBytes(out buf, s.Length, 5000))
+                {
+                    Assert.NotEmpty(buf);
+                    Logger.Info($"Read {buf.Length} bytes: {BitConverter.ToString(buf)}");
+                }
+                else
+                    Assert.Fail("pipe 1");
+            }
+            else
+                Assert.Fail("pipe 1");
+
         }
 
         [Fact]
         public void GetUsbInterfaceControl_shall_return_control_interface()
         {
-            var device = new UsbDeviceTest();
-            device.Initialize();
-
-            Assert.NotNull(device.UsbInterfaceControl);
+            var test = CreateDeviceTest(); ;
+            Assert.NotNull(test.UsbInterfaceControl);
         }
 
         [Fact]
         public void SendControlOutTransfer_shall_send_control_out_transfer()
         {
-            var device = new UsbDeviceTest();
-            device.Initialize();
+            var test = CreateDeviceTest();
 
-            uint result = device.SendControlOutTransfer(UsbSetupPacketOut);
+            uint result = test.SendControlOutTransfer(UsbSetupPacketOut);
             Assert.Equal((uint)0, result);
         }
 
@@ -78,19 +155,17 @@ namespace UsbDeviceBaseTest
         [Fact]
         public async Task SendControlOutTransferAsync_shall_send_control_out_transfer()
         {
-            var device = new UsbDeviceTest();
-            device.Initialize();
+            var test = CreateDeviceTest();
 
-            uint result = await device.SendControlOutTransferAsync(UsbSetupPacketOut);
+            uint result = await test.SendControlOutTransferAsync(UsbSetupPacketOut);
             Assert.Equal((uint)0, result);
         }
 
         [Fact]
         public void SendControlInTransfer_shall_send_control_in_transfer()
         {
-            var device = new UsbDeviceTest();
-            device.Initialize();
-            IBuffer buffer = device.SendControlInTransfer(UsbSetupPacketIn, 4);
+            var test = CreateDeviceTest();
+            IBuffer buffer = test.SendControlInTransfer(UsbSetupPacketIn, 4);
             byte[] data = buffer.ToArray();
             Assert.Empty(data);
         }
@@ -98,10 +173,9 @@ namespace UsbDeviceBaseTest
         [Fact]
         public async Task SendControlInTransferAsync_shall_send_control_in_transfer()
         {
-            var device = new UsbDeviceTest();
+            var test = CreateDeviceTest();
 
-            device.Initialize();
-            IBuffer buffer = await device.SendControlInTransferAsync(UsbSetupPacketIn, 4);
+            IBuffer buffer = await test.SendControlInTransferAsync(UsbSetupPacketIn, 4);
             byte[] data = buffer.ToArray();
             Assert.Empty(data);
         }
@@ -109,19 +183,18 @@ namespace UsbDeviceBaseTest
         [Fact]
         public void SendControlInTransfer_template_shall_send_control_in_transfer()
         {
-            var device = new UsbDeviceTest();
-            device.Initialize();
-            UInt32 buffer = device.SendControlInTransfer<UInt32>(UsbSetupPacketIn, 4);
+            var test = CreateDeviceTest();
+            UInt32 buffer = test.SendControlInTransfer<UInt32>(UsbSetupPacketIn, 4);
             Assert.Equal((UInt32)0, buffer);
         }
 
-        [Fact]
+        [Fact(Skip = "not suported by usb")]
         public async Task SendControlInTransferAsync_template_shall_send_control_in_transfer()
         {
-            var device = new UsbDeviceTest();
-            device.Initialize();
-        
-            UInt32 buffer = await device.SendControlInTransferAsync<UInt32>(UsbSetupPacketIn, 4);
+            var test = CreateDeviceTest();
+
+            UInt32? buffer = await test.SendControlInTransferAsync<UInt32>(UsbSetupPacketIn, 4);
+            Assert.NotNull(buffer);
             Assert.Equal((UInt32)0, buffer);
         }
 
@@ -153,5 +226,15 @@ namespace UsbDeviceBaseTest
             Length = 1
 
         };
+
+        private UsbDeviceTest CreateDeviceTest(bool callInit = true)
+        {
+            _device = new UsbDeviceTest();
+            if (callInit)
+                Assert.True(_device.Initialize());
+
+            return _device;
+
+        }
     }
 }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MemoryPack;
-using Windows.ApplicationModel.Activation;
 using Windows.Devices.Usb;
 
 namespace UsbDeviceBase

@@ -10,6 +10,11 @@ using Xunit;
 
 namespace UsbDeviceBaseTest.Dummy
 {
+    /// <summary>
+    /// A test implementation of the UsbDeviceBase class for unit testing purposes.
+    /// It using the AT90USB device as a reference for the test values.
+    /// Device driver shall be installed prior using this test. Refer to https://github.com/pbatard/libwdi/wiki/Zadig.
+    /// </summary>
     public class UsbDeviceTest : UsbDeviceBase.UsbDeviceBase
     {
         public  int CreateInterfaceCnt = 0;
@@ -25,9 +30,9 @@ namespace UsbDeviceBaseTest.Dummy
 
         public override ushort ProductId => TestProductId;
         
-        public override string DeviceId => "\\\\?\\usb#vid_03eb&pid_0001#001#{a5dcbf10-6530-11d2-901f-00c04fb951ed}";
+        public override string DeviceId => "\\\\?\\USB#VID_03EB&PID_0001#7&4110fb5&0&4#{a5dcbf10-6530-11d2-901f-00c04fb951ed}";
 
-        public override string DeviceName => "AT90USB";
+        public override string DeviceName => "AT90USB"; // name of the device given when installing the device driver.
 
 
         protected override UsbInterfaceBase CreateInterface(UsbInterfaceDescriptor descriptor, IEnumerable<KeyValuePair<int, PipeOutBase>> outPipes, IEnumerable<KeyValuePair<int, PipeInBase>> inPipes)

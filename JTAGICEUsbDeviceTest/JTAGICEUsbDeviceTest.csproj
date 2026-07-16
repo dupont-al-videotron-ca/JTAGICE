@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common.Test.XUnit\Common.Test.XUnit.csproj" />
-    <ProjectReference Include="..\JTAGICEmkIITest\JTAGICEmkIITest.csproj" />
     <ProjectReference Include="..\MyUsbDevice\MyUsbDevice.csproj" />
     <ProjectReference Include="..\UsbDeviceBase\UsbDeviceBase.csproj" />
   </ItemGroup>

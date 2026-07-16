@@ -3,16 +3,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using MemoryPack;
-using Windows.Devices.Usb;
 using Windows.Storage.Streams;
 
 namespace UsbDeviceBase
 {
-    public class BulkInPipeImpl : PipeInBase
+    public sealed class BulkInPipeImpl : PipeInBase
     {
 
         #region Constructors 
@@ -23,72 +24,75 @@ namespace UsbDeviceBase
 
         #endregion
 
-
-        #region Fields 
-
-        #endregion
-
-
         #region Properties 
 
         public Windows.Devices.Usb.UsbBulkInPipe InPipe { get; private set; }
 
-        #endregion
-
-
-        #region Delegates / Events 
+        public override bool IsByteToRead => InPipe.InputStream.AsStreamForRead().CanRead;
 
         #endregion
 
 
         #region Public Methods 
 
-        public async Task<T> Read<T>() where T : struct
+        public override bool ReadBytes(out byte[] values, uint length, int timeout = -1)
         {
-            uint readLen = (uint)Unsafe.SizeOf<T>();
+            return this.ReadBytesAsync(out values, length, CancellationToken.None, timeout).GetAwaiter().GetResult();
+        }
 
+        public override Task<bool> ReadBytesAsync(out byte[] values, uint length, CancellationToken cancellationToken, int timeout = -1)
+        {
             using (DataReader dataReader = new DataReader(InPipe.InputStream))
             {
                 dataReader.ByteOrder = this.ByteOrder;
                 dataReader.UnicodeEncoding = this.UnicodeEncoding;
 
-                await dataReader.LoadAsync(readLen);
+                List<byte> buffer = new List<byte>();
+                while (length > 0)
+                {
+                    var result = dataReader.LoadAsync(length);
+                    if (timeout >= 0)
+                    {
+                        var timeoutTask = Task.Delay(timeout, cancellationToken);
+                        var completedTask = Task.WhenAny(result.AsTask(), timeoutTask).GetAwaiter().GetResult();
+                        if (completedTask == timeoutTask)
+                        {
+                            values = null;
+                            return Task.FromResult(false);
+                        }
+                    }
+                    else
+                    {
+                        result.AsTask().Wait(cancellationToken);
+                    }
 
-                byte[] buf = new byte[readLen];
-                dataReader.ReadBytes(buf);
+                    var bufValues = new byte[dataReader.UnconsumedBufferLength];
+                    length -= (uint)bufValues.Length;
+                    dataReader.ReadBytes(bufValues);
+
+                    buffer.AddRange(bufValues);
+                }
 
                 dataReader.DetachStream();
-                T retval = MemoryPackSerializer.Deserialize<T>(buf, this.SerializerOptions);
-
-                return retval;
+                values = buffer.ToArray();
+                return Task.FromResult(true);
             }
         }
 
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Provate Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
-
-        #endregion
-
-        public static IBuffer StructToBuffer<T>(T data)
-        where T : notnull
+        public override bool ReadStructure<T>(ref T obj, int timeout) where T : struct
         {
-            byte[] bytes = MemoryPackSerializer.Serialize(data);
-            var val = MemoryPackSerializer.Deserialize<T>(bytes);
+            int size = Marshal.SizeOf<T>();
 
-            IBuffer buffer = WindowsRuntimeBuffer.Create(bytes, 0, bytes.Length, bytes.Length);
-
-            return buffer;
+            if (this.ReadBytes(out byte[]? values, (uint)size, timeout))
+            {
+                Span<byte> rspan = new Span<byte>(values);
+                obj = MemoryMarshal.Read<T>(rspan);
+                return true;
+            }
+            else
+                return false;
         }
 
+        #endregion
     }
 }

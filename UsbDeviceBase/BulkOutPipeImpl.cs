@@ -10,13 +10,11 @@ using System.Text;
 using System.Threading.Tasks;
 using MemoryPack;
 using Windows.Devices.Usb;
-using Windows.Foundation;
 using Windows.Storage.Streams;
-using WinRT;
 
 namespace UsbDeviceBase
 {
-    public class BulkOutPipeImpl: PipeOutBase   
+    public class BulkOutPipeImpl : PipeOutBase
     {
 
         #region Constructors 
@@ -35,7 +33,7 @@ namespace UsbDeviceBase
 
         #region Properties 
 
-        public Windows.Devices.Usb.UsbBulkOutPipe OutPipe { get; }
+        internal Windows.Devices.Usb.UsbBulkOutPipe OutPipe { get; }
 
         //
         // Summary:
@@ -45,7 +43,7 @@ namespace UsbDeviceBase
         // Returns:
         //     A UsbBulkOutEndpointDescriptor that represents the endpoint descriptor associated
         //     with the USB bulk OUT endpoint.
-        public UsbBulkOutEndpointDescriptor OutEndpointDescriptor => OutPipe.EndpointDescriptor;
+        internal UsbBulkOutEndpointDescriptor OutEndpointDescriptor => OutPipe.EndpointDescriptor;
 
         //
         // Summary:
@@ -54,7 +52,7 @@ namespace UsbDeviceBase
         //
         // Returns:
         //     The output steam that contains the transfer data.
-        public IOutputStream OutputStream => OutPipe.OutputStream;
+        internal IOutputStream OutputStream => OutPipe.OutputStream;
 
         //
         // Summary:
@@ -63,7 +61,7 @@ namespace UsbDeviceBase
         //
         // Returns:
         //     A UsbWriteOptions constant that indicates the pipe policy.
-        public UsbWriteOptions WriteOptions
+        public override UsbWriteOptions WriteOptions
         {
             get
             {
@@ -75,62 +73,54 @@ namespace UsbDeviceBase
             }
         }
 
-        public async void Send<T>(T data) where T : struct
+
+        public override int Send(byte[] bytes)
         {
-            byte[] bytes = MemoryPackSerializer.Serialize(data, SerializerOptions);
+            return SendAsync(bytes).GetAwaiter().GetResult();
+        }
 
-            if(bytes.Length > OutEndpointDescriptor.MaxPacketSize)
+        public override async Task<int> SendAsync(byte[] bytes)
+        {
+            if (bytes.Length == 0)
             {
-                throw new ArgumentException($"The size of the data to be sent ({bytes.Length} bytes) exceeds the maximum packet size ({OutEndpointDescriptor.MaxPacketSize} bytes) of the endpoint.");
+                return 0;
             }
-
-            IBuffer buffer = WindowsRuntimeBuffer.Create(bytes, 0, bytes.Length, bytes.Length);
 
             // Create the data writer object backed by the in-memory stream.
             using (DataWriter dataWriter = new DataWriter(this.OutputStream))
             {
-                dataWriter.UnicodeEncoding = this.UnicodeEncoding;
-                dataWriter.ByteOrder = this.ByteOrder;
-                dataWriter.WriteBuffer(buffer);
+                IBuffer buffer = WindowsRuntimeBuffer.Create(bytes, 0, bytes.Length, bytes.Length);
+                uint offset = 0;
 
-                // Send the contents of the writer to the backing stream.
-                await dataWriter.StoreAsync();
+                do
+                {
+                    dataWriter.UnicodeEncoding = this.UnicodeEncoding;
+                    dataWriter.ByteOrder = this.ByteOrder;
+                    dataWriter.WriteBuffer(buffer, offset, Math.Min((uint)bytes.Length - offset, OutEndpointDescriptor.MaxPacketSize));
 
-                // For the in-memory stream implementation we are using, the flushAsync call 
-                // is superfluous,but other types of streams may require it.
-                await dataWriter.FlushAsync();
+                    // Send the contents of the writer to the backing stream.
+                    await dataWriter.StoreAsync();
 
-                // In order to prolong the lifetime of the stream, detach it from the 
-                // DataWriter so that it will not be closed when Dispose() is called on 
-                // dataWriter. Were we to fail to detach the stream, the call to 
-                // dataWriter.Dispose() would close the underlying stream, preventing 
-                // its subsequent use by the DataReader below.
-                dataWriter.DetachStream();
+                    // For the in-memory stream implementation we are using, the flushAsync call 
+                    // is superfluous,but other types of streams may require it.
+                    //await dataWriter.FlushAsync();
+
+                    // In order to prolong the lifetime of the stream, detach it from the 
+                    // DataWriter so that it will not be closed when Dispose() is called on 
+                    // dataWriter. Were we to fail to detach the stream, the call to 
+                    // dataWriter.Dispose() would close the underlying stream, preventing 
+                    // its subsequent use by the DataReader below.
+                    dataWriter.DetachStream();
+
+                    offset += Math.Min((uint)bytes.Length - offset, OutEndpointDescriptor.MaxPacketSize);
+                } while (offset < bytes.Length);
+
+                return bytes.Length;
+
             }
+
         }
 
-        #endregion
-
-
-        #region Delegates / Events 
-
-        #endregion
-
-
-        #region Public Methods 
-
-        #endregion
-
-
-        #region Protected Methods 
-
-        #endregion
-
-        #region Provate Methods 
-
-        #endregion
-
-        #region Private Classes / Enum 
 
         #endregion
 

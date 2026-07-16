@@ -53,6 +53,8 @@ namespace UsbDeviceBase
         //     the device is only drawing power from the bus.
         bool SelfPowered { get; }
 
-        void Initialize();
+        bool Initialize();
+
+        bool IsConnected { get; }
     }
 }
