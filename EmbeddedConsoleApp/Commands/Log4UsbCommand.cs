@@ -8,7 +8,8 @@ using FluentArgs.Help;
 using log4net.Core;
 using Log4UsbService;
 
-{9
+namespace EmbeddedConsoleApp.Commands
+{
     internal class Log4UsbCommand : MyFramework.CommandArgs.CommandArgsBase
     {
 
