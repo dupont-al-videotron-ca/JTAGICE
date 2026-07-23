@@ -9,7 +9,7 @@
 #include "Timer2CTC.h"
 #include "AT90UsbKey.h"
 
-volatile uint32_t Timertick; // tick 1 ms
+volatile tick_t Timertick; // tick 1 ms
 volatile bool FatalError; 
 
 static void WaveformModeClear()
@@ -20,9 +20,9 @@ static void WaveformModeClear()
 }
 
 
-uint32_t GetTimerTick()
+tick_t GetTimerTick()
 {
-    uint32_t retval;
+    tick_t retval;
     bool intFlg =  BitIsSet(TIMSK2, OCIE2A);
     ClearBit(TIMSK2, OCIE2A);
     retval = Timertick;
@@ -34,30 +34,27 @@ uint32_t GetTimerTick()
     return retval;
 }
 
-bool IsTimeExpired(uint32_t oldtick, uint8_t timeout)
+bool IsTimeExpired(tick_t oldtick, tick_t timeout)
 {
-    int32_t diff = (int32_t)(GetTimerTick() - (oldtick + timeout));
-    if (diff >= 0)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return GetElapseTime(oldtick) >= timeout;
 }
 
-uint32_t GetElapseTime(uint32_t oldTick)
+tick_t GetElapseTime(tick_t oldTick)
 {
     return GetTimerTick() - oldTick;
 }
 
-void Sleep(uint32_t ms)
+void Sleep(tick_t ms)
 {
     if(ms != 0)
-    {
-        uint32_t tick = GetTimerTick();
-        while(!IsTimeExpired(tick, ms));
+    {        
+        SetBit(PORTB , DDB6);
+        tick_t startTick = GetTimerTick();
+        while(!IsTimeExpired(startTick, ms))
+        {
+        }
+        ClearBit(PORTB , DDB6);
+    
     }
     
 }
@@ -142,14 +139,15 @@ void Timer2CTC_Initialize()
     Timer2OutputADisconnected();
     Timer2OutputBDisconnected();
     Timer2SetWaveFormeMode(WaveformModeCTC);
-    Timer2SetPresacle(Timer2PreScale32);
+    Timer2SetPresacle(Timer2PreScale128);
 }
 
 void Timer2CTC_StartTick(bool enableIntr)
 {
     ClearBit(TIMSK2, OCIE2A);
-    OCR2A = 240; // adjusted with scope
-    
+    OCR2A = 120; // adjusted with scope
+
+    Timer2OutputAToggle();
     if(enableIntr)
     {
         SetBit(TIMSK2, OCIE2A);
@@ -170,8 +168,9 @@ void Timer2CTC_StartB(uint8_t ocr, bool enableIntr)
 // timer tick interrupt
 ISR(TIMER2_COMPA_vect)
 {
+    SetBit(PORTB , DDB6);
+    
     // clear intr source
-    SetBit(TIFR2, OCF2A);
     Timertick++;
     
     if(FatalError)

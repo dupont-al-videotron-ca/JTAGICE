@@ -21,7 +21,7 @@ static void MainLoop(void);
 static void ProcessUsbControl();
 static void ProcessUnitTest();
 
-const char DeviceName[] = "AT90USB";
+const char *DeviceName = "AT90USB";
 uint8_t AppState;
 
 int main(void) {
@@ -33,6 +33,7 @@ int main(void) {
     BoardPortDLedInit();
     BoardPortDLedsOff();
     SetBit(DDRB, DDB4); // output
+    SetBit(DDRB, DDB6); // output
 
     Timer2CTC_Initialize();
     Timer2CTC_StartTick(true);
@@ -52,13 +53,12 @@ int main(void) {
 static void MainLoop(void) {
     Log_Debug("MainLoop");
     while (!IsUsbDeveiceConfigured()) {
-        Sleep(10);
+        Sleep(1);
     }
 
-    while (1) 
-    {
+    
+    while(1)
         ProcessUnitTest();
-    }
 }
 
 static void ProcessUsbControl() 
@@ -81,10 +81,19 @@ static void ProcessUsbControl()
 
 static void ProcessUnitTest()
 {
+    
+    //SendLog(Log4UsbLevelFatal,"a1", "b1");
+
+    Sleep(500);
+#if 0    
     Log_Fatal("Log_Fatal");
-    Sleep(1);
-    //Log_Error("Log_Error");
-    //Log_Warn("Log_Warn");
-    //Log_Info("Log_Info");
-    //Log_Debug("Log_Debug");
+    Sleep(500);
+    Log_Error("Log_Error");
+    Sleep(500);
+    Log_Warn("Log_Warn");
+    Sleep(500);
+    Log_Info("Log_Info");
+    Sleep(500);
+    Log_Debug("Log_Debug");
+#endif    
  }

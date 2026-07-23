@@ -13,6 +13,7 @@
 #include "at90usbkey.h"
 #include "timer2ctc.h"
 
+extern bool ApplyUsbLoggerCfg(USB_DeviceRequest* request);
 extern uint8_t ResetCnt;
 
 uint8_t UsbDevConfValue = UsbUnconfiguredState;
@@ -308,22 +309,24 @@ void UsbProcessSetupRequest_Intr(void)
 
     UsbDevReadBytesN(&SetupRequest, sizeof(SetupRequest));
 
-    // Caution: We have to delay the AcknowledgeSETUP() if request is a 3 stage-transfer with out data
-    // because host may send out data immediately after our acknowledge and may not see our stall request!
-    if (!(SetupRequest.bRequest == USB_StdDevReqSET_DESCRIPTOR)) // ! 3 stage-transfer with out data
-        UsbDevAcknowledgeSETUP();
-
-    UsbDumpSetupRequest(&SetupRequest);
+    //UsbDumpSetupRequest(&SetupRequest);
     if (UsbIsVendorRequest(SetupRequest.bmRequestType))
     {
-        ReqDebug("Received UsbVendorRequest");
-        UsbDevProcessVendorRequest(&SetupRequest);
+        UsbDevAcknowledgeSETUP();
+        ApplyUsbLoggerCfg(&SetupRequest);
+        //ReqDebug("Received UsbVendorRequest");
+        //UsbDevProcessVendorRequest(&SetupRequest);
         UsbDevSelectEndpoint(0);
         // should call SendZLP
         UsbDevSendControlIn(); // send ZLP
     }
     else if (UsbIsStandardRequest(SetupRequest.bmRequestType))
     {
+        // Caution: We have to delay the AcknowledgeSETUP() if request is a 3 stage-transfer with out data
+        // because host may send out data immediately after our acknowledge and may not see our stall request!
+        if (!(SetupRequest.bRequest == USB_StdDevReqSET_DESCRIPTOR)) // ! 3 stage-transfer with out data
+            UsbDevAcknowledgeSETUP();
+
         switch (SetupRequest.bRequest)
         {
             case USB_StdDevReqGET_STATUS: // 3 stages with 2 byte IN-data -- not tested yet

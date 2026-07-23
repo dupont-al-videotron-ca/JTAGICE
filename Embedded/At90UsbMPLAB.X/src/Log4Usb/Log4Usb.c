@@ -42,7 +42,7 @@ bool ApplyUsbLoggerCfg(USB_DeviceRequest* request)
     return false;
 }
 
-bool SendLog(uint8_t level, const char *message, const char* fileName)
+bool SendLog(uint8_t level, char *message, char* fileName)
 {
     if(!IsUsbDeveiceConfigured() || level == Log4UsbLevelNone || level > LogLevel)
     {
@@ -52,18 +52,20 @@ bool SendLog(uint8_t level, const char *message, const char* fileName)
     memset(&appender, 0, sizeof(appender));
 
     appender.tickms = GetTimerTick();
-    uint16_t strLength = strlen(message)+1;
+    uint16_t msgLength = strlen(message)+1;
+    uint16_t fileNameLength = strlen(fileName)+1;
+    uint16_t deviceNsmeLength = strlen(DeviceName)+1;
+       
+    
+    uint16_t strLength =  msgLength + fileNameLength + deviceNsmeLength;
     appender.length = sizeof(UsbLoggingEventData_t) + strLength;
     appender.version = Log4UsbFrameVersion;
     appender.level = level;
 
-    Usb_InEndpointWriteFifoAndFlush(Log4UsbEndpointNumber, &appender, sizeof(UsbLoggingEventData_t));
-    
-    return true;
-    Usb_InEndpointWriteFifo(Log4UsbEndpointNumber, &appender, sizeof(UsbLoggingEventData_t));
-    Usb_InEndpointWriteFifo(Log4UsbEndpointNumber, (void*)DeviceName, strlen(DeviceName) + 1);
-    Usb_InEndpointWriteFifo(Log4UsbEndpointNumber, (void*)fileName, strlen(fileName) + 1);
-    Usb_InEndpointWriteFifoAndFlush(Log4UsbEndpointNumber, (void*)message, strlen(message) + 1);
+    Usb_InEndpointWriteFifo(Log4UsbEndpointNumber, &appender, sizeof(UsbLoggingEventData_t));    
+    Usb_InEndpointWriteFifo(Log4UsbEndpointNumber, DeviceName, deviceNsmeLength);
+    Usb_InEndpointWriteFifo(Log4UsbEndpointNumber, fileName, fileNameLength);
+    Usb_InEndpointWriteFifoAndFlush(Log4UsbEndpointNumber, message, msgLength);
 
     return true;
 }

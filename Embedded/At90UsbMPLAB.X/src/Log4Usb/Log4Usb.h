@@ -44,7 +44,7 @@ typedef struct
 } UsbLoggingEventData_t;
 
 bool ApplyUsbLoggerCfg(USB_DeviceRequest* request);
-bool SendLog(uint8_t level, const char* message, const char* fileName);
+bool SendLog(uint8_t level, char* message, char* fileName);
 
 #define Log_Fatal(msg) SendLog(Log4UsbLevelFatal,msg, __FILE__)
 #define Log_Error(msg) SendLog(Log4UsbLevelError,msg, __FILE__)

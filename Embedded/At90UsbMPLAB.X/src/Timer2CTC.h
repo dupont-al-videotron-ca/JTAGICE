@@ -74,10 +74,11 @@
 extern "C" {
 #endif /* __cplusplus */
 
+typedef uint32_t tick_t;
 extern volatile bool FatalError;  
-uint32_t GetTimerTick();
-uint32_t GetElapseTime(uint32_t oldTick);
-bool IsTimeExpired(uint32_t oldtick, uint8_t timeout);
+tick_t GetTimerTick();
+tick_t GetElapseTime(tick_t oldTick);
+bool IsTimeExpired(tick_t oldtick, tick_t timeout);
 
 void Timer2CTC_Initialize();
 void Timer2CTC_Reset();
