@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace UsbDeviceBase
 {
-    public interface IUsbPipe
+    public interface IUsbPipe : IDisposable
     {
     }
 }

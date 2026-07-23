@@ -8,10 +8,15 @@ using log4net.Core;
 
 namespace MyFramework.CommandArgs
 {
-    internal class CommandClrscr : CommandArgsBase
+    public class CommandClrscr : CommandArgsBase<CommandClrscr>
     {
 
         #region Constructors 
+        public CommandClrscr(CommandExecDelegate<CommandClrscr> commandExec) : base(_commandName, commandExec)
+        {
+            Create();
+        }
+
 
         #endregion
 
@@ -20,18 +25,10 @@ namespace MyFramework.CommandArgs
 
         private const string _commandName = "Clrscr";
 
-        public CommandClrscr() : base(_commandName)
-        {
-            Create();
-        }
-
         #endregion
 
 
         #region Properties 
-
-        public bool All { get; private set; } = false;
-        public bool HelpOnHelp { get; private set; } = true;
 
         #endregion
 
@@ -66,9 +63,8 @@ namespace MyFramework.CommandArgs
                 /* 4) Load remaining arguments */
 
                 /* 5) Callback */
-                .Call(pos => 
+                .Call(pos =>
                 {
-                    Commands.ClearScreen();
                 })
                 .Build();
 

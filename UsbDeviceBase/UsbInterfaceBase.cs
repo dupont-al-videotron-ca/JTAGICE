@@ -9,16 +9,25 @@ using Windows.Devices.Usb;
 
 namespace UsbDeviceBase
 {
+    /// <summary>
+    /// Represents a USB interface and provides access to its properties and associated pipes.
+    /// </summary>
     public abstract class UsbInterfaceBase : IUsbInterface
     {
 
 
         #region Constructors 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UsbInterfaceBase"/> class with the specified USB interface descriptor and associated pipes.    
+        /// </summary>
+        /// <param name="descriptor">The USB interface descriptor.</param>
+        /// <param name="outPipes">The collection of output pipes associated with the interface.</param>
+        /// <param name="inPipes">The collection of input pipes associated with the interface.</param>
+        /// <exception cref="ArgumentNullException">Thrown when the descriptor is null.</exception>
         public UsbInterfaceBase(Windows.Devices.Usb.UsbInterfaceDescriptor descriptor, IEnumerable<KeyValuePair<int, PipeOutBase>> outPipes, IEnumerable<KeyValuePair<int, PipeInBase>> inPipes)
         {
             UsbInterfaceDescriptor = descriptor ?? throw new ArgumentNullException(nameof(descriptor));
             InPipes = new Dictionary<int, PipeInBase>(inPipes);
-
             OutPipes = new Dictionary<int, PipeOutBase>(outPipes);
         }
 
@@ -26,6 +35,8 @@ namespace UsbDeviceBase
 
 
         #region Fields 
+
+        private bool disposedValue;
 
         #endregion
 
@@ -80,10 +91,17 @@ namespace UsbDeviceBase
         //     interface.
         public byte SubclassCode => UsbInterfaceDescriptor.SubclassCode;
 
+        /// <summary>
+        /// Gets the collection of input pipes associated with the USB interface.
+        /// </summary>
         public Dictionary<int, PipeInBase> InPipes { get; }
+
+        /// <summary>
+        /// Gets the collection of output pipes associated with the USB interface.
+        /// </summary>
         public Dictionary<int, PipeOutBase> OutPipes { get; }
 
-        protected Windows.Devices.Usb.UsbInterfaceDescriptor UsbInterfaceDescriptor { get; }
+        protected Windows.Devices.Usb.UsbInterfaceDescriptor UsbInterfaceDescriptor { get; private set; }
 
         #endregion
 
@@ -171,6 +189,39 @@ namespace UsbDeviceBase
                 }
             }
             return retval;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    foreach (var inItem in InPipes.Values)
+                    {
+                        inItem.Dispose();
+                    }
+
+                    foreach (var outItem in OutPipes.Values)
+                    {
+                        outItem.Dispose();
+
+                    }
+
+                    UsbInterfaceDescriptor = null!;
+                    InPipes.Clear(); 
+                    OutPipes.Clear();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

@@ -1,26 +1,20 @@
 ﻿
-using System.Collections;
-using System.Runtime.InteropServices;
-using System.Text;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 using log4net.Util;
 using Log4UsbService.EmbeddedData;
+using System.Collections;
+using System.Runtime.InteropServices;
+using System.Text;
 using UsbDeviceBase;
+using Windows.Devices.Usb;
 
 namespace Log4UsbService
 {
-    public class Log4UsbService: IDisposable
+    public class Log4UsbService : IDisposable, ILog4UsbService
     {
-        private readonly ILog loggerDebug;
-        private readonly IUSBControlDevice usbControl;
-        private readonly IUsbPipeIn pipeIn;
-        private readonly CancellationTokenSource cancellationSource;
-        private Task _receiveTask;
-        private bool disposedValue;
 
-        public CancellationToken CancellationToken { get; private set; }
 
         #region Constructors 
         /// <summary>
@@ -29,24 +23,55 @@ namespace Log4UsbService
         /// <param name="usbDeviceBase"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InvalidDataException"></exception>
-        public Log4UsbService(IUSBControlDevice controlDevice, IUsbPipeIn pipe)
+        public Log4UsbService(int interfaceId, int pipeId, IUsbDevice usbDevice, ILog logger)
         {
-            loggerDebug = LogManager.GetLogger(GetType());
-            this.usbControl = controlDevice ?? throw new ArgumentNullException(nameof(controlDevice));
-            pipeIn = pipe ?? throw new ArgumentNullException(nameof(pipe));
+            loggerDebug = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.interfaceId = interfaceId;
+            this.pipeId = pipeId;
+            this.usbDevice = usbDevice ?? throw new ArgumentNullException(nameof(usbDevice));
+            pipeIn = null!;
             cancellationSource = new CancellationTokenSource();
-            _receiveTask = null!;
+            receiveTask = null!;
+
+            usbDevice.DeviceOpened += OnDeviceOpened;
+            usbDevice.DeviceClosed += this.OnDeviceClosed;
         }
 
+
+        /// <summary>
+        /// Initializes a new instance of the Log4UsbService class with the specified UsbDeviceBase for testing purpose.
+        /// </summary>
+        /// <param name="usbDeviceBase"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="InvalidDataException"></exception>
+        internal Log4UsbService(int interfaceId, int pipeId, IUsbDevice controlDevice, IUsbPipeIn pipeIn, ILog logger) : this(interfaceId, pipeId, controlDevice, logger)
+        {
+            this.pipeIn = pipeIn ?? throw new ArgumentNullException(nameof(pipeIn));
+        }
         #endregion
 
 
         #region Fields 
 
+        private readonly TimeSpan receiveTimeout = TimeSpan.FromSeconds(10);
+        private readonly ILog loggerDebug;
+        private readonly int interfaceId;
+        private readonly int pipeId;
+        private IUsbDevice usbDevice;
+        private IUsbPipeIn pipeIn;
+        private CancellationTokenSource cancellationSource;
+        private Task receiveTask;
+        private bool disposedValue;
+        private readonly TimeSpan openTimeout = TimeSpan.FromSeconds(5);
+        private Level startLogRequestLevel = Level.Off;
+        private UInt32 previousTickCount = 0;
+
         #endregion
 
 
         #region Properties 
+
+        internal bool IsReceivingLog => receiveTask != null;
 
         #endregion
 
@@ -59,48 +84,110 @@ namespace Log4UsbService
         #region Public Methods 
 
         /// <summary>
+        /// Sets the receiving log level. 
+        /// If the level is Level.Off, it stops receiving log messages; 
+        /// otherwise, it starts receiving log messages with the specified level.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        public bool SetReceivingLog(Level level)
+        {
+            loggerDebug.Debug($"SetReceivingLog called with level: {level}.");
+
+            if (level == Level.Off)
+            {
+                return StopReceivingLog();
+            }
+            else
+            {
+                return StartReceivingLog(level);
+            }
+        }
+
+        /// <summary>
         /// Starts receiving log messages from the USB device by sending a logging configuration with the specified levelUsb.
         /// </summary>
         /// <param name="level"></param>
         /// <returns></returns>
-        public bool StartReceivingLog(Level level)
+        internal bool StartReceivingLog(Level level)
         {
-            uint error;
+            startLogRequestLevel = level;
 
-            if ((error = SendLoggingConfigurationToUsbDevice(level, true)) != 0)
+            if (!usbDevice.WaitOpenned(openTimeout))
             {
-                loggerDebug.Error($"Failed to send logging configuration to USB device. Error code: {error}");
+                loggerDebug.Error("USB device is not opened.");
                 return false;
             }
 
-            StartReceivingTask();
-            loggerDebug.Debug("Log4UsbService started.");
-            return true;
+            uint error;
+
+            // start logging on the USB device by sending a logging configuration with the specified levelUsb.
+            if ((error = SendLoggingConfigurationToUsbDevice(level, true)) != 0)
+            {
+                loggerDebug.Error($"Failed to send logging configuration to USB device. Error code: {(int)error:X8}");
+                return false;
+            }
+
+            if (!IsReceivingLog)
+                StartReceivingTask();
+
+            loggerDebug.Debug($"ReceivingLog started with level: {level}.");
+            return error == 0;
         }
 
         /// <summary>
         /// Stops receiving log messages from the USB device by sending a logging configuration with Level.Off.
         /// </summary>
         /// <returns></returns>
-        public bool StopReceivingLog()
+        internal bool StopReceivingLog()
         {
-            uint error;
-
-            if ((error = SendLoggingConfigurationToUsbDevice(Level.Off, false)) != 0)
+            startLogRequestLevel = Level.Off;
+            uint error = 1;
+            if (!usbDevice.IsOpened)
             {
-                loggerDebug.Error($"Failed to send logging configuration to USB device. Error code: {error}");
-                return false;
+                loggerDebug.Error("USB device is not opened.");
+            }
+            else
+            {
+                // stop logging on the USB device by sending a logging configuration with Level.Off.
+                if ((error = SendLoggingConfigurationToUsbDevice(Level.Off, false)) != 0)
+                {
+                    loggerDebug.Error($"Failed to send logging configuration to USB device. Error code: {(int)error:X8}");
+                }
             }
 
-            if(this._receiveTask != null && !this._receiveTask.IsCompleted)
+            StopReceivingTask();
+
+            loggerDebug.Debug("ReceivingLog stopped.");
+            return error == 0;
+        }
+        
+        #endregion
+
+
+        #region Protected Methods 
+
+        #endregion
+
+        #region Private Methods 
+
+        private bool StopReceivingTask()
+        {
+            if (this.receiveTask != null && !this.receiveTask.IsCompleted)
             {
+                loggerDebug.Debug("Receive task cancel requested.");
                 cancellationSource.Cancel(true);
                 try
                 {
-                    if (!this._receiveTask.Wait(1000))
+                    if (!this.receiveTask.Wait(1000))
                     {
                         loggerDebug.Error("Timeout while waiting for receive task to complete.");
                         return false;
+                    }
+                    else
+                    {
+                        this.receiveTask = null!;
+                        loggerDebug.Debug("Receive task completed successfully.");
                     }
                 }
                 catch (AggregateException ex)
@@ -111,34 +198,52 @@ namespace Log4UsbService
                         if (inner is OperationCanceledException)
                         {
                             loggerDebug.Debug("Receive task canceled successfully.");
+                            this.receiveTask = null!;
                             retval = true;
                         }
                         else
                         {
-                            loggerDebug.Error("Error while waiting for receive task to complete.", inner);
+                            loggerDebug.Fatal("Error while waiting for receive task to complete.", inner);
                         }
                     }
-                    this._receiveTask = null!;
                     return retval;
                 }
             }
-
-            this._receiveTask = null!;
-            loggerDebug.Debug("Log4UsbService stopped.");
-            return true;
+            else
+            {
+                loggerDebug.Debug("Receive task already completed.");
+            }
+            return this.receiveTask == null!;
         }
-        #endregion
 
+        private void OnDeviceClosed(object? sender, EventArgs e)
+        {
+            loggerDebug.Debug($"Device closed: {usbDevice.DeviceName}");
+            SetReceivingLog(Level.Off);
+        }
 
-        #region Protected Methods 
+        private void OnDeviceOpened(object? sender, DeviceInfoEventArgs e)
+        {
+            loggerDebug.Debug($"Device opened: {e.DeviceInfo.Name}");
 
-        #endregion
+            previousTickCount = 0;
+            this.pipeIn = usbDevice.GetBulkInPipe(this.interfaceId, this.pipeId);
 
-        #region Private Methods 
+            if (this.pipeIn == null)
+            {
+                loggerDebug.Error($"Failed to get bulk in pipe for interface {this.interfaceId} and pipe {this.pipeId}.");
+                return;
+            }
+
+            SetReceivingLog(this.startLogRequestLevel);
+        }
+
 
         private void StartReceivingTask()
         {
-            this._receiveTask = Task.Run(() =>
+            cancellationSource = new CancellationTokenSource();
+
+            this.receiveTask = Task.Run(() =>
             {
                 loggerDebug.Debug("receiving Task running.");
                 while (true)
@@ -151,7 +256,7 @@ namespace Log4UsbService
 
                     try
                     {
-                        this.ReceiveLogFrame();
+                        this.ReceiveLogFrameAsync();
                     }
                     catch (OperationCanceledException ex)
                     {
@@ -161,32 +266,58 @@ namespace Log4UsbService
                     }
                     catch (Exception ex)
                     {
-                        loggerDebug.Error("Receiving Exception:", ex);
+                        loggerDebug.Fatal("Receiving Exception:", ex);
                     }
                 }
 
                 loggerDebug.Debug("Receiving task exit.");
+                this.receiveTask = null!;
                 return;
 
             }, this.cancellationSource.Token);
+
         }
 
-        private void ReceiveLogFrame()
+        private async void ReceiveLogFrameAsync()
         {
-            USB_LoggingEventData_t logEventData = new USB_LoggingEventData_t();
-
             try
             {
-                if (this.usbControl.IsConnected)
+                if (this.usbDevice.IsOpened && !this.cancellationSource.Token.IsCancellationRequested)
                 {
-                    if (!this.pipeIn.ReadStructure(ref logEventData, 1000))
+                    //loggerDebug.Debug($"Reading structure: timeout : {receiveTimeout}"); 
+                    var logEventDataResult = await this.pipeIn.ReadStructureAsync<USB_LoggingEventData_t>(this.cancellationSource.Token, (int)receiveTimeout.TotalMilliseconds);
+                    if (!logEventDataResult.HasValue)
                     {
+                        //loggerDebug.Debug("timeout occured.");
+                        return;
+                    }
+                    else if (this.cancellationSource.Token.IsCancellationRequested)
+                    {
+                        //loggerDebug.Debug("CancellationRequested in ReadStructureAsync.");
                         return;
                     }
 
-                    int strLength = logEventData.Header.Length - (ushort)Marshal.SizeOf<USB_LoggingEventData_t>();
-                    if (!this.pipeIn.ReadBytes(out byte[] values, (uint)strLength, 1000))
+
+                    USB_LoggingEventData_t logEventData = logEventDataResult.Value;
+
+                    if (!logEventData.IsValid)
                     {
+                        loggerDebug.Error($"Received invalid log frame header, length:{logEventData.Header.Length}, reserve:{logEventData.Header.Reseved}, Version:{logEventData.Header.Version}, Level:{logEventData.Level}");
+                        return;
+                    }
+
+                    //loggerDebug.Debug($"Received log frame header: {logEventData.ToString()}");
+
+                    int strLength = logEventData.Header.Length - (ushort)Marshal.SizeOf<USB_LoggingEventData_t>();
+                    loggerDebug.Debug($"Reading strings length {strLength}, timeout: {receiveTimeout}");
+                    if (!await this.pipeIn.ReadBytesAsync(out byte[] values, strLength, this.cancellationSource.Token, (int)receiveTimeout.TotalMilliseconds))
+                    {
+                        //loggerDebug.Debug("ReadBytes timeout.");
+                        return;
+                    }
+                    else if (this.cancellationSource.Token.IsCancellationRequested)
+                    {
+                        //loggerDebug.Debug("CancellationRequested in ReadBytesAsync.");
                         return;
                     }
 
@@ -214,18 +345,47 @@ namespace Log4UsbService
                         message = strings[2];
                     }
 
+                    if (previousTickCount == 0)
+                    {
+                        previousTickCount = logEventData.TickCount;
+                    }
+                    else
+                    {
+                        Int32 diff = (Int32)(logEventData.TickCount - previousTickCount);
+                        //loggerDebug.Debug($"Received log frame: Level={logEventData.Level}, ElapsedTick={diff}ms, LogName={logName}, FileName={fileName}, Message={message}");
+                    }
+
+                    if (String.IsNullOrWhiteSpace(logName))
+                    {
+                        logName = loggerDebug.Logger.Name;
+                    }
+
                     ILog loggerUsb = LogManager.GetLogger(logName);
+
                     string logMessage = $"[{logEventData.TickCount,-10}ms]: {fileName}, {message}";
                     loggerUsb.Logger.Log(typeof(Log4UsbService), MapLevel(logEventData.Level), logMessage, null);
+
+                    previousTickCount = logEventData.TickCount;
                 }
                 else
                 {
                     return;
                 }
             }
+            catch (OperationCanceledException ex)
+            {
+                loggerDebug.Debug($"OperationCanceledException {ex.Message}.");
+                return;
+            }
+            catch (COMException ex)
+            {
+                loggerDebug.Debug($"COMException errorCode: 0x{ex.ErrorCode:X8}:");
+                return;
+            }
             catch (Exception ex)
             {
-                loggerDebug.Error("Error while reading log frame header from USB device.", ex);
+                loggerDebug.Fatal("Error while reading log frame header from USB device.", ex);
+                return;
             }
         }
 
@@ -254,7 +414,7 @@ namespace Log4UsbService
             uSB_LoggingCfg.LoggingLevel = level;
             uSB_LoggingCfg.IsLoggingEnabled = enable;
 
-            return usbControl.SendControlOutTransfer(uSB_LoggingCfg.SetupPacket);
+            return usbDevice.SendControlOutTransfer(uSB_LoggingCfg.SetupPacket);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -263,9 +423,13 @@ namespace Log4UsbService
             {
                 if (disposing)
                 {
-                    if (this._receiveTask != null)
+                    if (this.receiveTask != null)
                     {
                         StopReceivingLog();
+                        usbDevice.DeviceOpened -= OnDeviceOpened;
+                        usbDevice.DeviceClosed -= this.OnDeviceClosed;
+                        usbDevice = null!;
+                        pipeIn = null!;
                     }
                 }
 

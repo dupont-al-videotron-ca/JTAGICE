@@ -5,13 +5,41 @@ namespace MyUsbDevice
 {
     public class At90UsbKeyDevice : UsbDeviceBase.UsbDeviceBase
     {
-        private bool _flashInterface;
+
+
+        #region Constructors 
+        public At90UsbKeyDevice() : this(false)
+        {
+        }
 
         public At90UsbKeyDevice(bool flashInstalled = false) : base()
         {
-            this.Initialize();
             this._flashInterface = flashInstalled;
         }
+
+        #endregion
+
+
+        #region Fields 
+        private bool _flashInterface;
+
+        public const int InterfaceId = 0;
+        public const int LogPipeInId = 1;
+
+        #endregion
+
+
+        #region Properties 
+
+        #endregion
+
+
+        #region Delegates / Events 
+
+        #endregion
+
+
+        #region Public Methods 
 
         public override ushort VendorId => 0x03EB;
 
@@ -21,15 +49,37 @@ namespace MyUsbDevice
 
         public override string DeviceName => "AT90USB";
 
-        public override bool Initialize()
-        {
-            return base.Initialize();
 
+        #endregion
+
+
+        #region Protected Methods 
+
+        public IUsbPipeIn GetLog4UsbPipe()
+        {
+            BulkInPipeImpl pipe = GetBulkInPipe(InterfaceId, LogPipeInId);
+            if (pipe == null)
+            {
+                throw new InvalidOperationException("No USB interfaces available.");
+            }
+
+            return pipe;
         }
 
         protected override UsbInterfaceBase CreateInterface(Windows.Devices.Usb.UsbInterfaceDescriptor descriptor, IEnumerable<KeyValuePair<int, PipeOutBase>> outPipes, IEnumerable<KeyValuePair<int, PipeInBase>> inPipes)
         {
             return new At90UsbInterface(descriptor, outPipes, inPipes);
         }
+
+
+        #endregion
+
+        #region Private Methods 
+
+        #endregion
+
+        #region Private Classes / Enum 
+
+        #endregion
     }
 }

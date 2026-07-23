@@ -87,7 +87,7 @@ namespace UsbDeviceBaseTest
             var readPipe = test.ImplInterfaces[0].InPipes[1];
             if (readPipe.IsByteToRead)
             {
-                if (readPipe.ReadBytes(out buf, s.Length, 5000))
+                if (readPipe.ReadBytes(out buf, (int)s.Length, 5000))
                 {
                     Assert.NotEmpty(buf);
                     Logger.Info($"Read {buf.Length} bytes: {BitConverter.ToString(buf)}");
@@ -122,7 +122,7 @@ namespace UsbDeviceBaseTest
             var readPipe = test.ImplInterfaces[0].InPipes[2];
             if (readPipe.IsByteToRead)
             {
-                if (readPipe.ReadBytes(out buf, s.Length, 5000))
+                if (readPipe.ReadBytes(out buf, (int)s.Length, 5000))
                 {
                     Assert.NotEmpty(buf);
                     Logger.Info($"Read {buf.Length} bytes: {BitConverter.ToString(buf)}");
@@ -231,7 +231,13 @@ namespace UsbDeviceBaseTest
         {
             _device = new UsbDeviceTest();
             if (callInit)
-                Assert.True(_device.Initialize());
+            {
+                int retry = 0;
+                while (!_device.IsOpened && retry++ < 10)
+                    Task.Delay(500)?.Wait();
+
+                Assert.True(_device.IsOpened);
+            }
 
             return _device;
 

@@ -1,50 +1,114 @@
 ﻿#pragma warning disable CS1591,CS1573,CS0465,CS0649,CS8019,CS1570,CS1584,CS1658,CS0436,CS8981,SYSLIB1092, CS8625, CS8618, CS8603, CS8604, CA1416
+using log4net;
+using log4net.Repository.Hierarchy;
+using MemoryPack;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
-using log4net;
-using log4net.Repository.Hierarchy;
-using MemoryPack;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Usb;
-
 using Windows.Foundation.Metadata;
 using Windows.Storage.Streams;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace UsbDeviceBase
 {
-    public abstract class UsbDeviceBase : IDisposable, IUsbDevice, IUSBControlDevice
+    /// <summary>
+    /// Represents a base class for USB devices, providing common functionality for managing USB connections, sending control transfers, and handling device events.
+    /// </summary>
+    public abstract class UsbDeviceBase : IDisposable, IUsbDevice
     {
-
+        private enum DeviceState
+        {
+            WaitEnumerationCompleted,
+            WaitAdded,
+            Opened,
+        }
 
         #region Constructors 
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UsbDeviceBase"/> class.
+        /// </summary>
         protected UsbDeviceBase()
         {
             this.Logger = LogManager.GetLogger(this.GetType());
             IsConnected = false;
+            SetupWatcher();
         }
 
         #endregion
+        #region Events 
 
+        /// <summary>
+        /// Occurs when the device is connected or disconnected.
+        /// </summary>
+        public event EventHandler<DeviceConnectEventArgs>? DeviceConnect;
+
+        /// <summary>
+        /// Occurs when the device is opened.
+        /// </summary>
+        public event EventHandler<DeviceInfoEventArgs>? DeviceOpened;
+
+        /// <summary>
+        /// Occurs when the device is closed.
+        /// </summary>
+        public event EventHandler? DeviceClosed;
+
+        #endregion
+
+        protected void OnDeviceConnect(bool isConnected)
+        {
+            DeviceConnect?.Invoke(this, new DeviceConnectEventArgs(isConnected) );
+        }
+
+        protected void OnDeviceOpened(DeviceInfoEventArgs info)
+        {
+            DeviceOpened?.Invoke(this, info);
+        }
+
+        protected void OnDeviceClosed()
+        {
+            DeviceClosed?.Invoke(this, EventArgs.Empty);
+        }
 
         #region Fields 
 
+        private DeviceState state = DeviceState.WaitEnumerationCompleted;
         private bool disposedValue;
         private DeviceWatcher deviceWatcher;
+        private DeviceInformation? deviceInfo;
+
 
         #endregion
 
 
         #region Properties 
 
+        /// <summary>
+        /// Gets a value indicating whether the device is opened.
+        /// </summary>
+        public bool IsOpened
+        {
+            get
+            {
+                return WindowsDevice != null;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the device is connected.
+        /// </summary>
         public bool IsConnected { get; private set; }
 
+        /// <summary>
+        /// Gets the USB interface used for control transfers.
+        /// </summary>
         public UsbInterfaceBase UsbInterfaceControl
         {
             get
@@ -54,35 +118,10 @@ namespace UsbDeviceBase
         }
 
         public Windows.Storage.Streams.ByteOrder ByteOrder { get; init; } = Windows.Storage.Streams.ByteOrder.LittleEndian;
+
         public Windows.Storage.Streams.UnicodeEncoding UnicodeEncoding { get; set; } = Windows.Storage.Streams.UnicodeEncoding.Utf8;
 
-        protected MemoryPackSerializerOptions SerializerOptions
-        {
-            get
-            {
-                if (UnicodeEncoding == Windows.Storage.Streams.UnicodeEncoding.Utf8)
-                {
-                    return MemoryPackSerializerOptions.Utf8;
-                }
-                else
-                {
-                    return MemoryPackSerializerOptions.Utf16;
-                }
-            }
-        }
-
         public Dictionary<int, UsbInterfaceBase> ImplInterfaces { get; } = new Dictionary<int, UsbInterfaceBase>();
-
-        protected Windows.Devices.Usb.UsbConfigurationDescriptor UsbConfigurationDescriptor
-        {
-            get
-            {
-                ThrowIfNoWindowsDevice();
-                return this.WindowsDevice.Configuration.ConfigurationDescriptor;
-            }
-        }
-
-        protected ILog Logger { get; }
 
         public abstract ushort VendorId { get; }
 
@@ -132,26 +171,93 @@ namespace UsbDeviceBase
         //     the device is only drawing power from the bus.
         public bool SelfPowered => UsbConfigurationDescriptor.SelfPowered;
 
+        protected Windows.Devices.Usb.UsbConfigurationDescriptor UsbConfigurationDescriptor
+        {
+            get
+            {
+                ThrowIfNoWindowsDevice();
+                return this.WindowsDevice.Configuration.ConfigurationDescriptor;
+            }
+        }
+        protected MemoryPackSerializerOptions SerializerOptions
+        {
+            get
+            {
+                if (UnicodeEncoding == Windows.Storage.Streams.UnicodeEncoding.Utf8)
+                {
+                    return MemoryPackSerializerOptions.Utf8;
+                }
+                else
+                {
+                    return MemoryPackSerializerOptions.Utf16;
+                }
+            }
+        }
+
+        protected ILog Logger { get; }
+
         protected Windows.Devices.Usb.UsbDevice WindowsDevice { get; set; }
-        public bool IsOpenned { get; private set; }
+
 
         #endregion
 
 
         #region Public Methods 
 
+        /// <summary>
+        /// Waits for the USB device to be opened within the specified timeout period. 
+        /// </summary>
+        /// <param name="timeout">The maximum amount of time to wait for the device to be opened.</param>
+        /// <returns>True if the device is opened within the timeout period; otherwise, false.</returns>
+        public bool WaitOpenned(TimeSpan timeout)
+        {
+            Logger.Debug($"WaitOpenned with timeout{timeout}.");
+
+            if (!IsOpened && timeout > TimeSpan.Zero)
+            {
+                long retry = 1;
+                var delay = TimeSpan.FromMilliseconds(500);
+                if (timeout > delay)
+                {
+                    retry = (int)timeout.TotalMilliseconds / 500;
+                }
+
+                while (!IsOpened && retry-- > 0)
+                    Task.Delay(delay).GetAwaiter().GetResult();
+            }
+
+            return IsOpened;
+        }
+
+        /// <summary>
+        /// Gets the bulk IN pipe for the specified interface number and pipe ID.
+        /// </summary>
+        /// <param name="interfaceNumber">The interface number of the USB device.</param>
+        /// <param name="pipeId">The pipe ID of the bulk IN pipe.</param>
+        /// <returns>The bulk IN pipe implementation.</returns>
         public BulkInPipeImpl GetBulkInPipe(int interfaceNumber, int pipeId)
         {
             return this.GetPipeIn<BulkInPipeImpl>(interfaceNumber, pipeId);
         }
 
-        public BulkOutPipeImpl GetBulkOutPipe(int OutterfaceNumber, int pipeId)
+        /// <summary>
+        /// Gets the bulk OUT pipe for the specified interface number and pipe ID.
+        /// </summary>
+        /// <param name="interfaceNumber">The interface number of the USB device.</param>
+        /// <param name="pipeId">The pipe ID of the bulk OUT pipe.</param>
+        /// <returns>The bulk OUT pipe implementation.</returns>
+        public BulkOutPipeImpl GetBulkOutPipe(int interfaceNumber, int pipeId)
         {
-            return this.GetPipeOut<BulkOutPipeImpl>(OutterfaceNumber, pipeId);
+            return this.GetPipeOut<BulkOutPipeImpl>(interfaceNumber, pipeId);
         }
 
 
-        // Methods
+        /// <summary>
+        /// Sends a control OUT transfer to the USB device using the specified setup packet. 
+        /// This method blocks until the transfer is complete and returns the number of bytes sent.
+        /// </summary>
+        /// <param name="usp">The USB setup packet containing the control transfer parameters.</param>
+        /// <returns>The error number, 0 indication success.</returns>
         public uint SendControlOutTransfer(Windows.Devices.Usb.UsbSetupPacket usp)
         {
             Task<uint> t = this.SendControlOutTransferAsync(usp);
@@ -159,12 +265,23 @@ namespace UsbDeviceBase
             return t.Result;
         }
 
+        /// <summary>
+        /// Sends a control OUT transfer to the USB device using the specified setup packet asynchronously.
+        /// </summary>
+        /// <param name="usp">The USB setup packet containing the control transfer parameters.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the error number, 0 indication success.</returns>
         public async Task<uint> SendControlOutTransferAsync(Windows.Devices.Usb.UsbSetupPacket usp)
         {
+            Logger.Debug($"Sending control out transfer with Request: {usp.Request}, RequestType: {usp.RequestType.ControlTransferType}, Recipient: {usp.RequestType.Recipient}, Value: {usp.Value}, Index: {usp.Index}, Length: {usp.Length}.");
             try
             {
                 this.ThrowIfNoWindowsDevice();
                 return await this.WindowsDevice.SendControlOutTransferAsync(usp);
+            }
+            catch (COMException comEx)
+            {
+                HandleException(comEx);
+                return (uint)comEx.HResult;
             }
             catch (Exception ex)
             {
@@ -173,68 +290,185 @@ namespace UsbDeviceBase
             }
         }
 
+        /// <summary>
+        /// Sends a control IN transfer to the USB device using the specified setup packet and buffer length.
+        /// This method blocks until the transfer is complete and returns the received buffer.
+        /// </summary>
+        /// <param name="usp">The USB setup packet containing the control transfer parameters.</param>
+        /// <param name="bufferLength">The length of the buffer to receive data.</param>
+        /// <returns>The received buffer.</returns>
         public IBuffer SendControlInTransfer(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength)
         {
+            this.ThrowIfNoWindowsDevice();
             try
             {
-                this.ThrowIfNoWindowsDevice();
                 var t = this.SendControlInTransferAsync(usp, bufferLength);
                 t.Wait();
                 return t.Result;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to send control in transfer. Exception: {ex}");
-                throw;
+                HandleException(ex);
+                return default;
             }
         }
 
+        /// <summary>
+        /// Sends a control IN transfer to the USB device using the specified setup packet and buffer length asynchronously.
+        /// </summary>
+        /// <param name="usp">The USB setup packet containing the control transfer parameters.</param>
+        /// <param name="bufferLength">The length of the buffer to receive data.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the received buffer.</returns>
         public async Task<IBuffer> SendControlInTransferAsync(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength)
         {
-            IBuffer buffer = WindowsRuntimeBufferExtensions.AsBuffer(new byte[bufferLength]);
-
+            Logger.Debug($"Sending control in transfer with Request: {usp.Request}, RequestType: {usp.RequestType.ControlTransferType}, Recipient: {usp.RequestType.Recipient}, Value: {usp.Value}, Index: {usp.Index}, Length: {usp.Length}.");
             this.ThrowIfNoWindowsDevice();
-            return await this.WindowsDevice.SendControlInTransferAsync(usp, buffer);
-        }
-
-        public T SendControlInTransfer<T>(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength)
-        {
-            IBuffer buffer = SendControlInTransfer(usp, bufferLength);
-            byte[] data = buffer.ToArray();
-
-            if (data == null || data.Length == 0)
-            {
-                Logger.Info($"Received empty buffer from control in transfer. Returning default value.");
-                return (default);
-            }
-
-            return MemoryPackSerializer.Deserialize<T>(data, this.SerializerOptions);
-        }
-
-        public Task<T?> SendControlInTransferAsync<T>(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength)
-            where T : struct
-        {
             try
             {
-                this.ThrowIfNoWindowsDevice();
-                Task<IBuffer> t = SendControlInTransferAsync(usp, bufferLength);
-                t.Wait();
-                IBuffer buffer = t.Result;
-                byte[] data = buffer.ToArray();
-
-                if (data == null || data.Length == 0)
-                {
-                    Logger.Info($"Received empty buffer from control in transfer. Returning default value.");
-                    return Task.FromResult<T?>(default);
-                }
-
-                T? tResult = MemoryPackSerializer.Deserialize<T>(data, this.SerializerOptions);
-                return Task.FromResult(tResult);
+                IBuffer buffer = WindowsRuntimeBufferExtensions.AsBuffer(new byte[bufferLength]);
+                return await this.WindowsDevice.SendControlInTransferAsync(usp, buffer);
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to send control in transfer. Exception: {ex}");
-                throw;
+                HandleException(ex);
+                return default;
+            }
+        }
+        
+        /// <summary>
+        /// Sends a control IN transfer to the USB device using the specified setup packet and buffer length, and deserializes the result to the specified type.
+        /// This method blocks until the transfer is complete and returns the deserialized result.
+        /// </summary>
+        /// <typeparam name="T">The type to deserialize the received buffer to.</typeparam>
+        /// <param name="usp">The USB setup packet containing the control transfer parameters.</param>
+        /// <param name="bufferLength">The length of the buffer to receive data.</param>
+        /// <returns>The deserialized result.</returns> 
+        public T SendControlInTransfer<T>(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength)
+        {
+            Logger.Debug($"Sending control in transfer with Request: {usp.Request}, RequestType: {usp.RequestType.ControlTransferType}, Recipient: {usp.RequestType.Recipient}, Value: {usp.Value}, Index: {usp.Index}, Length: {usp.Length}.");
+            this.ThrowIfNoWindowsDevice();
+            try
+            {
+                IBuffer buffer = null!;
+                if ((buffer = SendControlInTransfer(usp, bufferLength)) != null)
+                {
+                    byte[] data = buffer.ToArray();
+
+                    if (data == null || data.Length == 0)
+                    {
+                        Logger.Info($"Received empty buffer from control in transfer. Returning default value.");
+                        return (default);
+                    }
+
+                    Logger.Debug($"Received buffer from control in transfer. Length: {data.Length}, Type: {typeof(T)}.");
+                    return MemoryPackSerializer.Deserialize<T>(data, this.SerializerOptions);
+                }
+                else
+                {
+                    return default;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex);
+                return default;
+            }
+        }
+
+        /// <summary>
+        /// Sends a control IN transfer to the USB device using the specified setup packet and buffer length asynchronously, and deserializes the result to the specified type. 
+        /// </summary>
+        /// <typeparam name="T">The type to deserialize the received buffer to.</typeparam>
+        /// <param name="usp">The USB setup packet containing the control transfer parameters.</param>
+        /// <param name="bufferLength">The length of the buffer to receive data.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the deserialized result.</returns>
+        public Task<T?> SendControlInTransferAsync<T>(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength)
+            where T : struct
+        {
+            Logger.Debug($"Sending control in transfer with Request: {usp.Request}, RequestType: {usp.RequestType.ControlTransferType}, Recipient: {usp.RequestType.Recipient}, Value: {usp.Value}, Index: {usp.Index}, Length: {usp.Length}.");
+            this.ThrowIfNoWindowsDevice();
+            try
+            {
+                Task<IBuffer> t = SendControlInTransferAsync(usp, bufferLength);
+                t.Wait();
+                IBuffer buffer = t.Result;
+                if (buffer != null)
+                {
+                    byte[] data = buffer.ToArray();
+
+                    if (data == null || data.Length == 0)
+                    {
+                        Logger.Info($"Received empty buffer from control in transfer. Returning default value.");
+                        return Task.FromResult<T?>(default);
+                    }
+
+                    T? tResult = MemoryPackSerializer.Deserialize<T>(data, this.SerializerOptions);
+                    Logger.Debug($"Deserialized control in transfer result. Type: {typeof(T)}, Value: {tResult}");
+                    return Task.FromResult(tResult);
+                }
+                else
+                {
+                    return Task.FromResult<T?>(default);
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex);
+                return Task.FromResult<T?>(default);
+            }
+        }
+
+        private void HandleException(Exception ex)
+        {
+            if (ex is COMException comEx)
+            {
+                Logger.Fatal($"COMException: {comEx.Message}, ErrorCode: 0x{comEx.ErrorCode:X8}");
+                switch ((uint)comEx.ErrorCode)
+                {
+                    // Lost connection to the device. This may be caused by the device being disconnected or the USB driver being unloaded.
+                    case 0x80070037:
+                    // device stop responding. This may be caused by the device being disconnected or the USB driver being unloaded.
+                    case 0x8007001f:
+                        //CloseDevice();
+                        break;
+                    case 0x800700DD:
+                        // device stop by embedded debugger.
+                    case 0x80070079:
+                        //The Semaphore Timeout Period Has Expired
+                    default:
+                        if (comEx.InnerException != null)
+                        {
+                            HandleException(ex.InnerException);
+                        }
+                        //CloseDevice();
+                        break;
+                }
+            }
+
+            else if (ex is AggregateException aggregateException)
+            {
+                foreach (var exx in aggregateException.InnerExceptions)
+                {
+                    HandleException(exx);
+                }
+
+            }
+            else if (ex is OperationCanceledException canceledException)
+            {
+                Logger.Warn($"OperationCanceledException: {canceledException.Message}");
+            }
+            else
+            {
+                if (ex.InnerException != null)
+                {
+                    HandleException(ex.InnerException);
+                }
+                else
+                {
+                    Logger.Fatal($"Exception: {ex.Message}", ex);
+                    throw ex;
+                }
             }
         }
 
@@ -253,8 +487,9 @@ namespace UsbDeviceBase
             return this.ImplInterfaces[0];
         }
 
-        protected async Task<bool> CreateWindowsDevicesAsync()
+        private async Task<bool> CreateWindowsDevicesAsync()
         {
+            deviceInfo = null;
             try
             {
                 string aqs = Windows.Devices.Usb.UsbDevice.GetDeviceSelector(this.VendorId, this.ProductId);
@@ -277,9 +512,7 @@ namespace UsbDeviceBase
 
                     if (found != null)
                     {
-                        aqs = Windows.Devices.Usb.UsbDevice.GetDeviceSelector((Guid)found.Properties["System.Devices.ContainerId"]);
-                        SetupWatcher(aqs);
-
+                        deviceInfo = found;
                         // yes, found the device using DeviceId, but VendorId/ProductId does not match.
                         this.WindowsDevice = await Windows.Devices.Usb.UsbDevice.FromIdAsync(found.Id);
 
@@ -299,7 +532,7 @@ namespace UsbDeviceBase
                 }
                 else
                 {
-                    SetupWatcher(aqs);
+                    deviceInfo = myDevices[0];
                     this.WindowsDevice = await Windows.Devices.Usb.UsbDevice.FromIdAsync(myDevices[0].Id);
                     if (this.WindowsDevice != null)
                     {
@@ -327,7 +560,7 @@ namespace UsbDeviceBase
 
                 ////await WindowsDevice.SendControlOutTransferAsync(initSetupPacket);
 
-                Logger.Info($"Initialized USB device with VendorId: {this.VendorId:X4} and ProductId: {this.ProductId:X4}.");
+                Logger.Info($"USB device is opened with VendorId: {this.VendorId:X4} and ProductId: {this.ProductId:X4}.");
                 //Logger.Debug($"DefaultInterface.InterfaceNumber: {this.WindowsDevice.DefaultInterface.InterfaceNumber}.");
                 //Logger.Debug($"DefaultInterface.Descriptors: {this.WindowsDevice.DefaultInterface.Descriptors.Count}, DefaultInterface.InterfaceSettings: {this.WindowsDevice.DefaultInterface.InterfaceSettings.Count}.");
                 //Logger.Debug($"DeviceDescriptor.NumberOfConfigurations: {this.WindowsDevice.DeviceDescriptor.NumberOfConfigurations}.");
@@ -335,7 +568,7 @@ namespace UsbDeviceBase
                 //Logger.Debug($"DefaultInterface.InterruptOutPipes: {this.WindowsDevice.DefaultInterface.InterruptOutPipes.Count}, DefaultInterface.InterruptInPipes: {this.WindowsDevice.DefaultInterface.InterruptInPipes.Count}.");
                 //Logger.Debug($"Configuration.UsbInterfaces: {this.WindowsDevice.Configuration.UsbInterfaces.Count}.");
                 //Logger.Debug($"Configuration.Descriptors: {this.WindowsDevice.Configuration.Descriptors.Count}.");
-                DumpDeviceInfo();
+                //DumpDeviceInfo();
             }
             catch (System.Runtime.InteropServices.COMException ex)
             {
@@ -370,39 +603,74 @@ namespace UsbDeviceBase
             return true;
         }
 
-
-        public virtual bool Initialize()
+        /// <summary>
+        /// Closes the USB device and disposes of all interfaces. 
+        /// This method is called when the device is disconnected 
+        /// or when the application is shutting down. 
+        /// It ensures that all resources are released properly before the device is reconnected.
+        /// </summary>
+        private void CloseDevice()
         {
-            return InitializeAsync().GetAwaiter().GetResult();
+            if (IsOpened)
+            {
+                Logger.Debug($"Closing device with VendorId: 0x{this.VendorId:X4}, ProductId: 0x{this.ProductId:X4}.");
+                foreach (var interfaceBase in ImplInterfaces.Values)
+                {
+                    interfaceBase.Dispose();
+                }
+
+                ImplInterfaces.Clear();
+
+                if (this.WindowsDevice != null)
+                {
+                    this.WindowsDevice.Dispose();
+                    this.WindowsDevice = null;
+
+                }
+                
+                state = DeviceState.WaitAdded;
+
+                OnDeviceClosed();
+            }
+            else
+            {
+                Logger.Debug($"Device is not opened. No need to close.");
+            }
         }
 
-        protected virtual async Task<bool> InitializeAsync()
+        private bool OpenDevice()
         {
-            if(IsOpenned)
+            if (IsOpened)
             {
-                Logger.Error($"Device is already initialized. Call Dispose() before initializing again.");
-                throw new InvalidOperationException("Device is already initialized. Call Dispose() before initializing again.");
+                Logger.Warn($"Device is already opened. Close device before initializing again.");
+                return true;
             }
 
-            IsOpenned = await this.CreateWindowsDevicesAsync();
-            if (!IsOpenned)
+            var result = this.CreateWindowsDevicesAsync().GetAwaiter().GetResult();
+            if (!result)
             {
                 return false;
             }
 
             ThrowIfNoWindowsDevice();
-
             if (!CreateInterfaces())
             {
                 throw new InvalidOperationException("Failed to create interfaces. Device may not be usable.");
             }
 
-            IsConnected = true;
+            state = DeviceState.Opened;
+
+            Logger.Debug($"Device is opened {IsOpened} ,Connected {IsConnected}.");
+
+            OnDeviceOpened(new DeviceInfoEventArgs(this.deviceInfo));
             return true;
         }
 
-        private void SetupWatcher(string aqs)
+        private void SetupWatcher()
         {
+            string aqs = Windows.Devices.Usb.UsbDevice.GetDeviceSelector(this.VendorId, this.ProductId);
+            Logger.Debug($"Searching for USB device with VendorId: {this.VendorId} and ProductId: {this.ProductId}. \n  AQS: {aqs}");
+
             deviceWatcher = DeviceInformation.CreateWatcher(aqs);
             deviceWatcher.Added += Watcher_Added;
             deviceWatcher.Removed += Watcher_Removed;
@@ -417,27 +685,67 @@ namespace UsbDeviceBase
             Logger.Debug($"Device Watcher_Stopped:");
         }
 
-        private void Watcher_EnumerationCompleted(DeviceWatcher sender, object args)
+        private async void Watcher_EnumerationCompleted(DeviceWatcher sender, object args)
         {
             Logger.Debug($"Device EnumerationCompleted:");
+            if (state == DeviceState.WaitEnumerationCompleted)
+            {
+                if (!IsConnected)
+                {
+                    Logger.Warn($"Device is not connected after enumeration completed.");
+                    state = DeviceState.WaitAdded;
+                    return;
+                }
+                else
+                {
+                    var result = OpenDevice();
+                    if (!result)
+                    {
+                        state = DeviceState.WaitAdded;
+                        Logger.Error($"Failed to open device after enumeration completed.");
+                    }
+                    else
+                        state = DeviceState.Opened;
+                }
+            }
         }
 
         private void Watcher_Updated(DeviceWatcher sender, DeviceInformationUpdate args)
         {
             Logger.Debug($"Device updated: {args.Id}");
-            IsConnected = false;
         }
 
         private void Watcher_Removed(DeviceWatcher sender, DeviceInformationUpdate args)
         {
             Logger.Debug($"Device removed: {args.Id}");
             IsConnected = false;
+            OnDeviceConnect(IsConnected);
+
+            CloseDevice();
+
         }
 
-        private void Watcher_Added(DeviceWatcher sender, DeviceInformation args)
+        private async void Watcher_Added(DeviceWatcher sender, DeviceInformation args)
         {
             Logger.Debug($"Device added: {args.Id}, Name: {args.Name}, IsEnabled: {args.IsEnabled}");
             IsConnected = args.IsEnabled;
+            OnDeviceConnect(IsConnected);
+
+            // cannot open device while in enumeration is not completed. Wait for enumeration completed event to open device.
+            if (this.state == DeviceState.WaitAdded)
+            {
+                if (!IsOpened)
+                {
+                    if (!OpenDevice())
+                    {
+                        Logger.Error($"Failed to open device after added.");
+                        state = DeviceState.WaitAdded;
+                        return;
+                    }
+                }
+
+                state = DeviceState.Opened;
+            }
         }
 
         protected bool CreateInterfaces()
@@ -510,7 +818,7 @@ namespace UsbDeviceBase
         {
             if (this.WindowsDevice == null)
             {
-                throw new InvalidOperationException("WindowsDevice is not initialized. Call InitializeAsync() first.");
+                throw new InvalidOperationException("WindowsDevice is not initialized. wait for device to be connected.");
             }
         }
 
@@ -520,14 +828,14 @@ namespace UsbDeviceBase
             {
                 if (disposing)
                 {
-                    if(this.deviceWatcher != null)
+                    if (this.deviceWatcher != null)
                     {
                         this.deviceWatcher.Added -= Watcher_Added;
                         this.deviceWatcher.Removed -= Watcher_Removed;
                         this.deviceWatcher.Updated -= Watcher_Updated;
                         this.deviceWatcher.EnumerationCompleted -= Watcher_EnumerationCompleted;
                         this.deviceWatcher.Stopped -= Watcher_Stopped;
-                     
+
                         if (this.deviceWatcher.Status == DeviceWatcherStatus.Started || this.deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted)
                         {
                             this.deviceWatcher.Stop();
@@ -549,6 +857,64 @@ namespace UsbDeviceBase
                 disposedValue = true;
             }
         }
+        private T GetPipeIn<T>(int interfaceNumber, int pipeId)
+            where T : PipeInBase
+        {
+            try
+            {
+                this.ThrowIfNoWindowsDevice();
+
+                if (!ImplInterfaces.ContainsKey(interfaceNumber))
+                {
+                    throw new InvalidOperationException($"Interface {interfaceNumber} is not initialized. Call InitializeAsync() first.");
+                }
+
+                Logger.Debug($"Getting BulkInPipe with pipe {pipeId} of type {typeof(T)} in interface {interfaceNumber}.");
+
+                var pipe = ImplInterfaces[interfaceNumber].InPipes.SingleOrDefault(p => p.Key == pipeId && p.Value.GetType() == typeof(T));
+                if (pipe.Equals(default(KeyValuePair<int, PipeInBase>)))
+                {
+                    Logger.Error($"BulkInPipe with pipe {pipeId}{typeof(T)} is not found in interface {interfaceNumber}.");
+                    return null;
+                }
+
+                return (T)pipe.Value;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to get BulkInPipe. Exception: {ex}");
+                throw;
+            }
+        }
+
+        private T GetPipeOut<T>(int interfaceNumber, int pipeId)
+            where T : PipeOutBase
+        {
+            try
+            {
+                this.ThrowIfNoWindowsDevice();
+
+                if (!ImplInterfaces.ContainsKey(interfaceNumber))
+                {
+                    throw new InvalidOperationException($"Interface {interfaceNumber} is not initialized. Call InitializeAsync() first.");
+                }
+
+                KeyValuePair<int, PipeOutBase> pipe = ImplInterfaces[interfaceNumber].OutPipes.SingleOrDefault(p => p.Key == pipeId && p.Value.GetType() == typeof(T));
+                if (pipe.Equals(default(KeyValuePair<int, PipeOutBase>)))
+                {
+                    Logger.Error($"BulkInPipe with pipe {pipeId}{typeof(T)} is not found in interface {interfaceNumber}.");
+                    return null;
+                }
+
+                return (T)pipe.Value;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to get BulkInPipe. Exception: {ex}");
+                throw;
+            }
+        }
+
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
@@ -563,7 +929,7 @@ namespace UsbDeviceBase
 
         #endregion
 
-        #region Private Methods 
+        #region Private Dump Methods 
 
         private void DumpDeviceInfo()
         {
@@ -752,61 +1118,6 @@ namespace UsbDeviceBase
             }
         }
 
-        private T GetPipeIn<T>(int interfaceNumber, int pipeId)
-            where T : PipeInBase
-        {
-            try
-            {
-                this.ThrowIfNoWindowsDevice();
-
-                if (!ImplInterfaces.ContainsKey(interfaceNumber))
-                {
-                    throw new InvalidOperationException($"Interface {interfaceNumber} is not initialized. Call InitializeAsync() first.");
-                }
-
-                KeyValuePair<int, PipeInBase> pipe = ImplInterfaces[interfaceNumber].InPipes.SingleOrDefault(p => p.Key == pipeId && p.GetType() == typeof(T));
-                if (pipe.Equals(default(KeyValuePair<int, PipeInBase>)))
-                {
-                    Logger.Error($"BulkInPipe with pipe {pipeId}{typeof(T)} is not found in interface {interfaceNumber}.");
-                    return null;
-                }
-
-                return (T)pipe.Value;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed to get BulkInPipe. Exception: {ex}");
-                throw;
-            }
-        }
-
-        private T GetPipeOut<T>(int interfaceNumber, int pipeId)
-            where T : PipeOutBase
-        {
-            try
-            {
-                this.ThrowIfNoWindowsDevice();
-
-                if (!ImplInterfaces.ContainsKey(interfaceNumber))
-                {
-                    throw new InvalidOperationException($"Interface {interfaceNumber} is not initialized. Call InitializeAsync() first.");
-                }
-
-                KeyValuePair<int, PipeOutBase> pipe = ImplInterfaces[interfaceNumber].OutPipes.SingleOrDefault(p => p.Key == pipeId && p.GetType() == typeof(T));
-                if (pipe.Equals(default(KeyValuePair<int, PipeOutBase>)))
-                {
-                    Logger.Error($"BulkInPipe with pipe {pipeId}{typeof(T)} is not found in interface {interfaceNumber}.");
-                    return null;
-                }
-
-                return (T)pipe.Value;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed to get BulkInPipe. Exception: {ex}");
-                throw;
-            }
-        }
 
         #endregion
 

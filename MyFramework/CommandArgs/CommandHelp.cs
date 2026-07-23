@@ -8,11 +8,14 @@ using log4net.Core;
 
 namespace MyFramework.CommandArgs
 {
-    internal class CommandHelp : CommandArgsBase
+    public class CommandHelp : CommandArgsBase<CommandHelp>
     {
-
-
         #region Constructors 
+        public CommandHelp(CommandExecDelegate<CommandHelp> commandExec) : base(_commandName, commandExec)
+        {
+            Create();
+        }
+
 
         #endregion
 
@@ -20,11 +23,6 @@ namespace MyFramework.CommandArgs
         #region Fields 
 
         private const string _commandName = "Help";
-
-        public CommandHelp() : base(_commandName)
-        {
-            Create();
-        }
 
         #endregion
 
@@ -75,7 +73,6 @@ namespace MyFramework.CommandArgs
                 {
                     All = all;
                     HelpOnHelp = hoh;
-                    ExecuteHelp();
                 })
                 .Build();
 
@@ -85,35 +82,12 @@ namespace MyFramework.CommandArgs
         #endregion
 
         #region Private Methods 
-        private void ExecuteHelp()
-        {
-            if(All)
-            {
-                var commands = Commands.CommandList.Values.ToList();
-                foreach (var command in commands)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine($"{command.Name}:");
-                    command.Parsable.Parse(new string[] { "-h" });
-                }
-            }
-
-            else if (HelpOnHelp) 
-            {
-                var cmd = Commands.FindCommand(_commandName);
-                if (cmd != null)
-                {
-                    cmd.Parse(new string[] { "-h" });
-                }
-            }
-        }
 
         #endregion
 
         #region Private Classes / Enum 
 
         #endregion
-
 
     }
 }

@@ -8,11 +8,15 @@ using log4net.Core;
 
 namespace MyFramework.CommandArgs
 {
-    internal class CommandExit : CommandArgsBase
+    public class CommandExit : CommandArgsBase<CommandExit>
     {
 
 
         #region Constructors 
+        public CommandExit(CommandExecDelegate<CommandExit> commandExec) : base(_commandName, commandExec)
+        {
+            Create();
+        }
 
         #endregion
 
@@ -21,18 +25,11 @@ namespace MyFramework.CommandArgs
 
         private const string _commandName = "Exit";
 
-        public CommandExit() : base(_commandName)
-        {
-            Create();
-        }
 
         #endregion
 
 
         #region Properties 
-
-        public bool All { get; private set; } = false;
-        public bool HelpOnHelp { get; private set; } = true;
 
         #endregion
 
@@ -67,9 +64,8 @@ namespace MyFramework.CommandArgs
                 /* 4) Load remaining arguments */
 
                 /* 5) Callback */
-                .Call(pos => 
+                .Call(pos =>
                 {
-                    Commands.Quit();
                 })
                 .Build();
 

@@ -5,6 +5,7 @@ namespace EmdeddedConsoleApp
     using System.Reflection;
     using System.Threading.Tasks;
     using EmbeddedConsoleApp.Commands;
+    using EmbeddedConsoleApp.DependencyInjection;
     using FluentArgs;
     using FluentArgs.Help;
     using log4net;
@@ -13,26 +14,19 @@ namespace EmdeddedConsoleApp
     using log4net.Core;
     using log4net.Repository.Hierarchy;
     using Log4UsbService.EmbeddedData;
+    using Microsoft.Extensions.Hosting;
     using MyFramework.CommandArgs;
-
+    using MyFramework.DependencyInjection;
 
     public static class Program
     {
         public static void Main(string[] args)
         {
-            // initialize log4net
-            //Hierarchy logRepository = (Hierarchy)LogManager.GetRepository(Assembly.GetCallingAssembly());
-            //XmlConfigurator.ConfigureAndWatch(logRepository, new FileInfo("log4net.config"));
 
-            // initialize commands
-            new Log4UsbCommand();
+            IHost host = new Startup().HostCreateApplicationBuilder().Build();
+            //host.Services.GetService(typeof(ConsoleHostedService));
 
-
-            // Run application console
-            Commands.RunConsole(args);
-
-            Console.WriteLine("Test complete. Hit enter");
+            host.Start();
         }
-
     }
 }

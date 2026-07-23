@@ -46,6 +46,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Log4UsbServiceTest", "Log4U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmbeddedConsoleApp", "EmbeddedConsoleApp\EmbeddedConsoleApp.csproj", "{291B5A01-0474-4D79-BA6D-69234533243E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyInjection", "DependencyInjectionFramework\DependencyInjection.csproj", "{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -200,6 +202,18 @@ Global
 		{291B5A01-0474-4D79-BA6D-69234533243E}.Release|x64.Build.0 = Release|Any CPU
 		{291B5A01-0474-4D79-BA6D-69234533243E}.Release|x86.ActiveCfg = Release|Any CPU
 		{291B5A01-0474-4D79-BA6D-69234533243E}.Release|x86.Build.0 = Release|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Debug|x64.Build.0 = Debug|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Debug|x86.Build.0 = Debug|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Release|x64.ActiveCfg = Release|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Release|x64.Build.0 = Release|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Release|x86.ActiveCfg = Release|Any CPU
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -213,6 +227,7 @@ Global
 		{0352C03B-19CC-4063-B831-8165D2035E41} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{7EC089D6-FC6C-54FD-0DE0-15D18B298D86} = {358ED1A9-9C7E-4F5E-962F-3DC0E3D5D988}
 		{6566C4CA-1B51-4A11-9944-8707903D368F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{0EF8092D-376F-4853-B0EA-7B4DD8BAAF33} = {B2707842-FB6A-4DFD-B424-10368FB072C0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B3760CA2-0061-4CF9-995C-4AD401073F21}

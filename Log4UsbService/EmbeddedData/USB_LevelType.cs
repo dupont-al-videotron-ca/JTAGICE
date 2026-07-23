@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Log4UsbService.EmbeddedData
 {
+    /// <summary>
+    /// Represents the severity level of a USB log message.
+    /// </summary>
     public enum USB_LevelType : byte
     {
         None = 0x00,

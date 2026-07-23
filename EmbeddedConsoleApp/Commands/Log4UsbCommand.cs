@@ -7,15 +7,15 @@ using FluentArgs;
 using FluentArgs.Help;
 using log4net.Core;
 using Log4UsbService;
+using MyFramework.CommandArgs;
 
 namespace EmbeddedConsoleApp.Commands
 {
-    internal class Log4UsbCommand : MyFramework.CommandArgs.CommandArgsBase
+    internal class Log4UsbCommand : MyFramework.CommandArgs.CommandArgsBase<Log4UsbCommand>
     {
 
-
         #region Constructors 
-        public Log4UsbCommand() : base(_commandName)
+        public Log4UsbCommand(CommandExecDelegate<Log4UsbCommand> commandExec) : base(_commandName, commandExec)
         {
             Create();
         }
@@ -25,7 +25,8 @@ namespace EmbeddedConsoleApp.Commands
 
         #region Fields 
 
-        private const string _commandName = "log4usb";
+        //private const string _commandName = "log4usb";
+        private const string _commandName = "l";
 
         #endregion
 
@@ -80,8 +81,8 @@ namespace EmbeddedConsoleApp.Commands
                 //.LoadRemainingArguments()
 
 
-                /* 5) Callback */
-                .Call(RemainingArg => LevelArg => 
+                /* 5) Callback to save args*/
+                .Call(PositionArg => LevelArg => 
                 {
                     SetLevel(LevelArg);
                 })
@@ -119,7 +120,7 @@ namespace EmbeddedConsoleApp.Commands
                     throw new ArgumentException($"Invalid log level: {levelArg}");
             }
         }
-            
+
         #endregion
 
 

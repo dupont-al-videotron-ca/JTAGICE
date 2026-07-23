@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using FluentArgs;
@@ -10,7 +12,7 @@ namespace MyFramework.CommandArgs
     /// <summary>
     /// Base class for command arguments.
     /// </summary>
-    public abstract class CommandArgsBase : ICommandArgs
+    public abstract class CommandArgsBase<T> : ICommandArgs<T> where T : class, ICommandArgs<T>
     {
 
         #region Constructors 
@@ -20,14 +22,15 @@ namespace MyFramework.CommandArgs
         /// </summary>
         /// <param name="parsable">Arguments parser.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        protected CommandArgsBase(string cmdName, IParsable parsable)
+        protected CommandArgsBase(string cmdName, IParsable parsable, CommandExecDelegate<T> cmdExecution)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(cmdName);
             ArgumentNullException.ThrowIfNull(parsable);
+            ArgumentNullException.ThrowIfNull(cmdExecution);
             this.Name = cmdName;
-            this.Parsable = null!;
 
             SetParsable(parsable);
+            CommandExec = cmdExecution;
         }
 
         /// <summary>
@@ -35,17 +38,20 @@ namespace MyFramework.CommandArgs
         /// </summary>
         /// <param name="parsable">Arguments parser.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        protected CommandArgsBase(string cmdName)
+        protected CommandArgsBase(string cmdName, CommandExecDelegate<T> cmdExecution)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(cmdName);
+            ArgumentNullException.ThrowIfNull(cmdExecution);
             this.Name = cmdName;
-            this.Parsable = null!;
 
+            CommandExec = cmdExecution;
         }
+
         #endregion
 
 
         #region Fields 
+        
 
         #endregion
 
@@ -55,10 +61,11 @@ namespace MyFramework.CommandArgs
 
         public string Name { get; }
 
-        public IParsable Parsable { get; private set; }
+        public IParsable Parsable { get; private set; } = null!;
+
+        public CommandExecDelegate<T> CommandExec { get; private set; } = null!;
 
         #endregion
-
 
         #region Delegates / Events 
 
@@ -72,25 +79,28 @@ namespace MyFramework.CommandArgs
         protected void SetParsable(IParsable parsable)
         {
             this.Parsable = parsable ?? throw new ArgumentNullException(nameof(parsable));
-            Commands.RegisterCommand(this);
+            Commands.Instance.RegisterCommand(this);
         }
 
         protected IInitialFluentArgsBuilder ApplyCommonConfig(IInitialFluentArgsBuilder builder)
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
+
             builder
                 /* 1) General parser configurations: The ordering does not matter */
-                .DefaultConfigsWithAppDescription("toto")
-                .RegisterHelpPrinter(new SimpleHelpPrinter(MyFramework.CommandArgs.Commands.Error))
-                .RegisterParsingErrorPrinter(new SimpleParsingErrorPrinter(MyFramework.CommandArgs.Commands.Error));
+                .DefaultConfigs()
+                .RegisterHelpPrinter(new SimpleHelpPrinter(Commands.Instance.Error))
+                .RegisterParsingErrorPrinter(new SimpleParsingErrorPrinter(Commands.Instance.Error));
 
             return builder;
         }
 
-        public bool Parse(string[] args)
+        public bool Execute(string[] args)
         {
-            if (Parsable != null)
-                return this.Parsable.Parse(args);
+            if (CommandExec != null && Parsable != null && this.Parsable.Parse(args))
+            {
+                return CommandExec((this as T)!);
+            }
             else return false;
         }
 
@@ -100,17 +110,25 @@ namespace MyFramework.CommandArgs
 
             if (Parsable != null)
             {
-                await this.Parsable.ParseAsync(args);
-                return true;
+                var result = await this.Parsable.ParseAsync(args);
+                return result;
             }
             else
                 return false;
+        }
+
+        public bool Parse(string[] args)
+        {
+            if (Parsable != null)
+                return this.Parsable.Parse(args);
+            else return false;
         }
 
         #endregion
 
 
         #region Protected Methods 
+
 
         #endregion
 

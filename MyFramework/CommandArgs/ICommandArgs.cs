@@ -13,8 +13,17 @@ namespace MyFramework.CommandArgs
 
         IParsable Parsable { get; }
 
+
         bool Parse(string[] args);
 
         Task<bool> ParseAsync(string[] args);
+
+        bool Execute(string[] args);
+    }
+
+
+    public interface ICommandArgs<T> : ICommandArgs where T : class, ICommandArgs<T>
+    {
+        CommandExecDelegate<T> CommandExec { get; }
     }
 }

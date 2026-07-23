@@ -10,7 +10,6 @@ namespace UsbDeviceBase
 {
     public abstract class UsbPipeBase : IUsbPipe
     {
-
         #region Constructors 
 
         public UsbPipeBase(Windows.Devices.Usb.UsbEndpointDescriptor descriptor)
@@ -22,6 +21,8 @@ namespace UsbDeviceBase
         #endregion
 
         #region Fields 
+
+        private bool disposedValue;
 
         #endregion
 
@@ -45,7 +46,7 @@ namespace UsbDeviceBase
             }
         }
 
-        protected Windows.Devices.Usb.UsbEndpointDescriptor EndpointDescriptor { get; }
+        protected Windows.Devices.Usb.UsbEndpointDescriptor EndpointDescriptor { get; private set; }
 
         //
         // Summary:
@@ -117,6 +118,22 @@ namespace UsbDeviceBase
         //     9-18 in the Universal Serial Bus 3.0 Specification.
         public UsbEndpointType EndpointType => EndpointDescriptor.EndpointType;
 
+        protected bool DisposedValue => this.disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!DisposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                    EndpointDescriptor = null!;
+                }
+
+                disposedValue = true;
+            }
+        }
+
         #endregion
 
 
@@ -131,6 +148,13 @@ namespace UsbDeviceBase
 
 
         #region Protected Methods 
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
         #endregion
 

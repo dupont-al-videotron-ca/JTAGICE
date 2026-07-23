@@ -14,9 +14,11 @@ namespace UsbDeviceBase
 
         public abstract bool IsByteToRead { get; }
 
-        public abstract bool ReadBytes(out byte[] values, uint length, int timeout = -1);
-        public abstract Task<bool> ReadBytesAsync(out byte[] values, uint length, CancellationToken cancellationToken, int timeout = -1);
+        public abstract bool ReadBytes(out byte[] values, int length, int timeout = -1);
+        public abstract Task<bool> ReadBytesAsync(out byte[] values, int length, CancellationToken cancellationToken, int timeout = -1);
 
         public abstract bool ReadStructure<T>(ref T obj, int timeout) where T : struct;
+
+        public abstract Task<T?> ReadStructureAsync<T>(CancellationToken cancellationToken, int timeout = -1) where T : struct;
     }
 }

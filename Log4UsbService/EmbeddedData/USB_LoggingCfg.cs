@@ -8,10 +8,17 @@ using log4net.Core;
 
 namespace Log4UsbService.EmbeddedData;
 
-internal class USB_LoggingCfg 
+/// <summary>
+/// Represents the configuration settings for USB logging, including the logging level and whether logging is enabled or disabled. 
+/// This class encapsulates a USB setup packet that is used to communicate these settings to a USB device.
+/// </summary>
+internal class USB_LoggingCfg
 {
-    private UsbSetupPacket setupPacket;
 
+    #region Constructors 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="USB_LoggingCfg"/> class with default values.
+    /// </summary>
     internal USB_LoggingCfg()
     {
         this.setupPacket = new UsbSetupPacket();
@@ -25,17 +32,40 @@ internal class USB_LoggingCfg
 
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="USB_LoggingCfg"/> class with specified logging level and enable/disable flag.
+    /// </summary>
+    /// <param name="level"></param>
+    /// <param name="enable"></param>
     internal USB_LoggingCfg(Level level, bool enable) : this()
     {
         IsLoggingEnabled = enable;
         LoggingLevel = level;
     }
 
+    #endregion
+
+
+    #region Fields 
+    private UsbSetupPacket setupPacket;
+
+    #endregion
+
+
+    #region Properties 
+
+
+    /// <summary>
+    /// Gets the USB setup packet used for configuring logging settings.
+    /// </summary>
     public UsbSetupPacket SetupPacket
     {
         get { return this.setupPacket; }
     }
 
+    /// <summary>
+    /// Gets or sets the logging level for the USB device. The logging level is determined by the lower 8 bits of the Index field in the setup packet.
+    /// </summary>
     public Level LoggingLevel
     {
         get
@@ -89,25 +119,30 @@ internal class USB_LoggingCfg
             this.setupPacket.Index |= (uint)uSB_LevelType; // Clear the lower 8 bits
         }
     }
-
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether logging is enabled for the USB device. The logging enable flag is determined by the 1st bit of the Value field in the setup packet.
+    /// </summary>  
     public bool IsLoggingEnabled
     {
-       
         get
         {
-            return (this.setupPacket.Value & 0x0100) != 0; // Check if the 9th bit is set
+            return (this.setupPacket.Value & 0x0001) != 0; // Check if the 1st bit is set
         }
         set
         {
             if (value)
             {
-                this.setupPacket.Value |= 0x0100; // Set the 9th bit to enable logging
+                this.setupPacket.Value |= 0x0001; // Set the 1st bit to enable logging
             }
             else
             {
-                this.setupPacket.Value &= ~(uint)0x0100; // Clear the 9th bit to disable logging
+                this.setupPacket.Value &= ~(uint)0x0001; // Clear the 1st bit to disable logging
             }
         }
 
     }
+
+    #endregion
+
 }

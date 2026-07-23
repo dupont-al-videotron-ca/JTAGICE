@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using log4net.Repository.Hierarchy;
 using MemoryPack;
 using Windows.Storage.Streams;
 
@@ -20,9 +21,12 @@ namespace UsbDeviceBase
         public BulkInPipeImpl(Windows.Devices.Usb.UsbEndpointDescriptor descriptor, Windows.Devices.Usb.UsbBulkInPipe pipe) : base(descriptor)
         {
             this.InPipe = pipe;
+            CreateDataReader();
         }
 
         #endregion
+
+        private DataReader dataReader;
 
         #region Properties 
 
@@ -35,42 +39,77 @@ namespace UsbDeviceBase
 
         #region Public Methods 
 
-        public override bool ReadBytes(out byte[] values, uint length, int timeout = -1)
+        public override bool ReadBytes(out byte[] values, int length, int timeout = -1)
         {
             return this.ReadBytesAsync(out values, length, CancellationToken.None, timeout).GetAwaiter().GetResult();
         }
 
-        public override Task<bool> ReadBytesAsync(out byte[] values, uint length, CancellationToken cancellationToken, int timeout = -1)
+        public override Task<bool> ReadBytesAsync(out byte[] values, int length, CancellationToken cancellationToken, int timeout = -1)
+        {
+            try
+            {
+                values = null;
+                List<byte> buffer = new List<byte>();
+                while (length > 0)
+                {
+                    DataReaderLoadOperation result = dataReader.LoadAsync((uint)length);
+                    if (result.AsTask().Wait(timeout, cancellationToken))
+                    {
+                        var bufValues = new byte[dataReader.UnconsumedBufferLength];
+                        length -= bufValues.Length;
+                        dataReader.ReadBytes(bufValues);
+                        buffer.AddRange(bufValues);
+                    }
+                    else
+                    {
+                        result.Cancel();
+                        values = null;
+                        return Task.FromResult(false);
+                    }
+
+                }
+
+                values = buffer.ToArray();
+                return Task.FromResult(true);
+            }
+            catch (COMException)
+            {
+                values = null;
+                return Task.FromResult(false);
+
+            }
+            catch (ArithmeticException)
+            {
+                values = null;
+                return Task.FromResult(false);
+            }
+        }
+
+        public Task<bool> ReadBytesAsyncV1(out byte[] values, uint length, CancellationToken cancellationToken, int timeout = -1)
         {
             using (DataReader dataReader = new DataReader(InPipe.InputStream))
             {
                 dataReader.ByteOrder = this.ByteOrder;
                 dataReader.UnicodeEncoding = this.UnicodeEncoding;
+                dataReader.InputStreamOptions = InputStreamOptions.Partial;
 
                 List<byte> buffer = new List<byte>();
                 while (length > 0)
                 {
                     var result = dataReader.LoadAsync(length);
-                    if (timeout >= 0)
+                    if (result.AsTask().Wait(timeout, cancellationToken))
                     {
-                        var timeoutTask = Task.Delay(timeout, cancellationToken);
-                        var completedTask = Task.WhenAny(result.AsTask(), timeoutTask).GetAwaiter().GetResult();
-                        if (completedTask == timeoutTask)
-                        {
-                            values = null;
-                            return Task.FromResult(false);
-                        }
+                        var bufValues = new byte[dataReader.UnconsumedBufferLength];
+                        length -= (uint)bufValues.Length;
+                        dataReader.ReadBytes(bufValues);
+                        buffer.AddRange(bufValues);
                     }
                     else
                     {
-                        result.AsTask().Wait(cancellationToken);
+                        values = null;
+                        return Task.FromResult(false);
                     }
 
-                    var bufValues = new byte[dataReader.UnconsumedBufferLength];
-                    length -= (uint)bufValues.Length;
-                    dataReader.ReadBytes(bufValues);
-
-                    buffer.AddRange(bufValues);
                 }
 
                 dataReader.DetachStream();
@@ -79,20 +118,62 @@ namespace UsbDeviceBase
             }
         }
 
-        public override bool ReadStructure<T>(ref T obj, int timeout) where T : struct
+        public override bool ReadStructure<T>(ref T obj, int timeout = -1) where T : struct
         {
             int size = Marshal.SizeOf<T>();
 
-            if (this.ReadBytes(out byte[]? values, (uint)size, timeout))
+            if (this.ReadBytes(out byte[]? values, size, timeout))
             {
                 Span<byte> rspan = new Span<byte>(values);
                 obj = MemoryMarshal.Read<T>(rspan);
-                return true;
+                return values.Length == size;
             }
             else
                 return false;
         }
 
+
+        public override async Task<T?> ReadStructureAsync<T>(CancellationToken cancellationToken, int timeout = -1)
+            where T : struct
+        {
+            int size = Marshal.SizeOf<T>();
+
+            if (await this.ReadBytesAsync(out byte[]? values, size, cancellationToken, timeout))
+            {
+                Span<byte> rspan = new Span<byte>(values);
+                T obj = MemoryMarshal.Read<T>(rspan);
+                return obj;
+            }
+            else
+                return null;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!DisposedValue)
+            {
+                if (disposing)
+                {
+                    dataReader.Dispose();
+                    dataReader = null;
+                    this.InPipe = null;
+                }
+            }
+
+            base.Dispose(disposing);
+        }
+
+
+        private void CreateDataReader()
+        {
+            if (dataReader == null)
+            {
+                dataReader = new DataReader(InPipe.InputStream);
+                dataReader.ByteOrder = this.ByteOrder;
+                dataReader.UnicodeEncoding = this.UnicodeEncoding;
+                dataReader.InputStreamOptions = InputStreamOptions.None;
+            }
+        }
         #endregion
     }
 }

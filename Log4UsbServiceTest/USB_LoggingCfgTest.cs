@@ -37,7 +37,7 @@ namespace Log4UsbServiceTest
             Assert.Equal(UsbControlTransferType.Vendor, testObject.SetupPacket.RequestType.ControlTransferType);
             Assert.Equal(UsbControlRecipient.Device, testObject.SetupPacket.RequestType.Recipient);
             Assert.Equal(0x01, testObject.SetupPacket.Request);
-            Assert.Equal((uint)0x0100, testObject.SetupPacket.Value);
+            Assert.Equal((uint)0x0001, testObject.SetupPacket.Value);
             Assert.Equal((uint)0x0001, testObject.SetupPacket.Index);
             Assert.True(testObject.IsLoggingEnabled);
             Assert.Equal(Level.Fatal, testObject.LoggingLevel);

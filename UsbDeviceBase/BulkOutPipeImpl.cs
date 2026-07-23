@@ -33,7 +33,7 @@ namespace UsbDeviceBase
 
         #region Properties 
 
-        internal Windows.Devices.Usb.UsbBulkOutPipe OutPipe { get; }
+        internal Windows.Devices.Usb.UsbBulkOutPipe OutPipe { get; private set; }
 
         //
         // Summary:
@@ -120,6 +120,19 @@ namespace UsbDeviceBase
             }
 
         }
+        protected override void Dispose(bool disposing)
+        {
+            if (!DisposedValue)
+            {
+                if (disposing)
+                {
+                    this.OutPipe = null!;
+                }
+            }
+
+            base.Dispose(disposing);
+        }
+
 
 
         #endregion

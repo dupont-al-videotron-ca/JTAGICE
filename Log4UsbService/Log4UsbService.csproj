@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
-    <EnableNETAnalyzers>False</EnableNETAnalyzers>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
     <OutputType>Library</OutputType>
   </PropertyGroup>
@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="log4net" Version="3.3.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>

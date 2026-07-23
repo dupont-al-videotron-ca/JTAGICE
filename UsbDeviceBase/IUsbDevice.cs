@@ -1,6 +1,9 @@
 ﻿
 
+using System.Runtime.InteropServices;
 using Windows.Devices.Usb;
+using Windows.Storage.Streams;
+using static UsbDeviceBase.UsbDeviceBase;
 
 namespace UsbDeviceBase
 {
@@ -53,8 +56,30 @@ namespace UsbDeviceBase
         //     the device is only drawing power from the bus.
         bool SelfPowered { get; }
 
-        bool Initialize();
+        uint SendControlOutTransfer(Windows.Devices.Usb.UsbSetupPacket usp);
+
+        Task<uint> SendControlOutTransferAsync(Windows.Devices.Usb.UsbSetupPacket usp);
+
+        IBuffer SendControlInTransfer(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength);
+
+        Task<IBuffer> SendControlInTransferAsync(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength);
+
+        T SendControlInTransfer<T>(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength);
+
+        Task<T?> SendControlInTransferAsync<T>(Windows.Devices.Usb.UsbSetupPacket usp, int bufferLength) where T : struct;
 
         bool IsConnected { get; }
+
+        bool IsOpened { get; }
+
+        event EventHandler<DeviceConnectEventArgs>? DeviceConnect;
+        event EventHandler<DeviceInfoEventArgs>? DeviceOpened;
+        event EventHandler? DeviceClosed;
+
+        bool WaitOpenned(TimeSpan timeout);
+
+        BulkInPipeImpl GetBulkInPipe(int interfaceNumber, int pipeId);
+
+        BulkOutPipeImpl GetBulkOutPipe(int OutterfaceNumber, int pipeId);
     }
 }
