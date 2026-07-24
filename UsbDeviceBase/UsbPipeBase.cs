@@ -23,11 +23,15 @@ namespace UsbDeviceBase
         #region Fields 
 
         private bool disposedValue;
+        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         #endregion
 
 
         #region Properties 
+
+        public bool IsDisposed => disposedValue;
+
         public Windows.Storage.Streams.ByteOrder ByteOrder { get; init; } = Windows.Storage.Streams.ByteOrder.LittleEndian;
         public Windows.Storage.Streams.UnicodeEncoding UnicodeEncoding { get; set; }
 
@@ -128,6 +132,12 @@ namespace UsbDeviceBase
                 {
                     // TODO: dispose managed state (managed objects)
                     EndpointDescriptor = null!;
+                    
+                    if(semaphoreSlim.CurrentCount == 0)
+                        semaphoreSlim.Release();
+                    
+                    semaphoreSlim.Dispose();
+                    semaphoreSlim = null!;
                 }
 
                 disposedValue = true;
@@ -144,6 +154,12 @@ namespace UsbDeviceBase
 
         #region Public Methods 
 
+        public bool CanAquired() => semaphoreSlim.CurrentCount > 0;
+
+        public bool Aquired(TimeSpan timeout, CancellationToken cancellationToken) => semaphoreSlim.Wait(timeout, cancellationToken);
+
+        public void Release() => semaphoreSlim.Release();
+
         #endregion
 
 
@@ -155,6 +171,7 @@ namespace UsbDeviceBase
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
 
         #endregion
 

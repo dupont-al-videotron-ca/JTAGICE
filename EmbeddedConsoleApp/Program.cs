@@ -23,10 +23,11 @@ namespace EmdeddedConsoleApp
         public static void Main(string[] args)
         {
 
-            IHost host = new Startup().HostCreateApplicationBuilder().Build();
-            //host.Services.GetService(typeof(ConsoleHostedService));
-
+            IHost host = new Startup().HostCreateBuilder().Build();
+            //var hostService = host.Services.GetService(typeof(IHost));
+            
             host.Start();
+            
         }
     }
 }

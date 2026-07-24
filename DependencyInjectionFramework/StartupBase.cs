@@ -17,28 +17,32 @@ namespace MyFramework.DependencyInjection
         }
 
         /// <summary>
-        /// Creates and configures an <see cref="IHostApplicationBuilder"/> instance for the application.
+        /// Creates and configures an <see cref="IHostBuilder"/> instance for the application.
         /// </summary>
         /// <returns></returns>
-        public virtual HostApplicationBuilder HostCreateApplicationBuilder()
+        public virtual IHostBuilder HostCreateBuilder()
         {
-            HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+            var builder = Host.CreateDefaultBuilder();
+            builder.ConfigureHostOptions(x => x.ShutdownTimeout = TimeSpan.FromSeconds(5)); // Set the shutdown timeout to 5 seconds
+            builder.ConfigureHostConfiguration(hostBuilder => CreateConfigurationBuilder(hostBuilder));
+            builder.UseDefaultServiceProvider((context, options) =>
+            {
+                options.ValidateOnBuild = context.HostingEnvironment.IsDevelopment();
+            });
+
+            builder.ConfigureContainer<Microsoft.Extensions.DependencyInjection.IServiceCollection>((context, services) =>
+            {
+                services.AddOptions();
+            });
 
 #if DEBUG
-            builder.Environment.EnvironmentName = "Development"; // Set the environment name if needed
+            builder.UseEnvironment(Environments.Development); // Set the environment name if needed
 #else
-            builder.Environment.EnvironmentName = "Production"; // Set the environment name if needed
+            builder.UseEnvironment(Environments.Production); // Set the environment name if needed
 #endif  
-
-            // logging and read configuration from log4net.config
-            builder.Logging.AddLog4Net();
-
-            //builder.Services.AddTransient<TransientDisposable>(); 
-            //builder.Services.AddScoped<ScopedDisposable>(); 
-            //builder.Services.AddSingleton<SingletonDisposable>();
+            builder.ConfigureLogging(logging => logging.AddLog4Net());
 
             // Configure the application configuration
-            CreateConfigurationBuilder(builder.Configuration);
             return builder;
         }
 

@@ -1,33 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using EmbeddedConsoleApp.Commands;
+﻿using EmbeddedConsoleApp.Commands;
+using Log4UsbService;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MyFramework.CommandArgs;
+using MyFramework.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 
 namespace EmbeddedConsoleApp.DependencyInjection
 {
     internal class ConsoleHostedService : IHostedService
     {
+        private readonly IHost hostService;
         private readonly ICommands commandService;
         private readonly ILogger<ConsoleHostedService> _logger;
 
         private readonly Log4UsbService.ILog4UsbService _log4UsbService;
 
         public ConsoleHostedService(
+            IHost host,
             ICommands commandService,
             Log4UsbService.ILog4UsbService log4UsbService,
             ILogger<ConsoleHostedService> logger)
         {
             ArgumentNullException.ThrowIfNull(commandService);
+            this.hostService = host;
             this.commandService = commandService;
             this._log4UsbService = log4UsbService ?? throw new ArgumentNullException(nameof(log4UsbService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+            var exitCommand = this.commandService.FindCommand("exit") as ICommandArgs<CommandExit>;
+            if (exitCommand != null)
+            {
+                exitCommand.CommandExec = ExecuteExit;
+            }
+
             // Register commands
             new Log4UsbCommand(this.ExecuteLog4Usb);
+        }
+
+        private bool ExecuteExit(CommandExit cmd)
+        {
+            //Console.WriteLine("Exiting application...");
+            // stop all services and exit the application
+            hostService.StopAsync().Wait();
+            //Environment.Exit(0);
+            return true;
         }
 
         /// <summary>
@@ -113,8 +134,13 @@ namespace EmbeddedConsoleApp.DependencyInjection
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            // Dispose our service;
+            var l = this.hostService.Services.GetService<Log4UsbService.ILog4UsbService>();
+            l?.Dispose();
+            this.hostService.Services.GetService<UsbDeviceBase.IUsbDevice>()?.Dispose();
+
+            _logger.LogInformation("ConsoleHostedService is stopping.");
             return Task.CompletedTask;
         }
-
     }
 }

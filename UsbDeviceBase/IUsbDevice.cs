@@ -7,7 +7,7 @@ using static UsbDeviceBase.UsbDeviceBase;
 
 namespace UsbDeviceBase
 {
-    public interface IUsbDevice
+    public interface IUsbDevice : IDisposable
     {
         UInt16 VendorId { get; }
         UInt16 ProductId { get; }
@@ -78,8 +78,16 @@ namespace UsbDeviceBase
 
         bool WaitOpenned(TimeSpan timeout);
 
+        [Obsolete("Use AcquireInPipe instead.")]
         BulkInPipeImpl GetBulkInPipe(int interfaceNumber, int pipeId);
 
+        T AcquireInPipe<T>(int interfaceNumber, int pipeId) where T : PipeInBase;
+
+        void ReleasePipe(IUsbPipe pipe);
+
+        T AcquireOutPipe<T>(int interfaceNumber, int pipeId) where T : PipeOutBase;
+
+        [Obsolete("Use AcquireOutPipe instead.")]
         BulkOutPipeImpl GetBulkOutPipe(int OutterfaceNumber, int pipeId);
     }
 }

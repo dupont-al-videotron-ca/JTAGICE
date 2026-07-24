@@ -5,7 +5,7 @@ namespace Log4UsbService
     /// <summary>
     /// Interface for the Log4UsbService, providing methods to configure logging levels for USB communication.
     /// </summary>
-    public interface ILog4UsbService
+    public interface ILog4UsbService : IDisposable
     {
         /// <summary>
         /// Sets the logging level for receiving log messages from the USB device.

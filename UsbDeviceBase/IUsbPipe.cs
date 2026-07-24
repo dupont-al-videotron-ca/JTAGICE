@@ -8,5 +8,12 @@ namespace UsbDeviceBase
 {
     public interface IUsbPipe : IDisposable
     {
+        bool CanAquired();
+
+        bool Aquired(TimeSpan timeout, CancellationToken cancellationToken);
+
+        void Release();
+
+        bool IsDisposed { get; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace UsbDeviceBase
 {
-    public interface IUsbPipeIn
+    public interface IUsbPipeIn: IUsbPipe
     {
 
         bool IsByteToRead { get; }

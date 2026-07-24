@@ -24,6 +24,6 @@ namespace MyFramework.CommandArgs
 
     public interface ICommandArgs<T> : ICommandArgs where T : class, ICommandArgs<T>
     {
-        CommandExecDelegate<T> CommandExec { get; }
+        CommandExecDelegate<T> CommandExec { get; set;}
     }
 }

@@ -3,7 +3,7 @@ using Windows.Storage.Streams;
 
 namespace UsbDeviceBase
 {
-    public interface IUsbPipeOut
+    public interface IUsbPipeOut : IUsbPipe
     {
 
         UsbWriteOptions WriteOptions { get; set; }

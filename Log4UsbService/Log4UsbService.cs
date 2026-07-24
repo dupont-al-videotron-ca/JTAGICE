@@ -65,6 +65,7 @@ namespace Log4UsbService
         private readonly TimeSpan openTimeout = TimeSpan.FromSeconds(5);
         private Level startLogRequestLevel = Level.Off;
         private UInt32 previousTickCount = 0;
+        private readonly System.Threading.Lock receiveLock = new ();
 
         #endregion
 
@@ -219,7 +220,14 @@ namespace Log4UsbService
         private void OnDeviceClosed(object? sender, EventArgs e)
         {
             loggerDebug.Debug($"Device closed: {usbDevice.DeviceName}");
-            SetReceivingLog(Level.Off);
+
+            lock (receiveLock)
+            {
+                if (this.pipeIn != null && !this.pipeIn.IsDisposed)
+                    usbDevice.ReleasePipe(this.pipeIn);
+
+                this.pipeIn = null!;
+            }
         }
 
         private void OnDeviceOpened(object? sender, DeviceInfoEventArgs e)
@@ -227,15 +235,19 @@ namespace Log4UsbService
             loggerDebug.Debug($"Device opened: {e.DeviceInfo.Name}");
 
             previousTickCount = 0;
-            this.pipeIn = usbDevice.GetBulkInPipe(this.interfaceId, this.pipeId);
-
-            if (this.pipeIn == null)
+            lock (receiveLock)
             {
-                loggerDebug.Error($"Failed to get bulk in pipe for interface {this.interfaceId} and pipe {this.pipeId}.");
-                return;
+                this.pipeIn = usbDevice.AcquireInPipe<BulkInPipeImpl>(this.interfaceId, this.pipeId);
+
+                if (this.pipeIn == null)
+                {
+                    loggerDebug.Error($"Failed to get bulk in pipe for interface {this.interfaceId} and pipe {this.pipeId}.");
+                    return;
+                }
             }
 
             SetReceivingLog(this.startLogRequestLevel);
+
         }
 
 
@@ -282,7 +294,8 @@ namespace Log4UsbService
         {
             try
             {
-                if (this.usbDevice.IsOpened && !this.cancellationSource.Token.IsCancellationRequested)
+                receiveLock.Enter();
+                if (this.pipeIn != null && this.usbDevice.IsConnected && this.usbDevice.IsOpened && !this.cancellationSource.Token.IsCancellationRequested)
                 {
                     //loggerDebug.Debug($"Reading structure: timeout : {receiveTimeout}"); 
                     var logEventDataResult = await this.pipeIn.ReadStructureAsync<USB_LoggingEventData_t>(this.cancellationSource.Token, (int)receiveTimeout.TotalMilliseconds);
@@ -309,7 +322,7 @@ namespace Log4UsbService
                     //loggerDebug.Debug($"Received log frame header: {logEventData.ToString()}");
 
                     int strLength = logEventData.Header.Length - (ushort)Marshal.SizeOf<USB_LoggingEventData_t>();
-                    loggerDebug.Debug($"Reading strings length {strLength}, timeout: {receiveTimeout}");
+                    //loggerDebug.Debug($"Reading strings length {strLength}, timeout: {receiveTimeout}");
                     if (!await this.pipeIn.ReadBytesAsync(out byte[] values, strLength, this.cancellationSource.Token, (int)receiveTimeout.TotalMilliseconds))
                     {
                         //loggerDebug.Debug("ReadBytes timeout.");
@@ -369,6 +382,8 @@ namespace Log4UsbService
                 }
                 else
                 {
+                    // wait for device (release CPU time)
+                    Task.Delay(10).Wait();
                     return;
                 }
             }
@@ -386,6 +401,10 @@ namespace Log4UsbService
             {
                 loggerDebug.Fatal("Error while reading log frame header from USB device.", ex);
                 return;
+            }
+            finally
+            {
+                receiveLock.Exit();
             }
         }
 
@@ -423,6 +442,7 @@ namespace Log4UsbService
             {
                 if (disposing)
                 {
+                    this.loggerDebug.Info("Disposing Log4UsbService.");
                     if (this.receiveTask != null)
                     {
                         StopReceivingLog();

@@ -21,7 +21,7 @@ namespace UsbDeviceBase
     /// <summary>
     /// Represents a base class for USB devices, providing common functionality for managing USB connections, sending control transfers, and handling device events.
     /// </summary>
-    public abstract class UsbDeviceBase : IDisposable, IUsbDevice
+    public abstract class UsbDeviceBase : IUsbDevice
     {
         private enum DeviceState
         {
@@ -239,6 +239,7 @@ namespace UsbDeviceBase
         {
             return this.GetPipeIn<BulkInPipeImpl>(interfaceNumber, pipeId);
         }
+
 
         /// <summary>
         /// Gets the bulk OUT pipe for the specified interface number and pipe ID.
@@ -828,6 +829,7 @@ namespace UsbDeviceBase
             {
                 if (disposing)
                 {
+                    this.Logger.Info($"Disposing {this.GetType().Name}.");
                     if (this.deviceWatcher != null)
                     {
                         this.deviceWatcher.Added -= Watcher_Added;
@@ -857,6 +859,7 @@ namespace UsbDeviceBase
                 disposedValue = true;
             }
         }
+
         private T GetPipeIn<T>(int interfaceNumber, int pipeId)
             where T : PipeInBase
         {
@@ -878,7 +881,20 @@ namespace UsbDeviceBase
                     return null;
                 }
 
-                return (T)pipe.Value;
+                if (!pipe.Value.CanAquired())
+                {
+                    Logger.Error($"BulkInPipe with pipe {pipeId}{typeof(T)} is not available for acquisition in interface {interfaceNumber}.");
+                    return null;
+                }
+                else if(pipe.Value.Aquired(TimeSpan.FromSeconds(5), CancellationToken.None))
+                {
+                    return (T)pipe.Value;
+                }
+                else
+                {
+                    Logger.Error($"BulkInPipe with pipe {pipeId}{typeof(T)} could not be acquired within the timeout period in interface {interfaceNumber}.");
+                    return null;
+                }
             }
             catch (Exception ex)
             {
@@ -1118,11 +1134,26 @@ namespace UsbDeviceBase
             }
         }
 
+        public T AcquireInPipe<T>(int interfaceNumber, int pipeId) where T : PipeInBase
+        {
+            return this.GetPipeIn<T>(interfaceNumber, pipeId);
+        }
+
+        public void ReleasePipe(IUsbPipe pipe)
+        {
+            pipe.Release();
+        }
+
+        public T AcquireOutPipe<T>(int interfaceNumber, int pipeId) where T : PipeOutBase
+        {
+            return this.GetPipeOut<T>(interfaceNumber, pipeId);
+        }
+
 
         #endregion
 
-        #region Private Classes / Enum 
+    #region Private Classes / Enum 
 
-        #endregion
-    }
+    #endregion
+}
 }

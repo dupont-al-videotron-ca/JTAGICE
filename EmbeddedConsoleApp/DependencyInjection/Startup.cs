@@ -16,17 +16,20 @@ namespace EmbeddedConsoleApp.DependencyInjection
 
         internal Startup() { }
 
-        override public HostApplicationBuilder HostCreateApplicationBuilder()
+        override public IHostBuilder HostCreateBuilder()
         {
-            var builder = base.HostCreateApplicationBuilder();
+            var builder = base.HostCreateBuilder();
+
             // Add additional services or configurations here if needed
             // For example, you can add custom services, logging providers, etc.
-            builder.Services.AddSingleton<IUsbDevice, At90UsbKeyDevice>();
+            builder.ConfigureServices(s => 
+                { 
+                    s.AddSingleton<IUsbDevice, At90UsbKeyDevice>()
+                    .AddLogUsbService()
+                    .AddSingleton<ICommands, MyFramework.CommandArgs.Commands>()
+                    .AddHostedService<ConsoleHostedService>();
+                });
 
-            builder.Services.AddLogUsbService();
-
-            builder.Services.AddSingleton<ICommands, MyFramework.CommandArgs.Commands>();
-            builder.Services.AddHostedService<ConsoleHostedService>();
             return builder;
         }
 

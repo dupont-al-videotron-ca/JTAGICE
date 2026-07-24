@@ -63,7 +63,7 @@ namespace MyFramework.CommandArgs
 
         public IParsable Parsable { get; private set; } = null!;
 
-        public CommandExecDelegate<T> CommandExec { get; private set; } = null!;
+        public CommandExecDelegate<T> CommandExec { get; set; } = null!;
 
         #endregion
 
