@@ -158,6 +158,7 @@ namespace Log4UsbService
             }
 
             StopReceivingTask();
+            pipeIn.Reset();
 
             loggerDebug.Debug("ReceivingLog stopped.");
             return error == 0;
@@ -295,8 +296,9 @@ namespace Log4UsbService
             try
             {
                 receiveLock.Enter();
-                if (this.pipeIn != null && this.usbDevice.IsConnected && this.usbDevice.IsOpened && !this.cancellationSource.Token.IsCancellationRequested)
+                if (this.pipeIn != null && this.usbDevice.IsConnected && this.usbDevice.IsOpened )
                 {
+                    this.cancellationSource.Token.ThrowIfCancellationRequested();
                     //loggerDebug.Debug($"Reading structure: timeout : {receiveTimeout}"); 
                     var logEventDataResult = await this.pipeIn.ReadStructureAsync<USB_LoggingEventData_t>(this.cancellationSource.Token, (int)receiveTimeout.TotalMilliseconds);
                     if (!logEventDataResult.HasValue)
@@ -304,12 +306,7 @@ namespace Log4UsbService
                         //loggerDebug.Debug("timeout occured.");
                         return;
                     }
-                    else if (this.cancellationSource.Token.IsCancellationRequested)
-                    {
-                        //loggerDebug.Debug("CancellationRequested in ReadStructureAsync.");
-                        return;
-                    }
-
+                    this.cancellationSource.Token.ThrowIfCancellationRequested();
 
                     USB_LoggingEventData_t logEventData = logEventDataResult.Value;
 
@@ -328,11 +325,7 @@ namespace Log4UsbService
                         //loggerDebug.Debug("ReadBytes timeout.");
                         return;
                     }
-                    else if (this.cancellationSource.Token.IsCancellationRequested)
-                    {
-                        //loggerDebug.Debug("CancellationRequested in ReadBytesAsync.");
-                        return;
-                    }
+                    this.cancellationSource.Token.ThrowIfCancellationRequested();
 
                     string logName = string.Empty;
                     string fileName = string.Empty;

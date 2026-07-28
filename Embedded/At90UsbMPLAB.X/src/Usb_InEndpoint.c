@@ -47,10 +47,8 @@ static bool WaitInBankReadyToWrite(UsbInEndpointData_t* inData)
 {
     for (inData->InRetryCnt = 1; inData->InRetryCnt != 0; inData->InRetryCnt++)
     {
-//        if (UsbDevIsFifoEmpty() && UsbDevIsFifoControllBitSet())
-        if (UsbDevIsFifoEmpty() && UsbDevIsFifoControllBitSet() && UsbDevWriteAllowed())
+        if (UsbDevIsFifoEmpty() && UsbDevIsFifoControllBitSet() && UsbDevIsWriteAllowed())
         {
-//            UsbDevClearTransmitterReady();
             return true;
         }
     }               
@@ -78,6 +76,51 @@ static bool FlushInFifo(UsbInEndpointData_t* inData)
     }
 
     return true;
+}
+
+static bool ApplyKillBreak(UsbInEndpointData_t* inData)
+{
+    UsbDevKillBK();
+    for (inData->InRetryCnt = 1; inData->InRetryCnt != 0; inData->InRetryCnt++)
+    {
+        if (UsbDevIsKillBKCompleted())
+        {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool Usb_InEndpointAbort(uint8_t epNumber)
+{
+    bool retval = false;
+    UsbDevSelectEndpoint(epNumber);
+    bool intrActive = UsbDevIsTransmitterReadyIntEnabled() != 0;
+    UsbDevDisableTransmitterReadyInt();
+
+    UsbInEndpointData_t* inData = &UsbEPData[epNumber - 1].In;
+    for (inData->InRetryCnt = 1; !retval && inData->InRetryCnt != 0; inData->InRetryCnt++)
+    {
+        if(UsbDevGetNumberOfBusyBanks() == 0)
+        {
+            retval = true;
+            break;
+        }
+        else
+        {
+            retval = ApplyKillBreak(inData);
+        }
+    }
+    
+    UsbDevResetEndpoint(epNumber);
+    
+    if(intrActive)
+    {
+        UsbDevEnableTransmitterReadyInt();
+    }
+    
+    return retval;
 }
 
 /// <summary>
@@ -112,15 +155,7 @@ void Usb_InEnpoint_HandleInterrupt(uint8_t epNumber)
     UsbDevSelectEndpoint(epNumber);
     if(UsbDevNAK_ResponseSendToInRequest())
     { 
-        // compiler internal error.
-        //UsbInEndpointData_t* inData = &UsbEPData[ep - 1].In;      
-        //inData->InNAKCnt++;
-        // compiler internal error.
-        //UsbEndpointData_t* inData = &UsbEPData[ep - 1];      
-        //inData->.In.InNAKCnt++;
-
-        // hope it is working?
-        
+       
         uint16_t* inData2 = &(UsbEPData[epNumber - 1].In.InNAKCnt);      
         inData2++;
 
@@ -181,7 +216,7 @@ bool Usb_InEndpointWriteFifo(uint8_t epNumber, void* pSrc, uint8_t dataLength)
         inData->InFifoCnt++;
 
         // is bank's FIFO full ?
-        if (!UsbDevWriteAllowed()) 
+        if (!UsbDevIsWriteAllowed()) 
         {
             // Yes send it and wait for completion before writing more data.
             if (!SendInFifo(inData))

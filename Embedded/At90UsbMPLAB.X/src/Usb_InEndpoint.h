@@ -6,5 +6,7 @@
 bool Usb_InEndpointWriteFifoAndFlush(uint8_t epNumber, void* pSrc, uint8_t dataLength);
 bool Usb_InEndpointWriteFifo(uint8_t epNumber, void* pSrc, uint8_t dataLength);
 
+bool Usb_InEndpointAbort(uint8_t epNumber);
+
 #endif
 

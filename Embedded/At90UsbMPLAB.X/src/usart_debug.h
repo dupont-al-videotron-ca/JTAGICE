@@ -9,7 +9,8 @@
 #include "usart_drv.h"
 #include "usb_spec.h"
 
-#ifdef DEBUG
+
+#ifdef NoDEBUG
 #define Debug(msg) USART_WriteString(msg)
 //#define ReqDebug(msg) USART_WriteString(msg " (" __FILE__ ")\r\n")
 #define ReqDebug(msg) USART_WriteString("|" msg "\r\n")
@@ -18,13 +19,13 @@
 #define ReqDebug(msg)
 #endif
 
-#ifdef DEBUG
+#ifdef NoDEBUG
 #define Assert(exp) if ((exp) == 0) USART_WriteString("Error: (" #exp ") == 0 (" __FILE__ ")\r\n");
 #else
 #define Assert(exp)
 #endif
 
-#ifdef DEBUG
+#ifdef NoDEBUG
 void UsbDumpDeviceDescriptor(USB_DeviceDescriptor *d);
 void UsbDumpConfigurationDescriptor(USB_ConfigurationDescriptor *c);
 void UsbDumpInterfaceDescriptor(USB_InterfaceDescriptor *i);

@@ -20,5 +20,6 @@ namespace UsbDeviceBase
         public abstract bool ReadStructure<T>(ref T obj, int timeout) where T : struct;
 
         public abstract Task<T?> ReadStructureAsync<T>(CancellationToken cancellationToken, int timeout = -1) where T : struct;
+        public abstract void Reset();
     }
 }

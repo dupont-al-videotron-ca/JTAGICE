@@ -60,6 +60,9 @@
     <ClCompile Include="..\At90UsbMPLAB.X\src\Usb_OutEndpoint.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\At90UsbMPLAB.X\src\Main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\At90UsbMPLAB.X\src\AT90UsbKey.h">

@@ -3,15 +3,14 @@
 // S. Salewski 22-MAR-2007
 
 
-#ifdef DEBUG
+#ifdef NoDEBUG
 
 #include "usart_debug.h"
 #include "usb_spec.h"
 #include "usart_drv.h"
 #include "defines.h"
 
-void
-UsbDumpDeviceDescriptor(USB_DeviceDescriptor *d)
+void UsbDumpDeviceDescriptor(USB_DeviceDescriptor *d)
 {
   USART_WriteString("USB Device-Descriptor:");
   USART_WriteString("\r\n  d->bLength: "); USART_WriteHex(d->bLength);

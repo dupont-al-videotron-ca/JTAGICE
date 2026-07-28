@@ -9,7 +9,7 @@ extern const char* DeviceName;
 extern uint32_t GetTimerTick();
 
 #ifdef DEBUG
-static uint8_t LogLevel = Log4UsbLevelAll;
+static uint8_t LogLevel = Log4UsbLevelFatal;
 #else
 static uint8_t LogLevel = Log4UsbLevelNone;
 #endif
@@ -17,8 +17,10 @@ static uint8_t LogLevel = Log4UsbLevelNone;
 /// <summary>
 /// Applies the USB logger configuration based on the provided device request.
 /// </summary>
-bool ApplyUsbLoggerCfg(USB_DeviceRequest* request)
+bool ApplyUsbLoggerCfg_Intr(USB_DeviceRequest* request)
 {
+    bool retval = false;
+    
     // is request valid?
     if (UsbIsVendorRequest(request->bmRequestType) && 
         (request->bRequest == AppLoggerId) && 
@@ -26,20 +28,31 @@ bool ApplyUsbLoggerCfg(USB_DeviceRequest* request)
         (LSB(request->wIndex) <= Log4UsbLevelAll))
     {
         // yes 
+        uint8_t prevEp =  UsbDevGetEndpoint();
+        UsbDevSelectEndpoint(Log4UsbEndpointNumber);
+
         if(LSB(request->wValue) == Log4UsbLogDisableRequest)
         {
             // valid request, apply configuration
             LogLevel = Log4UsbLevelNone;
-            return true;
+            retval = true;
         }
         else if (LSB(request->wValue) == Log4UsbLogEnableRequest)
         {
             LogLevel = LSB(request->wIndex);
-            return true;
+            if(!UsbDevGetNumberOfBusyBanks() == 0)
+            {
+                Usb_InEndpointAbort(Log4UsbEndpointNumber);
+            }
+            
+            retval = true;
         }        
+        
+        UsbDevSelectEndpoint(prevEp);
     }
+    
     // invalid request
-    return false;
+    return retval;
 }
 
 bool SendLog(uint8_t level, char *message, char* fileName)
@@ -48,6 +61,7 @@ bool SendLog(uint8_t level, char *message, char* fileName)
     {
         return false;
     }
+    
     UsbLoggingEventData_t appender;
     memset(&appender, 0, sizeof(appender));
 

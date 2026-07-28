@@ -41,15 +41,6 @@
 // To ensure that reallocation of endpoints with new FIFO size of one interface will not interfere with other interfaces,
 // only the interface with highest number should use multiple alternate settings with different endpoint FIFO sizes
 
-// These macros are called if an endpoint interrupt is triggered (if enabled)
-// and may be used to fill (IN-Endpoint) or read (OUT-Endpoint) the FIFO.
-#define UsbDevEP1IntAction() UsbDevFillEP1FIFO() // send status to host
-#define UsbDevEP2IntAction() // EP2, used for DAQ data, is filled by timer-ISR
-#define UsbDevEP3IntAction() UsbDevReadEP3FIFO() // read data byte for digital port B
-#define UsbDevEP4IntAction()
-#define UsbDevEP5IntAction()
-#define UsbDevEP6IntAction()
-
 typedef struct
 {
     uint8_t bEndpointAddress;

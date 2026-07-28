@@ -18,7 +18,6 @@
 extern void Sleep(uint32_t ms);
 
 static void MainLoop(void);
-static void ProcessUsbControl();
 static void ProcessUnitTest();
 
 const char *DeviceName = "AT90USB";
@@ -51,32 +50,14 @@ int main(void) {
 // a LED connected to PORTA0 will toggle to indicate the unused processing power
 
 static void MainLoop(void) {
-    Log_Debug("MainLoop");
-    while (!IsUsbDeveiceConfigured()) {
-        Sleep(1);
+    while (!IsUsbDeveiceConfigured()) 
+    {
+        Sleep(10);
     }
-
     
+    Log_Info("MainLoop started");
     while(1)
         ProcessUnitTest();
-}
-
-static void ProcessUsbControl() 
-{
-    if (UsbDevHasReceivedSETUP()) 
-    {
-        BoardPortD2GreenOn();
-        //UsbProcessSetupRequest();
-        BoardPortD2GreenOff();
-    }
-    if (UsbDevNAK_ResponseSendToOutRequest()) {
-        UsbDevClearNAK_ResponseOutBit();
-    }
-
-    if (UsbDevSTALLHandshakeSend()) 
-    {
-        UsbDevClearSTALLHandshakeSend();
-    }
 }
 
 static void ProcessUnitTest()
@@ -84,8 +65,9 @@ static void ProcessUnitTest()
     
     //SendLog(Log4UsbLevelFatal,"a1", "b1");
 
-    Sleep(500);
-#if 0    
+    Sleep(50);
+    Log_Fatal("Log_Fatal");
+#if 0
     Log_Fatal("Log_Fatal");
     Sleep(500);
     Log_Error("Log_Error");

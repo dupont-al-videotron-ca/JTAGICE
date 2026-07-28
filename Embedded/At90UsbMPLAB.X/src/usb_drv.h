@@ -231,7 +231,7 @@ void UsbDrv_DeviceStartPLL(void);
 #define UsbDevClearNAK_ResponseInBit()		ClearBit(UEINTX, NAKINI)	// shall be cleared by software
 //#define UsbDevReadWriteAllowed()		BitIsSet(UEINTX, RWAL)		// set by hardware, don't use for control endpoint
 #define UsbDevReadAllowed()			BitIsSet(UEINTX, RWAL)
-#define UsbDevWriteAllowed()			BitIsSet(UEINTX, RWAL)
+#define UsbDevIsWriteAllowed()			BitIsSet(UEINTX, RWAL)
 #define UsbDevNAK_ResponseSendToOutRequest()	BitIsSet(UEINTX, NAKOUTI)
 #define UsbDevClearNAK_ResponseOutBit()		ClearBit(UEINTX, NAKOUTI)	// shall be cleared by software
 #define UsbDevHasReceivedSETUP()		BitIsSet(UEINTX, RXSTPI)	// set by hardware if current bank contains a valid SETUP packet
@@ -239,7 +239,8 @@ void UsbDrv_DeviceStartPLL(void);
 #define UsbDevAcknowledgeSETUP()		ClearBit(UEINTX, RXSTPI)	// acknowledge request and clear fifo, see section 22.13
 #define UsbDevHasReceivedOUT_Data()		BitIsSet(UEINTX, RXOUTI)	// set by hardware if current bank contains a new packed
 #define UsbDevClearHasReceivedOUT_Data()	ClearBit(UEINTX, RXOUTI)	// shall be cleared by software
-#define UsbDevKillLastWrittenBank()		SetBit(UEINTX, RXOUTI)		// see page 278 for abort operation
+#define UsbDevKillBK()                SetBit(UEINTX, RXOUTI)		// see page 278 for abort operation
+#define UsbDevIsKillBKCompleted()		BitIsSet(UEINTX, RXOUTI)		// see page 278 for abort operation
 #define UsbDevSTALLHandshakeSend()		BitIsSet(UEINTX, STALLEDI) 	// STALL send or CRC error in OUT isochronous endpoint
 #define UsbDevClearSTALLHandshakeSend()		ClearBit(UEINTX, STALLEDI) 	// STALL send or CRC error in OUT isochronous endpoint
 #define UsbDevIsFifoEmpty()             BitIsSet(UEINTX, TXINI)		// current bank is free and can be filled
@@ -263,6 +264,7 @@ void UsbDrv_DeviceStartPLL(void);
 #define UsbDevDisableSTALLED_Int()		ClearBit(UEIENX, STALLEDE)
 #define UsbDevEnableTransmitterReadyInt()	SetBit(UEIENX, TXINE)
 #define UsbDevDisableTransmitterReadyInt()	ClearBit(UEIENX, TXINE)
+#define UsbDevIsTransmitterReadyIntEnabled()	BitIsSet(UEIENX, TXINE)
 
 // UEDATX (Usb Endpoint DATa X)
 #define UsbDevReadByteFromFifo()		UEDATX				// read byte from endpoint FIFO selected by EPNUM

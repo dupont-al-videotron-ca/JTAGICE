@@ -13,5 +13,6 @@
 
         Task<T?> ReadStructureAsync<T>(CancellationToken cancellationToken, int timeout = -1) where T : struct;
 
+        void Reset();
     }
 }

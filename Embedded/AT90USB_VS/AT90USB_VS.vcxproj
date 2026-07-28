@@ -22,6 +22,7 @@
     <ClCompile Include="..\At90UsbMPLAB.X\scr++\ClassRingbuffer.cpp" />
     <ClCompile Include="..\At90UsbMPLAB.X\src\daq_dev.c" />
     <ClCompile Include="..\At90UsbMPLAB.X\src\Log4Usb\Log4Usb.c" />
+    <ClCompile Include="..\At90UsbMPLAB.X\src\Main.c" />
     <ClCompile Include="..\At90UsbMPLAB.X\src\ringbuffer.c" />
     <ClCompile Include="..\At90UsbMPLAB.X\src\SUDD.c" />
     <ClCompile Include="..\At90UsbMPLAB.X\src\Timer2CTC.c" />

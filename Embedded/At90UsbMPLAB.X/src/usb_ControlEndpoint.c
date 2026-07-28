@@ -13,7 +13,7 @@
 #include "at90usbkey.h"
 #include "timer2ctc.h"
 
-extern bool ApplyUsbLoggerCfg(USB_DeviceRequest* request);
+extern bool ApplyUsbLoggerCfg_Intr(USB_DeviceRequest* request);
 extern uint8_t ResetCnt;
 
 uint8_t UsbDevConfValue = UsbUnconfiguredState;
@@ -313,12 +313,20 @@ void UsbProcessSetupRequest_Intr(void)
     if (UsbIsVendorRequest(SetupRequest.bmRequestType))
     {
         UsbDevAcknowledgeSETUP();
-        ApplyUsbLoggerCfg(&SetupRequest);
-        //ReqDebug("Received UsbVendorRequest");
-        //UsbDevProcessVendorRequest(&SetupRequest);
-        UsbDevSelectEndpoint(0);
-        // should call SendZLP
-        UsbDevSendControlIn(); // send ZLP
+        // is vendor request and for log4usb?
+        if (UsbIsVendorRequest(SetupRequest.bmRequestType) && SetupRequest.bRequest == AppLoggerId)
+        {        
+            // Yes,
+            ApplyUsbLoggerCfg_Intr(&SetupRequest);
+            
+            // should call SendZLP
+            UsbDevSendControlIn(); // send ZLP
+        }
+        else
+        {
+            // no stall!
+            UsbDevRequestStallHandshake();
+        }
     }
     else if (UsbIsStandardRequest(SetupRequest.bmRequestType))
     {
